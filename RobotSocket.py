@@ -6,6 +6,8 @@ import queue
 import struct
 import numpy as np
 
+from Kinematics import ForwardKinematics
+
 
 class StaticRobotParameters:
     def __init__(self):
@@ -103,16 +105,17 @@ class RobotSocket(socket.socket):
         # so that the parameter update can occur fully concurrently.
         # Additionally, a position update for all the robot joints is necessary.
         interpretedData = DynamicRobotParameters()
-        for index, attribute in enumerate(vars(interpretedData)):
+        for attribute in vars(interpretedData):
             parameter = getattr(interpretedData, attribute)
             value = data[parameter.precedingBytes:(parameter.precedingBytes + parameter.sizeInBytes)]
+            if len(value) == 0:
+                return None
             try:
                 value = struct.unpack(parameter.type, bytes.fromhex(str(binascii.hexlify(value).decode("utf-8"))))[0]
-                if attribute == 'MessageSize' and value == 0:
-                    return None
             except struct.error as e:
                 print("An exception occurred on {}. {}".format(attribute, e))
-
+            if attribute == 'MessageSize' and value == 0:
+                return None
             parameter.value = value
             setattr(parameter, 'value', value)
         return interpretedData
@@ -155,16 +158,16 @@ class RobotSocket(socket.socket):
 
 
 class Robot(StaticRobotParameters, DynamicRobotParameters, RobotSocket):
-    def __init__(self, display_dynamic_robot_parameters=True):
+    def __init__(self):
         StaticRobotParameters.__init__(self)
         DynamicRobotParameters.__init__(self)
         RobotSocket.__init__(self, self.IP, self.Port, self.updateDynamicRobotParameters)
-        self.displayDynamicRobotParameters = display_dynamic_robot_parameters
-        self.robotJoints = []
+        self.robotJointAngles = []
         self.toolPosition = []
-        # Wait for update thread to kick in
-        while len(self.robotJoints) == 0:
-            time.sleep(0.1)
+        self.forwardKinematics = ForwardKinematics()
+        # # Wait for update thread to kick in
+        # while len(self.robotJoints) == 0:
+        #     time.sleep(0.1)
 
     def updateDynamicRobotParameters(self, communication_queue):
         # Update parameters of the Robot through a thread callback from the socket.
@@ -176,41 +179,16 @@ class Robot(StaticRobotParameters, DynamicRobotParameters, RobotSocket):
                 newParameter = getattr(new_parameters, parameter)
                 setattr(self, parameter, newParameter)
         communication_queue.put(0)
-        self.robotJoints = [self.Base, self.Shoulder, self.Elbow, self.Wrist1, self.Wrist2, self.Wrist3]
-        self.toolPosition = [self.toolX, self.toolY, self.toolZ, self.toolRX, self.toolRY, self.toolRZ]
-        self.updateJointPositions()
-        # print(self.toolX.value, self.toolY.value, self.toolZ.value)
-        angles = [joint.value / 3.14159 * 180 for joint in self.robotJoints]
-
-    def updateJointPositions(self):
-        for joint in self.robotJoints:
-            # Swap x and y coordinates of base as a 90 degree rotation was confirmed
-            if joint.origin is None:
-                joint.T[0, 3], joint.T[1, 3] = -joint.T[1, 3], joint.T[0, 3]
-            else:
-                joint.T = joint.origin.T.dot(joint.T)
-
-    def jointAngles(self):
-        # return np.array([self.Base, self.Shoulder, self.Elbow, self.ElbowEnd, self.Wrist1, self.Wrist2, self.Wrist3])
-        return [joint.angle for joint in self.robotJoints]
+        self.robotJointAngles = [joint.value for joint in [self.Base, self.Shoulder, self.Elbow, self.Wrist1, self.Wrist2, self.Wrist3]]
+        self.toolPosition = [i.value for i in [self.toolX, self.toolY, self.toolZ, self.toolRX, self.toolRY, self.toolRZ]]
 
     def jointPositions(self):
-        X, Y, Z = [0, 0], [0, 0], [0, self.Base.Z()]
-        for joint in self.robotJoints:
-            x, y, z = joint.position()
-            X.append(x)
-            Y.append(y)
-            Z.append(z)
-        return np.array(X), np.array(Y), np.array(Z)
+        return self.forwardKinematics.forward(self.robotJointAngles)
 
     def openGripper(self):
-        # self.renewSocket()
-        # self.connectSafely()
         self.send(b'set_digital_out(8, False)' + b"\n")
 
     def closeGripper(self):
-        # self.renewSocket()
-        # self.connectSafely()
         self.send(b'set_digital_out(8, True)' + b"\n")
 
     def setGripperVoltage(self, voltage=24):
@@ -279,11 +257,11 @@ class Robot(StaticRobotParameters, DynamicRobotParameters, RobotSocket):
 
 if __name__ == '__main__':
     robot = Robot()
-    # robot.closeGripper()
+    robot.closeGripper()
+    time.sleep(2)
 
-    time.sleep(20)
-    # robot.openGripper()
-    # time.sleep(1)
+    robot.openGripper()
+    time.sleep(10)
     robot.shutdownRobot()
 
 

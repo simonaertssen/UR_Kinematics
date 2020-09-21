@@ -71,9 +71,7 @@ class RobotRotationEmulator:
         self.angles[0] += 0.001
 
     def jointPositions(self):
-        self.fk.forward(self.angles)
-        pos = self.fk.positions()
-        x, y, z = pos
+        pos = self.fk.forward(self.angles)
         self.step()
         return pos
 
