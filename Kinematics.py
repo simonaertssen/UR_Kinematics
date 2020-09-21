@@ -16,40 +16,40 @@ def T(theta, d, r, alpha):
 class ForwardKinematics(object):
     # Use slots for faster access:
     # https://stackoverflow.com/questions/472000/usage-of-slots
-    __slots__ = ('shoulder', 'elbow', 'elbowend', 'wrist1', 'wrist2', 'wrist3', 'tool')
+    __slots__ = ('base', 'shoulder', 'elbow', 'elbowend', 'wrist1', 'wrist2', 'wrist3')
 
     def __init__(self):
         super(ForwardKinematics).__init__()
+        self.base     = np.zeros((4, 4))
         self.shoulder = np.zeros((4, 4))
         self.elbow    = np.zeros((4, 4))
         self.elbowend = np.zeros((4, 4))
         self.wrist1   = np.zeros((4, 4))
         self.wrist2   = np.zeros((4, 4))
         self.wrist3   = np.zeros((4, 4))
-        self.tool     = np.zeros((4, 4))
 
     def forward(self, jointangles):
         a, b, c, d, e, f = jointangles
-        self.shoulder = T(a, 0.089159, 0.134, np.pi / 2)
-        self.elbow    = T(b, 0, -0.425, 0)
-        self.elbowend = T(b, 0.119, 0, 0)
-        self.wrist1   = T(c, 0, -0.39225, 0)
-        self.wrist2   = T(d, -0.09475, 0, np.pi / 2)
-        self.wrist3   = T(e, 0.09475, 0, -np.pi / 2)
-        self.tool     = T(f, -0.0815, 0, 0)
+        self.base     = T(theta=a, d=0.089159,  r=0.134,    alpha=np.pi / 2)
+        self.shoulder = T(theta=b, d=0,         r=-0.425,   alpha=0)
+        self.elbow    = T(theta=c, d=0.119,     r=0,        alpha=0)
+        self.elbowend = T(theta=c, d=0,         r=-0.39225, alpha=0)
+        self.wrist1   = T(theta=d, d=-0.09475,  r=0,        alpha=np.pi / 2)
+        self.wrist2   = T(theta=e, d=0.09475,   r=0,        alpha=-np.pi / 2)
+        self.wrist3   = T(theta=f, d=-0.0815,   r=0,        alpha=0)
 
-        self.shoulder[0, 3], self.shoulder[1, 3] = -self.shoulder[1, 3], self.shoulder[0, 3]
+        self.base[0, 3], self.base[1, 3] = -self.base[1, 3], self.base[0, 3]
+        self.shoulder = self.base.dot(self.shoulder)
         self.elbow    = self.shoulder.dot(self.elbow)
         self.elbowend = self.elbow.dot(self.elbowend)
         self.wrist1   = self.elbowend.dot(self.wrist1)
         self.wrist2   = self.wrist1.dot(self.wrist2)
         self.wrist3   = self.wrist2.dot(self.wrist3)
-        self.tool     = self.wrist3.dot(self.tool)
 
     def positions(self):
-        X = np.array([0, 0, self.shoulder[0, 3], self.elbow[0, 3], self.elbowend[0, 3], self.wrist1[0, 3], self.wrist2[0, 3], self.wrist3[0, 3], self.tool[0, 3]])
-        Y = np.array([0, 0, self.shoulder[1, 3], self.elbow[1, 3], self.elbowend[1, 3], self.wrist1[1, 3], self.wrist2[1, 3], self.wrist3[1, 3], self.tool[1, 3]])
-        Z = np.array([0, self.shoulder[2, 3], self.shoulder[2, 3], self.elbow[2, 3], self.elbowend[2, 3], self.wrist1[2, 3], self.wrist2[2, 3], self.wrist3[2, 3], self.tool[2, 3]])
+        X = np.array([0,               0, self.base[0, 3], self.shoulder[0, 3], self.elbow[0, 3], self.elbowend[0, 3], self.wrist1[0, 3], self.wrist2[0, 3], self.wrist3[0, 3]])
+        Y = np.array([0,               0, self.base[1, 3], self.shoulder[1, 3], self.elbow[1, 3], self.elbowend[1, 3], self.wrist1[1, 3], self.wrist2[1, 3], self.wrist3[1, 3]])
+        Z = np.array([0, self.base[2, 3], self.base[2, 3], self.shoulder[2, 3], self.elbow[2, 3], self.elbowend[2, 3], self.wrist1[2, 3], self.wrist2[2, 3], self.wrist3[2, 3]])
         return X, Y, Z
 
 

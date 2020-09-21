@@ -20,24 +20,20 @@ class ThreeDimCanvas(FigureCanvasQTAgg):
         fig = Figure(figsize=(width, height), dpi=dpi)
         super(ThreeDimCanvas, self).__init__(fig)
         self.axes = fig.gca(projection='3d')  # generates 3D Axes object
-        # self.axes.hold(False)
 
         self.axes.set_xlim3d(-0.5, 0.5)
         self.axes.set_ylim3d(-0.5, 0.5)
         self.axes.set_zlim3d(0, 1)
 
         initPos = np.zeros((6,))
-        self.lines = self.axes.plot3D(initPos, initPos, initPos, 'black')[0]
-        self.joint = self.axes.scatter3D(initPos, initPos, initPos, c='r')
+        self.arms   = self.axes.plot3D(initPos, initPos, initPos, 'black')[0]
+        self.joints = self.axes.scatter3D(initPos, initPos, initPos, c='r')
 
     def updatePlot(self, positions):
         # self.axes.clear()
         X, Y, Z = positions
-        self.lines.set_data_3d(X, Y, Z)
-        #self.joint._offsets3d = (X, Y, Z)
-        # print(X[2], Y[2], Z[2])
-        # self.axes.clear()
-        # self.axes.plot3D(X, Y, Z, 'black')
+        self.joints._offsets3d = (X, Y, Z)
+        self.arms.set_data_3d(X, Y, Z)
         self.draw_idle()
 
 
@@ -74,20 +70,14 @@ class RobotRotationEmulator:
         self.fk = ForwardKinematics()
 
     def step(self):
-        self.angles[0] += 0.01
+        self.angles[0] += 0.001
 
     def jointPositions(self):
         self.fk.forward(self.angles)
         pos = self.fk.positions()
         x, y, z = pos
-        print(x)
-        print(y)
-        print(z)
         self.step()
         return pos
-
-    def jointAngles(self):
-        pass
 
 
 def seeViewerAtWork(robot):
