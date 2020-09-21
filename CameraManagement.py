@@ -19,7 +19,7 @@ import numpy as np
 
 class ImageEventHandler(pylon.ImageEventHandler):
     def __init__(self, callback):
-        super().__init__()
+        super(ImageEventHandler).__init__()
         self.returnImageCallback = callback
         self.cameraContextValue = None
         self.grabbedImage = None
