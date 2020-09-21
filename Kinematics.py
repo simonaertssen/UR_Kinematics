@@ -22,7 +22,7 @@ class ForwardKinematics(object):
         super(ForwardKinematics).__init__()
         self.shoulder = np.zeros((4, 4))
         self.elbow    = np.zeros((4, 4))
-        self.elbowend   = np.zeros((4, 4))
+        self.elbowend = np.zeros((4, 4))
         self.wrist1   = np.zeros((4, 4))
         self.wrist2   = np.zeros((4, 4))
         self.wrist3   = np.zeros((4, 4))
@@ -34,12 +34,12 @@ class ForwardKinematics(object):
         self.elbow    = T(b, 0, -0.425, 0)
         self.elbowend = T(b, 0.119, 0, 0)
         self.wrist1   = T(c, 0, -0.39225, 0)
-        self.wrist2   = T(d, 0.09475, 0, np.pi / 2)
+        self.wrist2   = T(d, -0.09475, 0, np.pi / 2)
         self.wrist3   = T(e, 0.09475, 0, -np.pi / 2)
-        self.tool     = T(f, 0.0815, 0, 0)
+        self.tool     = T(f, -0.0815, 0, 0)
 
         self.shoulder[0, 3], self.shoulder[1, 3] = -self.shoulder[1, 3], self.shoulder[0, 3]
-        self.elbow    = self.elbow.dot(self.elbow)
+        self.elbow    = self.shoulder.dot(self.elbow)
         self.elbowend = self.elbow.dot(self.elbowend)
         self.wrist1   = self.elbowend.dot(self.wrist1)
         self.wrist2   = self.wrist1.dot(self.wrist2)
@@ -47,9 +47,9 @@ class ForwardKinematics(object):
         self.tool     = self.wrist3.dot(self.tool)
 
     def positions(self):
-        X = np.array([self.shoulder[0, 3], self.elbow[0, 3], self.elbowend[0, 3], self.wrist1[0, 3], self.wrist2[0, 3], self.wrist3[0, 3], self.tool[0, 3]])
-        Y = np.array([self.shoulder[1, 3], self.elbow[1, 3], self.elbowend[1, 3], self.wrist1[1, 3], self.wrist2[1, 3], self.wrist3[1, 3], self.tool[1, 3]])
-        Z = np.array([self.shoulder[2, 3], self.elbow[2, 3], self.elbowend[2, 3], self.wrist1[2, 3], self.wrist2[2, 3], self.wrist3[2, 3], self.tool[2, 3]])
+        X = np.array([0, 0, self.shoulder[0, 3], self.elbow[0, 3], self.elbowend[0, 3], self.wrist1[0, 3], self.wrist2[0, 3], self.wrist3[0, 3], self.tool[0, 3]])
+        Y = np.array([0, 0, self.shoulder[1, 3], self.elbow[1, 3], self.elbowend[1, 3], self.wrist1[1, 3], self.wrist2[1, 3], self.wrist3[1, 3], self.tool[1, 3]])
+        Z = np.array([0, self.shoulder[2, 3], self.shoulder[2, 3], self.elbow[2, 3], self.elbowend[2, 3], self.wrist1[2, 3], self.wrist2[2, 3], self.wrist3[2, 3], self.tool[2, 3]])
         return X, Y, Z
 
 
