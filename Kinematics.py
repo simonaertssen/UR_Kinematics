@@ -28,7 +28,7 @@ class ForwardKinematics(object):
         self.wrist3   = np.zeros((4, 4))
         self.tool     = np.zeros((4, 4))
 
-    def setJointAngles(self, jointangles):
+    def forward(self, jointangles):
         a, b, c, d, e, f = jointangles
         self.shoulder = T(a, 0.089159, 0.134, np.pi / 2)
         self.elbow    = T(b, 0, -0.425, 0)
@@ -37,16 +37,6 @@ class ForwardKinematics(object):
         self.wrist2   = T(d, 0.09475, 0, np.pi / 2)
         self.wrist3   = T(e, 0.09475, 0, -np.pi / 2)
         self.tool     = T(f, 0.0815, 0, 0)
-
-    def forward(self, jointangles):
-        a, b, c, d, e, f = jointangles
-        self.shoulder = T(a, 0.089159, 0.134, np.pi / 2)
-        self.elbow = T(b, 0, -0.425, 0)
-        self.elbow2 = T(b, 0.119, 0, 0)
-        self.wrist1 = T(c, 0, -0.39225, 0)
-        self.wrist2 = T(d, 0.09475, 0, np.pi / 2)
-        self.wrist3 = T(e, 0.09475, 0, -np.pi / 2)
-        self.tool = T(f, 0.0815, 0, 0)
 
         self.shoulder[0, 3], self.shoulder[1, 3] = -self.shoulder[1, 3], self.shoulder[0, 3]
         self.shoulder = self.shoulder.dot(self.elbow)
@@ -58,14 +48,16 @@ class ForwardKinematics(object):
         self.tool = self.wrist3.dot(self.tool)
 
 
-def testKinematicsSpeed():
+def SpeedOfCurrentKinematics():
     fk = ForwardKinematics()
     start = time.time()
     for _ in range(1000):
-        fk.forward([0, -np.pi/2, 0, 0, -np.pi/2, 0, 0])
-    interval = start - time.time()
+        fk.forward([0, -np.pi/2, 0, -np.pi/2, 0, 0])
+    interval = time.time() - start
     print(1000/interval, "iterations per second")
 
 
 if __name__ == '__main__':
-    testKinematicsSpeed()
+    SpeedOfCurrentKinematics()
+    # 17905 iterations per second for the first try
+    # 16697 iterations per second without 'slots'
