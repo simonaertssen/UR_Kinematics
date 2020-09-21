@@ -28,6 +28,12 @@ class ForwardKinematics(object):
         self.wrist2   = np.zeros((4, 4))
         self.wrist3   = np.zeros((4, 4))
 
+    def positions(self):
+        X = np.array([0,               0, self.base[0, 3], self.shoulder[0, 3], self.elbow[0, 3], self.elbowend[0, 3], self.wrist1[0, 3], self.wrist2[0, 3], self.wrist3[0, 3]])
+        Y = np.array([0,               0, self.base[1, 3], self.shoulder[1, 3], self.elbow[1, 3], self.elbowend[1, 3], self.wrist1[1, 3], self.wrist2[1, 3], self.wrist3[1, 3]])
+        Z = np.array([0, self.base[2, 3], self.base[2, 3], self.shoulder[2, 3], self.elbow[2, 3], self.elbowend[2, 3], self.wrist1[2, 3], self.wrist2[2, 3], self.wrist3[2, 3]])
+        return X, Y, Z
+
     def forward(self, jointangles):
         a, b, c, d, e, f = jointangles
         # The joint parameters a, d and alpha can be found here: https://www.universal-robots.com/articles/ur-articles/parameters-for-calculations-of-kinematics-and-dynamics/
@@ -47,19 +53,14 @@ class ForwardKinematics(object):
         self.wrist2   = self.wrist1.dot(self.wrist2)
         self.wrist3   = self.wrist2.dot(self.wrist3)
 
-    def positions(self):
-        X = np.array([0,               0, self.base[0, 3], self.shoulder[0, 3], self.elbow[0, 3], self.elbowend[0, 3], self.wrist1[0, 3], self.wrist2[0, 3], self.wrist3[0, 3]])
-        Y = np.array([0,               0, self.base[1, 3], self.shoulder[1, 3], self.elbow[1, 3], self.elbowend[1, 3], self.wrist1[1, 3], self.wrist2[1, 3], self.wrist3[1, 3]])
-        Z = np.array([0, self.base[2, 3], self.base[2, 3], self.shoulder[2, 3], self.elbow[2, 3], self.elbowend[2, 3], self.wrist1[2, 3], self.wrist2[2, 3], self.wrist3[2, 3]])
-        return X, Y, Z
+        return self.positions()
 
 
 def SpeedOfCurrentKinematics():
     fk = ForwardKinematics()
     start = time.time()
     for _ in range(100000):
-        fk.forward([0, -np.pi/2, 0, -np.pi/2, 0, 0])
-        pos = fk.positions()
+        pos = fk.forward([0, -np.pi/2, 0, -np.pi/2, 0, 0])
     interval = time.time() - start
     print(100000/interval, "iterations per second")
 
