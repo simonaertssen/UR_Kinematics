@@ -4,7 +4,7 @@ import numpy as np
 import cv2 as cv
 from PyQt5 import QtGui, QtCore, QtWidgets
 from CameraManagement import CameraArray
-from RobotSocket import RobotClass
+from RobotSocket import Robot
 
 
 class updateViewThread(QtCore.QThread):
@@ -67,7 +67,7 @@ class SurfaceInspectionWindow(QtWidgets.QMainWindow):
         self.setGeometry(50, 50, self.width, self.height)
 
         # Start the robot:
-        self.robot = RobotClass()
+        self.robot = Robot()
         self.objectsToPickUp = 0
 
         # Start threads

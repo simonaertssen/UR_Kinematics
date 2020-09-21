@@ -42,7 +42,6 @@ class DynamicParameter(object):
 class DynamicRobotParameters:
     def __init__(self):
         # These parameters correspond to the 'Meaning'field in the UR excel sheet 'Client_Interface_V3'.
-        # The joint parameters a, d and alpha can be found here: https://www.universal-robots.com/articles/ur-articles/parameters-for-calculations-of-kinematics-and-dynamics/
         self.MessageSize        = DynamicParameter(4,   0, '!i', "Total message length in bytes")
         self.Time               = DynamicParameter(8,   4, '!d', "Time elapsed since the controller was started")
 
@@ -106,29 +105,16 @@ class RobotSocket(socket.socket):
         interpretedData = DynamicRobotParameters()
         for index, attribute in enumerate(vars(interpretedData)):
             parameter = getattr(interpretedData, attribute)
-            # if isinstance(parameter, RobotJoint):
-            #     parameter = getattr(parameter, 'angle')
             value = data[parameter.precedingBytes:(parameter.precedingBytes + parameter.sizeInBytes)]
-            if value == 0 or len(value) == 0:
-                return None
-            # print(attribute, "[{}:{}]".format(parameter.precedingBytes, parameter.precedingBytes + parameter.sizeInBytes), value, len(value))
             try:
                 value = struct.unpack(parameter.type, bytes.fromhex(str(binascii.hexlify(value).decode("utf-8"))))[0]
+                if attribute == 'MessageSize' and value == 0:
+                    return None
             except struct.error as e:
                 print("An exception occurred on {}. {}".format(attribute, e))
 
-            if index == 0 and value == 0:
-                return None
-
-            # print(attribute, "[{}:{}]".format(parameter.precedingBytes, parameter.precedingBytes + parameter.sizeInBytes), value)
-            # print(attribute, parameter, vars(parameter))
             parameter.value = value
             setattr(parameter, 'value', value)
-            # print(parameter.value)
-            #
-            # if isinstance(parameter, RobotJoint):
-            #     parameter.updateCoordinates()
-            # print("interpretedData", vars(interpretedData.toolX))
         return interpretedData
 
     def connectSafely(self, address_to_connect_to=None):
@@ -168,7 +154,7 @@ class RobotSocket(socket.socket):
                         time.sleep(0.2)
 
 
-class RobotClass(StaticRobotParameters, DynamicRobotParameters, RobotSocket):
+class Robot(StaticRobotParameters, DynamicRobotParameters, RobotSocket):
     def __init__(self, display_dynamic_robot_parameters=True):
         StaticRobotParameters.__init__(self)
         DynamicRobotParameters.__init__(self)
@@ -181,7 +167,7 @@ class RobotClass(StaticRobotParameters, DynamicRobotParameters, RobotSocket):
             time.sleep(0.1)
 
     def updateDynamicRobotParameters(self, communication_queue):
-        # Update parameters of the RobotClass through a thread callback from the socket.
+        # Update parameters of the Robot through a thread callback from the socket.
         # Loop through the new attributes and find the old attributes to be replaced.
         new_parameters = communication_queue.get()
         # print("Got parameters", new_parameters)
@@ -291,15 +277,14 @@ class RobotClass(StaticRobotParameters, DynamicRobotParameters, RobotSocket):
         self.waitForParallelTask(function=initialiseInThread(), arguments=None)
 
 
-
 if __name__ == '__main__':
-    Robot = RobotClass()
-    # Robot.closeGripper()
+    robot = Robot()
+    # robot.closeGripper()
 
     time.sleep(20)
-    # Robot.openGripper()
+    # robot.openGripper()
     # time.sleep(1)
-    Robot.shutdownRobot()
+    robot.shutdownRobot()
 
 
 

@@ -30,6 +30,7 @@ class ForwardKinematics(object):
 
     def forward(self, jointangles):
         a, b, c, d, e, f = jointangles
+        # The joint parameters a, d and alpha can be found here: https://www.universal-robots.com/articles/ur-articles/parameters-for-calculations-of-kinematics-and-dynamics/
         self.base     = T(theta=a, d=0.089159,  r=0.134,    alpha=np.pi / 2)
         self.shoulder = T(theta=b, d=0,         r=-0.425,   alpha=0)
         self.elbow    = T(theta=c, d=0.119,     r=0,        alpha=0)
