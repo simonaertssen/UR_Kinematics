@@ -164,7 +164,6 @@ class Robot(StaticRobotParameters, DynamicRobotParameters, RobotSocket):
         RobotSocket.__init__(self, self.IP, self.Port, self.updateDynamicRobotParameters)
         self.robotJointAngles = []
         self.toolPosition = []
-        self.forwardKinematics = ForwardKinematics()
         # # Wait for update thread to kick in
         # while len(self.robotJoints) == 0:
         #     time.sleep(0.1)
@@ -183,7 +182,7 @@ class Robot(StaticRobotParameters, DynamicRobotParameters, RobotSocket):
         self.toolPosition = [i.value for i in [self.toolX, self.toolY, self.toolZ, self.toolRX, self.toolRY, self.toolRZ]]
 
     def jointPositions(self):
-        return self.forwardKinematics.forward(self.robotJointAngles)
+        return ForwardKinematics(self.robotJointAngles)
 
     def openGripper(self):
         self.send(b'set_digital_out(8, False)' + b"\n")

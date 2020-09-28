@@ -50,6 +50,7 @@ class Viewer(QtWidgets.QMainWindow):
     def __init__(self, robot):
         super(Viewer, self).__init__()
         self.setWindowTitle("Viewing the robot position")
+        self.resize(1000, 500)
 
         self.canvas = ThreeDimCanvas(self, width=6, height=4, dpi=50)
         self.jointReader = RobotJointReader(robot.jointPositions, self.canvas.updatePlot)
@@ -65,13 +66,12 @@ class RobotRotationEmulator:
         super(RobotRotationEmulator, self).__init__()
         # Initial angles of the robot:
         self.angles = [0, -np.pi/2, 0, -np.pi/2, 0, 0]
-        self.fk = ForwardKinematics()
 
     def step(self):
-        self.angles[0] += 0.001
+        self.angles[2] += 0.001
 
     def jointPositions(self):
-        pos = self.fk.forward(self.angles)
+        pos = ForwardKinematics(self.angles)
         self.step()
         return pos
 
