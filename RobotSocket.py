@@ -253,6 +253,12 @@ class Robot(StaticRobotParameters, DynamicRobotParameters, RobotSocket):
 
         self.waitForParallelTask(function=initialiseInThread(), arguments=None)
 
+    def test(self):
+        self.closeGripper()
+        time.sleep(2)
+        self.openGripper()
+        time.sleep(2)
+
 
 if __name__ == '__main__':
     robot = Robot()
