@@ -91,9 +91,10 @@ class RobotSocket(socket.socket):
         self.shuttingDown = False
         self.connectSafely()
 
-    def shutdownRobot(self):
+    def shutdownSafely(self):
         print("Robot is shutting down.")
         self.shuttingDown = True
+        self.shutdown(socket.SHUT_RDWR)
         self.close()
 
     def renewSocket(self):
@@ -262,10 +263,8 @@ class Robot(StaticRobotParameters, DynamicRobotParameters, RobotSocket):
 
 if __name__ == '__main__':
     robot = Robot()
-    robot.closeGripper()
-    time.sleep(2)
+    robot.test()
 
-    robot.openGripper()
     time.sleep(10)
     robot.shutdownRobot()
 
