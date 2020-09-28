@@ -182,6 +182,9 @@ class Robot(StaticRobotParameters, DynamicRobotParameters, RobotSocket):
         self.robotJointAngles = [joint.value for joint in [self.Base, self.Shoulder, self.Elbow, self.Wrist1, self.Wrist2, self.Wrist3]]
         self.toolPosition = [i.value for i in [self.toolX, self.toolY, self.toolZ, self.toolRX, self.toolRY, self.toolRZ]]
 
+    def jointAngles(self):
+        return self.robotJointAngles
+
     def jointPositions(self):
         return ForwardKinematics(self.robotJointAngles)
 

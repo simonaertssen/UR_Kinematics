@@ -1,6 +1,7 @@
 import sys
 import matplotlib
 import numpy as np
+import time
 
 import RobotSocket
 from Kinematics import ForwardKinematics
@@ -36,14 +37,17 @@ class ThreeDimCanvas(FigureCanvasQTAgg):
 
 
 class RobotJointReader(QtCore.QThread):
-    def __init__(self, read_joints, update_plot):
+    def __init__(self, read_joints, update_plot, print_me=None):
         super(RobotJointReader, self).__init__()
         self.readJoints = read_joints
         self.updatePlot = update_plot
+        self.printMe = print_me
 
     def run(self):
         while True:
             self.updatePlot(self.readJoints())
+            if self.printMe is not None:
+                print([value*180/np.pi for value in self.printMe])
 
 
 class Viewer(QtWidgets.QMainWindow):
@@ -52,12 +56,18 @@ class Viewer(QtWidgets.QMainWindow):
         self.setWindowTitle("Viewing the robot position")
         self.resize(1000, 500)
 
-        self.canvas = ThreeDimCanvas(self, width=6, height=4, dpi=50)
-        self.jointReader = RobotJointReader(robot.jointPositions, self.canvas.updatePlot)
+        self.shutdownRobot = robot.shutdownSafely
+
+        self.canvas = ThreeDimCanvas(self, width=6, height=6, dpi=50)
+        self.setCentralWidget(self.canvas)
+        self.jointReader = RobotJointReader(robot.jointPositions, self.canvas.updatePlot, robot.jointAngles)
         self.jointReader.start()
 
-        self.setCentralWidget(self.canvas)
         self.show()
+
+    def closeEvent(self, event):
+        self.shutdownRobot()
+        self.close()
 
 
 class RobotRotationEmulator:
@@ -83,11 +93,13 @@ def seeViewerAtWork(robot):
 
 
 def seeViewerAtWorkWithEmulator():
-    seeViewerAtWork(RobotRotationEmulator())
+    r = RobotRotationEmulator()
+    seeViewerAtWork(r)
 
 
 def seeViewerAtWorkWithRobot():
-    seeViewerAtWork(RobotSocket.Robot())
+    r = RobotSocket.Robot()
+    seeViewerAtWork(r)
 
 
 if __name__ == '__main__':
