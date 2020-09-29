@@ -50,9 +50,13 @@ class Reader(socket.socket):
         self.connectSafely()
         self.CommunicationThread = threading.Thread(target=self.readContinuously, args=(), daemon=False)
         self.CommunicationThread.start()
+        self.Printing = False
 
     def readContinuously(self):
-        raise NotImplementedError
+        while True:
+            output = self.read()
+            if self.Printing is True and output is not None:
+                print(output)
 
     def read(self):
         raise NotImplementedError
@@ -80,12 +84,6 @@ class ModBusReader(Reader):
         PORT = 502
         super(ModBusReader, self).__init__(IP, PORT)
 
-    def readContinuously(self):
-        while True:
-            output = self.read()
-            print(output)
-            time.sleep(0.02)
-
     def read(self):
         self.send(b'\x00\x04\x00\x00\x00\x06\x00\x03\x00\x01\x00\x01')
         data = self.recv(self.BufferLength).hex()
@@ -95,15 +93,6 @@ class ModBusReader(Reader):
         allBits = [int(x) for x in bin(int(data))[2:]][::-1]
         gripperBit = 8
         return allBits[gripperBit]
-
-        # Working example:
-        # self.send(b'\x00\x01\x00\x00\x00\x06\x00\x06\x00\x80\x00\x08')  # set register 128 to 1
-        # time.sleep(0.01)
-        # data = self.recv(self.BufferLength).hex()
-        # self.send(b'\x00\x01\x00\x00\x00\x06\x00\x03\x00\x80\x00\x01')
-        # data = self.recv(self.BufferLength).hex()
-        # value = data[-1]
-        # return value
 
 
 class RobotChiefCommunicationOfficer(Reader):
@@ -128,13 +117,6 @@ class RobotChiefCommunicationOfficer(Reader):
         self.toolRX = ParameterInfo('toolRX', 8, 612, '!d', "Cartesian Tool Orientation RX")
         self.toolRY = ParameterInfo('toolRY', 8, 620, '!d', "Cartesian Tool Orientation RY")
         self.toolRZ = ParameterInfo('toolRZ', 8, 628, '!d', "Cartesian Tool Orientation RZ")
-
-    def readContinuously(self):
-        while True:
-            output = self.read()
-            if output is not None:
-                print(round(output.Value * 180 / 3.14159))
-            # time.sleep(0.5)
 
     def sendCommand(self, command):
         self.send(command)
