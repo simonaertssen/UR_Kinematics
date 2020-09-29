@@ -48,6 +48,11 @@ class Reader(socket.socket):
         self.Address = (ip, port)
         self.BufferLength = 1116
         self.connectSafely()
+        self.CommunicationThread = threading.Thread(target=self.readContinuously, args=(), daemon=False)
+        self.CommunicationThread.start()
+
+    def readContinuously(self):
+        raise NotImplementedError
 
     def read(self):
         raise NotImplementedError
@@ -75,12 +80,18 @@ class ModBusReader(Reader):
         PORT = 502
         super(ModBusReader, self).__init__(IP, PORT)
 
+    def readContinuously(self):
+        while True:
+            output = self.read()
+            print(output)
+            time.sleep(0.02)
+
     def read(self):
         self.send(b'\x00\x04\x00\x00\x00\x06\x00\x03\x00\x01\x00\x01')
         data = self.recv(self.BufferLength).hex()
         if len(data) == 0:
             return None
-        print(type(data), data)
+
         allBits = [int(x) for x in bin(int(data))[2:]][::-1]
         gripperBit = 8
         return allBits[gripperBit]
@@ -118,6 +129,13 @@ class RobotChiefCommunicationOfficer(Reader):
         self.toolRY = ParameterInfo('toolRY', 8, 620, '!d', "Cartesian Tool Orientation RY")
         self.toolRZ = ParameterInfo('toolRZ', 8, 628, '!d', "Cartesian Tool Orientation RZ")
 
+    def readContinuously(self):
+        while True:
+            output = self.read()
+            if output is not None:
+                print(round(output.Value * 180 / 3.14159))
+            # time.sleep(0.5)
+
     def sendCommand(self, command):
         self.send(command)
 
@@ -134,8 +152,8 @@ class RobotChiefCommunicationOfficer(Reader):
             if len(value) == 0:
                 return None
             try:
-                value = unpack(parameter.Type, bytes.fromhex(str(hexlify(value).decode("utf-8"))))[0]
-            except error as e:
+                value = struct.unpack(parameter.Type, bytes.fromhex(str(hexlify(value).decode("utf-8"))))[0]
+            except struct.error as e:
                 print('An error occurred while reading the robot info...\n', e)
             if index == 0 and (value == 0 or value > self.BufferLength):  # Catch when the message is empty
                 return None
@@ -148,22 +166,22 @@ class Robot:
         super(Robot, self).__init__()
         self.ModBusReader = ModBusReader()
         self.RobotCCO = RobotChiefCommunicationOfficer()
-        self.CommunicationThread = threading.Thread(target=self.readInfo, args=(), daemon=False)
-        self.CommunicationThread.start()
+        # self.CommunicationThread = threading.Thread(target=self.readInfo, args=(), daemon=False)
+        # self.CommunicationThread.start()
 
-    def readInfo(self):
-        print("Starting reader thread")
-        while True:
-            time.sleep(0.5)
-            # result = self.ModBusReader.read()
-            # if result is not None:
-            #     print(result)
-            all_sockets, _, _ = select([self.ModBusReader, self.RobotCCO], [], [])
-            for socket in all_sockets:
-                result = socket.read()
-                print(result)
-                # if result is not None:
-                #     print(str(int(result.Value)))
+    # def readInfo(self):
+    #     print("Starting reader thread")
+    #     while True:
+    #         time.sleep(0.5)
+    #         # result = self.ModBusReader.read()
+    #         # if result is not None:
+    #         #     print(result)
+    #         all_sockets, _, _ = select([self.ModBusReader, self.RobotCCO], [], [])
+    #         for socket in all_sockets:
+    #             result = socket.read()
+    #             print(result)
+    #             # if result is not None:
+    #             #     print(str(int(result.Value)))
 
 
 if __name__ == '__main__':
