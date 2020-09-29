@@ -1,5 +1,7 @@
 import socket
 import weakref
+import struct
+import binascii
 
 
 class ParameterInfo:
@@ -12,6 +14,9 @@ class ParameterInfo:
         self.Note = note
         self.Value = numerical_value
         self.Instances.append(weakref.ref(self))
+
+    def __repr__(self):
+        return __class__.__name__ + ': ' + str(self.Value)
 
     @classmethod
     def getInstances(cls):
@@ -92,12 +97,26 @@ class RobotInfoReader(Reader):
         self.toolRZ = ParameterInfo(8, 628, '!d', "Cartesian Tool Orientation RZ")
 
     def read(self):
-        variables = vars(self)
+        # for parameter in ParameterInfo.getInstances():
+        #     print(parameter)
+        try:
+            data = self.recv(self.BufferLength)
+        except OSError as error:
+            print('An error occurred while reading the robot info...\n', error)
+            return None
 
-        for obj in ParameterInfo.getInstances():
-            print(obj.Note)
-        # data = self.recv(self.BufferLength)
-        # data = self.interpretData(data)
+        for index, parameter in ParameterInfo.getInstances():
+            value = data[parameter.precedingBytes:(parameter.precedingBytes + parameter.sizeInBytes)]
+            if len(value) == 0:
+                return None
+            try:
+                value = struct.unpack(parameter.type, bytes.fromhex(str(binascii.hexlify(value).decode("utf-8"))))[0]
+            except struct.error as e:
+                print('An error occurred while reading the robot info...\n', e)
+            if index == 0 and value == 0:
+                # Catch when the message is empty
+                return None
+        return 0
 
 
 class Robot:
