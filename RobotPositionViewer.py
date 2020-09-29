@@ -14,6 +14,14 @@ from mpl_toolkits.mplot3d import Axes3D
 matplotlib.use('Qt5Agg')
 
 
+def printwrapper(function):
+    def inner(*args, **kwargs):
+        print("Calling", function.__name__)
+        function(*args, **kwargs)
+        print(function.__name__, "is done.")
+    return inner
+
+
 class ThreeDimCanvas(FigureCanvasQTAgg):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
@@ -28,6 +36,7 @@ class ThreeDimCanvas(FigureCanvasQTAgg):
         self.arms   = self.axes.plot3D(initPos, initPos, initPos, 'black')[0]
         self.joints = self.axes.scatter3D(initPos, initPos, initPos, c='r')
 
+    @printwrapper
     def updatePlot(self, positions):
         # self.axes.clear()
         X, Y, Z = positions
@@ -43,6 +52,7 @@ class RobotJointReader(QtCore.QThread):
         self.updatePlot = update_plot
         self.printMe = print_me
 
+    @printwrapper
     def run(self):
         while True:
             self.updatePlot(self.readJoints())
@@ -60,11 +70,14 @@ class Viewer(QtWidgets.QMainWindow):
 
         self.canvas = ThreeDimCanvas(self, width=6, height=6, dpi=50)
         self.setCentralWidget(self.canvas)
+
         self.jointReader = RobotJointReader(robot.jointPositions, self.canvas.updatePlot, robot.jointAngles)
         self.jointReader.start()
+        time.sleep(0.1)
 
         self.show()
 
+    @printwrapper
     def closeEvent(self, event):
         self.shutdownRobot()
         self.close()
@@ -77,15 +90,25 @@ class RobotRotationEmulator:
         # Initial angles of the robot:
         self.angles = [0, -np.pi/2, 0, -np.pi/2, 0, 0]
 
+    @printwrapper
     def step(self):
-        self.angles[2] += 0.001
+        self.angles[0] += 0.001
 
+    @printwrapper
     def jointPositions(self):
         pos = ForwardKinematics(self.angles)
         self.step()
         return pos
 
+    @printwrapper
+    def shutdownSafely(self):
+        pass
 
+    @printwrapper
+    def jointAngles(self):
+        return self.angles
+
+@printwrapper
 def seeViewerAtWork(robot):
     app = QtWidgets.QApplication(sys.argv)
     w = Viewer(robot)
@@ -103,7 +126,7 @@ def seeViewerAtWorkWithRobot():
 
 
 if __name__ == '__main__':
-    seeViewerAtWorkWithRobot()
+    seeViewerAtWorkWithEmulator()
 
 
 
