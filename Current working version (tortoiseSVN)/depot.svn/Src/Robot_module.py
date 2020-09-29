@@ -8,6 +8,8 @@ import math
 import cv2
 import Image_module as Im
 from matplotlib import pyplot as plt
+import os
+
 
 
 # Robot connection
@@ -157,28 +159,42 @@ def getPosition(s = None):
     :param s: robot connection
     :return: [X,Y,Z,RX,RY,RZ] - robots current position
     '''
-
+    X = -1
+    Y = -1
+    Z = -1
+    RX = -1
+    RY = -1
+    RZ = -1
     # Connect to robot
-    if s is None or True: # IF the connection doesn't get reestablish, it doesn't work for some reason.
-        #print("New robot connection")
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(0.5)
-        s.connect((HOST, PORT))
-        time.sleep(0.1)
+    #if s is None or True: # IF the connection doesn't get reestablish, it doesn't work for some reason.
+    #    #print("New robot connection")
+    #    try:
+    #        print("UPDATE SOCKET")
+    #        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #        s.settimeout(0.5)
+    #        s.connect((HOST, PORT))
+    #    except:
+    #        print("Recoonect socket error")
+    #        return np.array([X,Y,Z,RX,RY,RZ])
 
-
+    time.sleep(0.1)
     # Trials
     count = 0
-
     # Connect
+
     while count < 100:
         try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(0.5)
+            s.connect((HOST, PORT))
             # Send message to recived new information
-            s.send(b"")
+            #s.send(b'' + b"\n")
+            time.sleep(0.1)
 
             # Other information
-            s.recv(588)
-
+            package_length = unpack('!i', bytes.fromhex(str(binascii.hexlify(s.recv(4)).decode("utf-8"))))[0]
+            print("Package length:", package_length)
+            s.recv(584)
             # Position
             X  = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
             Y  = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
@@ -186,7 +202,6 @@ def getPosition(s = None):
             RX = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
             RY = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
             RZ = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
-
             #print("Current position:", X,Y,Z,RX,RY,RZ)
 
             # Other information
@@ -194,7 +209,6 @@ def getPosition(s = None):
 
             # Position
             ROBO_MODE  = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
-
             #print("Robot mode:", ROBO_MODE)
 
             break
@@ -205,6 +219,186 @@ def getPosition(s = None):
             s.close()
 
     return np.array([X,Y,Z,RX,RY,RZ])
+
+def getPosition_modbus(s = None):
+    program_run = 0
+
+
+    try:
+        if s is None:
+            print("CONNECT to robot")
+            PORT_502 = 502
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(10)
+            s.connect((HOST, PORT_502))
+            time.sleep(0.05)
+        reg_400 = ""
+        s.send (b"\x00\x04\x00\x00\x00\x06\x00\x03\x01\x90\x00\x01") #request data from register 128-133 (cartisian data)
+        reg_400 = s.recv(1024)
+        reg_400 = reg_400.replace (b"\x00\x04\x00\x00\x00\x05\x00\x03\x02", b"")
+        reg_400 = reg_400.hex() #convert the data from \x hex notation to plain hex
+
+        if reg_400 == "":
+            reg_400 = "0000"
+        reg_400_i = int(reg_400,16)
+        if reg_400_i < 32768:
+            reg_400_f = float(reg_400_i)/10
+        if reg_400_i > 32767:
+            reg_400_i = 65535 - reg_400_i
+            reg_400_f = float(reg_400_i)/10*-1
+        X = reg_400_f
+
+        reg_401 = ""
+        s.send (b"\x00\x04\x00\x00\x00\x06\x00\x03\x01\x91\x00\x01") #request data from register 128-133 (cartisian data)
+        reg_401 = s.recv(1024)
+        reg_401 = reg_401.replace (b"\x00\x04\x00\x00\x00\x05\x00\x03\x02", b"")
+        reg_401 = reg_401.hex() #convert the data from \x hex notation to plain hex
+        if reg_401 == "":
+            reg_401 = "0000"
+        reg_401_i = int(reg_401,16)
+        if reg_401_i < 32768:
+            reg_401_f = float(reg_401_i)/10
+        if reg_401_i > 32767:
+            reg_401_i = 65535 - reg_401_i
+            reg_401_f = float(reg_401_i)/10*-1
+        Y = reg_401_f
+
+        reg_402 = ""
+        s.send (b"\x00\x04\x00\x00\x00\x06\x00\x03\x01\x92\x00\x01") #request data from register 128-133 (cartisian data)
+        reg_402 = s.recv(1024)
+        reg_402 = reg_402.replace (b"\x00\x04\x00\x00\x00\x05\x00\x03\x02", b"")
+        reg_402 = reg_402.hex() #convert the data from \x hex notation to plain hex
+        if reg_402 == "":
+            reg_402 = "0000"
+        reg_402_i = int(reg_402,16)
+        if reg_402_i < 32768:
+            reg_402_f = float(reg_402_i)/10
+
+        if reg_402_i > 32767:
+            reg_402_i = 65535 - reg_402_i
+            reg_402_f = float(reg_402_i)/10*-1
+        Z = reg_402_f
+
+        reg_403 = ""
+        s.send (b"\x00\x04\x00\x00\x00\x06\x00\x03\x01\x93\x00\x01") #request data from register 128-133 (cartisian data)
+        reg_403 = s.recv(1024)
+        reg_403 = reg_403.replace (b"\x00\x04\x00\x00\x00\x05\x00\x03\x02", b"")
+        reg_403 = reg_403.hex() #convert the data from \x hex notation to plain hex
+        if reg_403 == "":
+            reg_403 = "0000"
+        reg_403_i = int(reg_403,16)
+        if reg_403_i < 32768:
+            reg_403_f = float(reg_403_i)/1000
+        if reg_403_i > 32767:
+            reg_403_i = 65535 - reg_403_i
+            reg_403_f = float(reg_403_i)/1000*-1
+        Rx = reg_403_f
+
+        reg_404 = ""
+        s.send (b"\x00\x04\x00\x00\x00\x06\x00\x03\x01\x94\x00\x01") #request data from register 128-133 (cartisian data)
+        reg_404 = s.recv(1024)
+        reg_404 = reg_404.replace (b"\x00\x04\x00\x00\x00\x05\x00\x03\x02", b"")
+        reg_404 = reg_404.hex() #convert the data from \x hex notation to plain hex
+        if reg_404 == "":
+            reg_404 = "0000"
+        reg_404_i = int(reg_404,16)
+        if reg_404_i < 32768:
+            reg_404_f = float(reg_404_i)/1000
+        if reg_404_i > 32767:
+            reg_404_i = 65535 - reg_404_i
+            reg_404_f = float(reg_404_i)/1000*-1
+        Ry = reg_404_f
+
+        reg_405 = ""
+        s.send (b"\x00\x04\x00\x00\x00\x06\x00\x03\x01\x95\x00\x01") #request data from register 128-133 (cartisian data)
+        reg_405 = s.recv(1024)
+        reg_405 = reg_405.replace (b"\x00\x04\x00\x00\x00\x05\x00\x03\x02", b"")
+        reg_405 = reg_405.hex() #convert the data from \x hex notation to plain hex
+        if reg_405 == "":
+            reg_405 = "0000"
+        reg_405_i = int(reg_405,16)
+        if reg_405_i < 32768:
+            reg_405_f = float(reg_405_i)/1000
+        if reg_405_i > 32767:
+            reg_405_i = 65535 - reg_405_i
+            reg_405_f = float(reg_405_i)/1000*-1
+        Rz = reg_405_f
+
+        home_status = 1
+        program_run += 1
+        position = (X,Y,Z,Rx,Ry,Rz)
+        print("\nPosition:", position)
+        return position
+
+    except socket.error as socketerror:
+        print("Error: ", socketerror)
+        return (-1,-1,-1,-1,-1,-1)
+
+def connect_robot_modbus(Port=502):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(10)
+    s.connect((HOST, PORT))
+    time.sleep(0.05)
+    return s
+
+def getJointPosition(s = None):
+    '''
+    DESCRIPTION: Returns the current position of the robot.
+    :param s: robot connection
+    :return: [X,Y,Z,RX,RY,RZ] - robots current position
+    '''
+    # Connect to robot
+    if s is None or True: # IF the connection doesn't get reestablish, it doesn't work for some reason.
+        #print("New robot connection")
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.5)
+        s.connect((HOST, PORT))
+        time.sleep(0.1)
+
+    joint_position_actual = np.array([-1, -1, -1, -1, -1, -1])
+    joint_position_target = np.array([-1, -1, -1, -1, -1, -1])
+
+    # Trials
+    count = 0
+    # Connect
+    while count < 100:
+        try:
+            # Send message to recived new information
+            s.send(b'get joint speeds()' + b"\n")
+            s.send(b'get joint positions()' + b"\n")
+            # Other information
+            s.recv(12)
+            # Target Joint Position
+            X  = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
+            Y  = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
+            Z  = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
+            RX = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
+            RY = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
+            RZ = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
+
+            joint_position_target = np.array([X,Y,Z,RX,RY,RZ])
+            # Other information
+            s.recv(192)
+
+            # Actual Joint Position
+            X  = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
+            Y  = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
+            Z  = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
+            RX = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
+            RY = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
+            RZ = unpack('!d', bytes.fromhex(str(binascii.hexlify(s.recv(8)).decode("utf-8"))))[0]
+
+            joint_position_actual = np.array([X, Y, Z, RX, RY, RZ])
+
+            break
+        except socket.error as socketerror:
+            # Problems with the connection
+            print("Error: ", socketerror)
+            count += 1
+            s.close()
+
+    return joint_position_target, joint_position_actual
+
 
 def getSpeed(s=None):
     '''
@@ -259,7 +453,7 @@ def getSpeed(s=None):
     return np.array([X,Y,Z,RX,RY,RZ])
 
 
-def waitPos(pos_targ, s=None, check = False, check_pose = [0,0,0,0,0,0]):
+def waitPos(pos_targ, s=None, check = False, check_pose = [0,0,0,0,0,0], compare_pos = True):
     '''
     DESCRIPTION: Wait for the robot to reach the target position
     :param pos_targ: target position for robot
@@ -273,33 +467,70 @@ def waitPos(pos_targ, s=None, check = False, check_pose = [0,0,0,0,0,0]):
 
     pos_targ = np.array(pos_targ)
     #pos_targ[3:] += (pos_targ[3:] < 0) * 2 * math.pi
-
+    pos_targ *= 1000
     # Run until robot reports the correct position 3 times
     pos_cur_pre = np.zeros(pos_targ.shape)
+    pos_targ = pos_targ.astype(np.int)
+    if compare_pos:
+        pos_targ[3:] = np.abs(pos_targ[3:])
+    print("START WAIT POS")
     while count < 2:
-        pos_cur = (getPosition(s)*1000).astype(int)
-        pos_diff = np.abs(pos_cur - pos_targ)
-        pos_diff[3:] -= (pos_diff[3:] > 6) * 2 * math.pi
-        # Check if in position
-        #print("Cur:", np.round(pos_cur, 5))
-        #print("Pre", np.round(pos_cur_pre, 5))
-        #print('Count:',count)
-        #print(np.array_equal(pos_cur, pos_cur_pre))
-        #print(np.abs(np.sum(pos_cur-pos_cur_pre)))
-        # Maybe try to use the target position more
-        # Pre version (np.sum(pos_diff) < 10e-2) or np.array_equal(pos_cur, pos_cur_pre):
-        if (np.sum(np.abs(pos_cur-pos_cur_pre))) < 20:
-            count += 1
-        else:
-            count = 0
-        pos_cur_pre = pos_cur.copy()
+        try:
+            pos_cur = (getPosition(s)*1000).astype(int)
+            #print("Cur:", pos_cur)
+            #print("Target:", pos_targ)
+            #print("DIFF TARG:", pos_cur-pos_targ)
+            #print("Diff value:", (np.sum(np.abs(pos_cur-pos_targ))))
+            #speed_cur = sum(abs(getSpeed(s) * 1000).astype(int))
 
-        if check:
-            return np.sum(np.abs(np.array(check_pose-pos_cur))) < 20
+            #joint_position_target, joint_position_actual = getJointPosition(s)
+            #joint_position_actual *= 1000
+            #joint_position_actual = joint_position_actual.astype(np.int)
+            #print(joint_position_target)
+            #print("cur angle:", joint_position_actual)
+            #print("Target:", pos_targ)
+            #print("DIFF TARG angle:", joint_position_actual - pos_targ)
+            #print("DIFF:", np.sum(np.abs(joint_position_target*1000-joint_position_actual*1000)))
+            #DIFF = np.sum(np.abs(joint_position_target*1000-joint_position_actual*1000))
+
+            #pos_diff = np.abs(pos_cur - pos_targ)
+            #pos_diff[3:] -= (pos_diff[3:] > 6) * 2 * math.pi
+            # Check if in position
+            #print("Cur:", np.round(pos_cur, 5))
+            #print("Pre", np.round(pos_cur_pre, 5))
+            #print('Count:',count)
+            #print(np.array_equal(pos_cur, pos_cur_pre))
+            #print(np.abs(np.sum(pos_cur-pos_cur_pre)))
+            # Maybe try to use the target position more
+            # Pre version (np.sum(pos_diff) < 10e-2) or np.array_equal(pos_cur, pos_cur_pre):
+            distance = (np.sum(np.abs(pos_cur-pos_cur_pre)))
+            print("DIstance to target:", distance)
+            #print("SPEED:", speed_cur)
+            #if compare_pos:
+            #    pos_cur[3:] = np.abs(pos_cur[3:])
+            #    print("Position difference:", (np.sum(np.abs(pos_cur-pos_targ))))
+            #    distance = (np.sum(np.abs(pos_cur-pos_targ)))
+            #else:
+            #    print("Angle difference:", (np.sum(np.abs(joint_position_actual - pos_targ))))
+            #    distance = (np.sum(np.abs(joint_position_actual - pos_targ)))
 
 
-        max_count += 1
+            if check:
+                return np.sum(np.abs(np.array(check_pose-pos_cur))) < 20
 
+            if distance < 10:#DIFF < 0.3:
+                count += 1
+                break
+            else:
+                count = 0
+            pos_cur_pre = pos_cur.copy()
+
+
+            max_count += 1
+        except:
+            print("Wait pose error")
+
+    print("END WAIT POS")
     return True
 
 
@@ -317,7 +548,7 @@ def robot_init(pos_init, s = None):
         #.connectSafely((HOST, PORT))
         s.connect((HOST, PORT))
 
-    angle_brick_drop = [87.28 * math.pi / 180, -73.11 * math.pi / 180, 114.73 * math.pi / 180, -131.61 * math.pi / 180, -89.91 * math.pi / 180, -2.73 * math.pi / 180]
+    angle_brick_drop = [87.28 * math.pi / 180, -74.56 * math.pi / 180, 113.86 * math.pi / 180, -129.29 * math.pi / 180, -89.91 * math.pi / 180, -2.73 * math.pi / 180]
 
     # Set gripper  voltage - avoids the current error
     s.send(b'set_tool_voltage(12)' + b'\n')
@@ -326,7 +557,7 @@ def robot_init(pos_init, s = None):
     time.sleep(0.5)
 
     #Check if in position
-    pos_check = waitPos(pos_init, s, check = True, check_pose=[-126, -459, 316, 775, 3044,1])
+    pos_check = waitPos(pos_init, s, check = True, check_pose=[-125.92, -459.28, 293.57, 775, 3044, 0])
     print("Pose check:", pos_check)
     # Drop of current object
     if not pos_check:
@@ -336,9 +567,7 @@ def robot_init(pos_init, s = None):
             pos_cur[2] = 0.317
 
         # Move robot to pos_init
-        print("KOM NU")
         robot_movej(s, pos_cur, 1, True)
-        print(1)
         robot_movej(s, pos_init, 1, False)
 
         robot_movej(s, angle_brick_drop, 1, False)
@@ -371,11 +600,10 @@ def robot_movej(s, pos, wait = True, p = True):
 
     # Send command
     s.send(str.encode(string))
-
     # Wait for bot to reach its position
+    print("Wait?", wait)
     if wait:
-        waitPos(pos, s)
-
+        waitPos(pos, s, compare_pos=p)
     #print('In position')
 
     return string
@@ -404,7 +632,7 @@ def robot_movel(s, pos, wait = True, p = True):
     # Wait for bot to reach its position
     #print('Wait')
     if wait != 0:
-        waitPos(pos, s)
+        waitPos(pos, s, compare_pos=p)
     #print('In position')
     time.sleep(0.2)
 
@@ -427,52 +655,57 @@ def close_gripper(s = None):
     s.send(b'set_digital_out(8, True)' + b"\n")
 
 
-def robot_line_sweep( pick_point, view_point, cam_pos, temp, img, save_image, show_image, path, s = None, optimize = False):
+def robot_line_sweep( pick_point, view_point, cam_pos, temp, img, save_image, show_image, path, s = None, optimize = False, camera = None):
+    print("PICK", pick_point)
+    pick_point[1] = pick_point[3]
+
     if s is None:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    final_position = generate_pos(cam_pos, view_point, pick_point, img, temp, s, optimize)
-    start_position = generate_pos(cam_pos, [view_point[2],view_point[3],view_point[0],view_point[1],view_point[4],view_point[5],view_point[6],view_point[7], [8]], pick_point, img, temp, s)
-    print("Start", start_position)
-    print("End", final_position)
-
+    final_position, _, y_offset = generate_pos(cam_pos, view_point, pick_point, img, temp, s, optimize, camera)
+    start_position, _, _ = generate_pos(cam_pos, [view_point[2],view_point[3],view_point[0],view_point[1],view_point[4],view_point[5],view_point[6],view_point[7], [8]], pick_point, img, temp, s)
+    start_position[1] += y_offset
     position = final_position.copy()
     angle = math.pi / 2 + math.atan2(view_point[3] - view_point[1], view_point[2] - view_point[0])
     angle = -1 * math.atan2(view_point[1] - view_point[3], view_point[0] - view_point[2])
     angle = angle - abs(math.pi - temp)
-    print("Angle:", angle)
+
     direction = 1 if angle >= 0 and angle <= math.pi else -1
     length = math.sqrt((view_point[2] - view_point[0]) ** 2 + (view_point[3] - view_point[1]) ** 2)
+    print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
     for j in reversed(range(view_point[6])):
-        #position[0] = final_position[0] + (j/(view_point[6]-1))*math.sin(angle) * (-0.3125 + 0.5627) * abs(length) / img.shape[1]
         position[1] = final_position[1] - (j/(view_point[6]-1)) * (-0.3125 + 0.5627) * abs(length) / img.shape[1]
-        #print("Y:", position[1])
-    #for j in range(1,view_point[6]+1):
-    #    position[0] = start_position[0] + (final_position[0]- start_position[0])*j/view_point[6]
-    #   position[1] = start_position[1] + (final_position[1] - start_position[1]) * j / view_point[6]
-
         # Move robot
+        print("Position:", position)
         robot_movej(s, position)
-
         # Get image
+        print("Save?", save_image, path)
         if show_image or save_image:
+            img_num = os.listdir(path)
             if path is not None:
-                path_save = path + '/img_' + time.strftime("%Y%m%d-%H%M%S") + ".png"
+                path_save = path + '/img_' + str(len(img_num)) + '_' + time.strftime("%Y%m%d-%H%M%S") + ".png"
             else:
                 path_save = path
+            print("Save image", j, "/", view_point[6])
+        else:
+            path_save = None
 
-            Im.save_image(save_image, path_save, show_image, "Line sweep - image %d of %d" %(view_point[6]-j, view_point[6]))
+        Im.save_image(save_image, path_save, show_image, "Line sweep - image %d of %d" %(view_point[6]-j, view_point[6]), camera=camera)
 
-def robot_point_view( pick_point, view_point, cam_pos, temp, img, save_image, show_image, path, s = None, optimize = False):
+
+def robot_point_view( pick_point, view_point, cam_pos, temp, img, save_image, show_image, path, s = None, optimize = False, camera = None):
     if s is None:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    position= generate_pos(cam_pos, view_point, pick_point, img, temp, s, optimize)
+    position, opt_image, _= generate_pos(cam_pos, view_point, pick_point, img, temp, s, optimize, camera)
+
     print("View point", view_point)
     print("Cam pos", cam_pos)
     print("Position", position)
-    # Move robot
-    robot_movej(s, position)
+
+    if opt_image is None:
+        # Move robot
+        robot_movej(s, position)
 
     # Get image
     if show_image or save_image:
@@ -481,7 +714,7 @@ def robot_point_view( pick_point, view_point, cam_pos, temp, img, save_image, sh
         else:
             path_save = path
 
-        Im.save_image(save_image, path_save, show_image, "")
+        Im.save_image(save_image, path_save, show_image, "", opt_image, camera=camera)
 
 
 def robot_point_rotation( pick_point, view_point, cam_pos, temp, img, save_image, show_image, path, s = None):
@@ -489,7 +722,7 @@ def robot_point_rotation( pick_point, view_point, cam_pos, temp, img, save_image
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     #view_point[0],view_point[1],view_point[2],view_point[3]= view_point[2],view_point[3],view_point[0],view_point[1]
-    position = generate_pos(cam_pos, view_point, pick_point, img, temp, s)
+    position, _, _ = generate_pos(cam_pos, view_point, pick_point, img, temp, s)
     position[1], a = rotate((cam_pos[1], cam_pos[2]), (position[1], position[2]), -(view_point[5] * math.pi / 180) / 2)
     position[2] +=  abs(position[2]-a)
 
@@ -515,9 +748,9 @@ def robot_point_rotation( pick_point, view_point, cam_pos, temp, img, save_image
             Im.save_image(save_image, path_save, show_image, "Point rotation - Angle: %2.f"  %(0.5 * view_point[5]  - (j-1) * (view_point[5] ) / (max(view_point[6] - 1,1))))
 
 
-def generate_pos(cam_pos, view_point, pick_point, img, temp , s, optimize = False):
+def generate_pos(cam_pos, view_point, pick_point, img, temp , s, optimize = False, camera = None):
+    print("GET POSITION START")
     position = cam_pos.copy()
-    print("position", position)
     # Translate pick -> view
     length = math.sqrt(((pick_point[2] + pick_point[0]) / 2 - view_point[2]) ** 2 + ( (pick_point[3] + pick_point[1]) / 2 - view_point[3]) ** 2)
     angle_trans_pick = math.pi / 2 - math.atan2((view_point[3] - (pick_point[3] + pick_point[1]) / 2), view_point[2] - (pick_point[2] + pick_point[0]) / 2)
@@ -534,7 +767,7 @@ def generate_pos(cam_pos, view_point, pick_point, img, temp , s, optimize = Fals
     angle_hoiz = temp2 - abs(math.pi - temp)
 
     angle_ver = (view_point[4]) * math.pi / 180 + math.pi #-2*math.pi/180
-    print("Optimize?", optimize)
+
     position[3], position[4], position[5] = Angles2rotvec(angle_ver, angle_hoiz)
 
     #TODO: Optimize this part
@@ -542,29 +775,39 @@ def generate_pos(cam_pos, view_point, pick_point, img, temp , s, optimize = Fals
     #position[1] -= 0.0035 * math.sin(abs(view_point[4] * math.pi / 180))
     if abs(view_point[4]) == 90:
         position[2] += 0.008
-    print("position 2", position, -view_point[4])
+
     position[1], position[2] = rotate((cam_pos[1], cam_pos[2]), (position[1], position[2]), -view_point[4] * math.pi / 180)
-    print("position 3", position)
+
     if abs(view_point[4]) == 90:
         position[2] -= 0.003
 
+    opt_img = None
+    y_offset = 0
     if optimize:
-        position = optimize_view(s, position.copy(), angle_hoiz, angle_ver)
+        position, opt_img, y_offset = optimize_view(s, position.copy(), angle_hoiz, angle_ver, camera)
 
-    return position
+    print("GET POSITION END")
+    return position, opt_img, y_offset
 
 
-def optimize_view(s, position, angle_h, angle_v):
+def optimize_view(s, position, angle_h, angle_v, camera = None):
     opt_position = position.copy()
+    opt_image = None
+
+    #Demo purpose
+    #position[1] -= 0.02
 
     print("Optimizing angle")
     variance = 0
     for offset in range(-5, 6):
         position[3], position[4], position[5] = Angles2rotvec(angle_v + 0.3 * offset * math.pi / 180, angle_h)
         robot_movej(s, position)
-        img = Im.get_image(F"21565643")
-        cv2.imshow("Variance test", img)
-        cv2.waitKey(10)
+        img = Im.get_image(F"21565643", camera)
+        # Show image
+        img = cv2.putText(img, "Optimizing view angle", (10, img.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, 255, 2,cv2.LINE_AA)
+        cv2.imwrite('C:/Prj/Robopick/Depot.svn/images/temp/temp_save.png', img)
+        cv2.imwrite('C:/Prj/Robopick/Depot.svn/images/temp/temp.png', img)
+
         hist_1, _, _ = plt.hist(img.ravel(), 256, [0, 256], histtype='step');
 
         temp = math.sqrt(np.var(img))
@@ -572,64 +815,100 @@ def optimize_view(s, position, angle_h, angle_v):
         if temp > variance:
             variance = temp
             opt_position[3:6] = position[3:6]
-        elif temp < variance * 1.05:
+            opt_image = img.copy()
+        elif temp < variance * 1.1:
             break
 
     sharpness = 0
     pre_variance = 0
-    print("Optimizing view")
-    position[2] -= 0.005
+    start_height = position[2]
+    position[2] -= 0.003
     print("Optimizing height")
     position[3:6] = opt_position[3:6].copy()
-    for offset in range(20):
+    for offset in range(30):
         robot_movej(s, position)
-        img = Im.get_image(F"21565643")
-        cv2.imshow("Variance test", img)
-        cv2.waitKey(10)
+        img = Im.get_image(F"21565643", camera)
+        #Show image
+        img = cv2.putText(img, "Optimizing view height", (10, img.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, 255, 2, cv2.LINE_AA)
+        cv2.imwrite('C:/Prj/Robopick/Depot.svn/images/temp/temp_save.png', img)
+        cv2.imwrite('C:/Prj/Robopick/Depot.svn/images/temp/temp.png', img)
+
         hist_1, _, _ = plt.hist(img.ravel(), 256, [0, 256], histtype='step');
         #temp = math.sqrt(np.var(img))
         array = np.asarray(img, dtype=np.int32)
         gy, gx = np.gradient(array)
         gnorm = np.sqrt(gx ** 2 + gy ** 2)
         temp = np.average(gnorm)
+        #temp = cv2.Laplacian(img, cv2.CV_64F).var()
 
-        print("Sharpness:", temp, position[2])
+        print("Sharpness:", temp, position[2], offset)
         if temp > sharpness:
             sharpness = temp
             opt_position[2] = position[2]
-        elif temp*1.10 < variance and temp >1.5:
+            opt_image = img.copy()
+        elif temp*1.10 < sharpness and temp >1.5:
             break
-        if offset > 1 and False:
-            position[2] += (temp-pre_variance)*0.001
+
+        position[2] += 0.0003
+
+
+    #offset y-coordinate with respect to height
+
+    y_offset = (opt_position[2]-start_height)*math.cos(75*math.pi/180)
+    opt_position[1] += y_offset
+
+    print("OPITMAL", opt_position)
+
+    variance = 0
+    position[2] = opt_position[2]
+    position[1] -= 0.005
+    print("Optimize y axis")
+    for offset in range(10):
+        robot_movej(s, position)
+        img = Im.get_image(F"21565643", camera)
+        img_draw = img.copy()
+        img_draw = cv2.putText(img_draw, "Optimizing X position", (10, img.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, 255, 2, cv2.LINE_AA)
+        cv2.imwrite('C:/Prj/Robopick/Depot.svn/images/temp/temp_save.png', img_draw)
+        cv2.imwrite('C:/Prj/Robopick/Depot.svn/images/temp/temp.png', img_draw)
+        #cv2.imshow("Variance test", img)
+        #cv2.waitKey(10)
+        hist_1, _, _ = plt.hist(img.ravel(), 256, [0, 256], histtype='step');
+        temp = np.mean(img)#math.sqrt(np.var(img))
+        print("Std:", temp)
+        print("Mean", np.mean(img))
+        if temp > variance:
+            variance = temp
+            opt_position[1] = position[1]
+            opt_image = img.copy()
+        elif temp < variance * 1.05:
+            break
+        position[1] += 0.001
+
+
+    while True:
+        max = np.max(opt_image)
+        print("Max:",np.max(img) )
+        print("Exposure time:", camera.ExposureTimeAbs.GetValue())
+        exposure_time = camera.ExposureTimeAbs.GetValue()
+        if max == 255:
+            camera.ExposureTimeAbs = exposure_time - 5
+        elif max < 230:
+            camera.ExposureTimeAbs = exposure_time + 5
         else:
-            position[2] += 0.0005
+            break
+        opt_image = Im.get_image(F"21565643", camera)
+        img_draw = opt_image.copy()
+        img_draw = cv2.putText(img_draw, "Optimizing exposure time", (10, img.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1,255, 2, cv2.LINE_AA)
+        cv2.imwrite('C:/Prj/Robopick/Depot.svn/images/temp/temp_save.png', img_draw)
+        cv2.imwrite('C:/Prj/Robopick/Depot.svn/images/temp/temp.png', img_draw)
 
-        pre_variance = temp
 
-    #variance = 0
-    #position[2] = opt_position[2]
-    #position[1] -= 0.005
-    #for offset in range(10):
-    #    robot_movej(s, position)
-    #    img = Im.get_image(F"21565643")
-    #    cv2.imshow("Variance test", img)
-    #    cv2.waitKey(10)
-    #    hist_1, _, _ = plt.hist(img.ravel(), 256, [0, 256], histtype='step');
 
-    #    temp = math.sqrt(np.var(img))
-    #    print("Std:", temp)
-    #    print("Mean", np.mean(img))
-    #    if temp > variance:
-    #        variance = temp
-    #        opt_position[1] = position[1]
-    #    elif temp < variance * 1.05:
-    #        break
+    time.sleep(0.5)
+    if os.path.isfile('C:/Prj/Robopick/Depot.svn/images/temp/temp_save.png'):
+        os.remove('C:/Prj/Robopick/Depot.svn/images/temp/temp_save.png')
 
-    #    position[1] += 0.001
-
-    cv2.destroyWindow("Variance test")
-
-    return  opt_position
+    return  opt_position, opt_image, y_offset
 
 
 if __name__ == '__main__':

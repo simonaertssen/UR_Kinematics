@@ -168,9 +168,9 @@ class MainObjectWidget(QWidget):
         Program_label.setAlignment(Qt.AlignCenter)
         aProgram_label = QLabel(self)
         pixmap = QPixmap("C:/Prj/Robopick/Depot.svn/Doc/JLI_logo.png")
-        pixmap = pixmap.scaledToWidth(200)
+        pixmap = pixmap.scaledToWidth(100)
         aProgram_label.setPixmap(pixmap)
-        aProgram_label.move(40, 200)
+        aProgram_label.move(40, 100)
         aProgram_label.lower()
         aProgram_label.show()
 

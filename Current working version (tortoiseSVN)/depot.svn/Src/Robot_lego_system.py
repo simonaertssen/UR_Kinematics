@@ -42,15 +42,16 @@ def SelectObjects():
     return selected
 
 
-def Robot(Robo_info, s = None, reset = False):
+def Robot(Robo_info, s = None,  reset = False, camera = None):
         print("Run robot", len(Robo_info))
+        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         #return s, False
         # Default positions
         # Positions encoding: X, Y, Z, RX, RY, RZ
         pos_idle =       [-0.126,   -0.460,  0.317,  0.00,  3.14,  0.00]
         joint_idle =     [61.42*math.pi/180, -93*math.pi/180, 94.65*math.pi/180, -91.39*math.pi/180, -90*math.pi/180, 0*math.pi/180]
         pos_brick_drop = [ 0.085,   -0.516,  0.050,  0.00,  3.14,  0.00]
-        angle_brick_drop = [87.28 * math.pi / 180, -73.11 * math.pi / 180, 114.73 * math.pi / 180, -131.61 * math.pi / 180, -89.91 * math.pi / 180, -2.73 * math.pi / 180]
+        angle_brick_drop = [87.28 * math.pi / 180, -74.56 * math.pi / 180, 113.86 * math.pi / 180, -129.29 * math.pi / 180, -89.91 * math.pi / 180, -2.73 * math.pi / 180]
 
         # Initialize Robot
         if s is None:
@@ -58,15 +59,20 @@ def Robot(Robo_info, s = None, reset = False):
         elif reset:
             s = Rm.robot_init(joint_idle, s)
 
-        if Robo_info[0] is None or len(Robo_info) != 12:
+        if Robo_info[0] is None or len(Robo_info) != 13:
+            if Robo_info[-1] is not None:
+                drop_objecct(s, Robo_info[-1], Robo_info[5])
+
+            s.send(b'set_digital_out(8,False)' + b"\n")  # Open gripper
+            time.sleep(0.1)
             Rm.robot_movej(s, joint_idle, 1, False)
+            print("ERROR: RETURN FROM ROBOT", Robo_info[0] is None, len(Robo_info) != 13, len(Robo_info))
             return s, False
+
 
         # Work directory
         rootdir = r"C:/Prj/Robopick/Depot.svn/Library"
-        rootdir = r"C:/Users/simon/Documents/JLI Projects/ROBOPICK (Mads L)/Current working version (tortoiseSVN)/depot.svn/Library"
-
-        shape, pos, angle, dim, contours, img, _, save_image, show_image, data_type, contour_number, optimize_view = Robo_info
+        shape, pos, angle, dim, contours, img, _, save_image, show_image, data_type, contour_number, optimize_view, drop_position = Robo_info
         angle *= -1
         # Show result
         print("DATA", data_type)
@@ -85,6 +91,13 @@ def Robot(Robo_info, s = None, reset = False):
         #print("Pick points", pick_points)
 
         # Grab brick
+
+        if drop_position is not None:
+            drop_objecct(s,drop_position,img)
+        else:
+            s.send(b'set_digital_out(8,False)' + b"\n")  # Open gripper
+            time.sleep(0.1)
+
         angle_view_v = get_objecct(s, shape, pos, angle , pick_points, img)
 
         #Rm.robot_movej(s, joint_idle, 1, False)
@@ -99,14 +112,18 @@ def Robot(Robo_info, s = None, reset = False):
 
         # Present object to camera 2
         if pick_points[int(pick_points[0,4]+1), 0] != -1:
-            present_object_cam2(pick_points, s, img, angle_view_v, Robo_info[0][1], data_type, save_image, show_image, optimize_view)
+            present_object_cam2(pick_points, s, img, angle_view_v, Robo_info[0][1], data_type, save_image, show_image, optimize_view, camera)
 
         # Drop brick
         #Rm.robot_movej(s, joint_idle, 1, False)
         #Rm.robot_movej(s, pos_brick_drop)
         Rm.robot_movej(s, angle_brick_drop, 1, False)
-        s.send(b'set_digital_out(8,False)' + b"\n")  # Open gripper
-        time.sleep(0.1)
+
+        # TODO: MAKE THIS WORK SO IT DROPS IF IT ONLY USES ONE BRICK
+        #if drop_position is None:
+            #s.send(b'set_digital_out(8,False)' + b"\n")  # Open gripper
+            #time.sleep(0.1)
+
 
         #Rm.robot_movej(s, joint_idle, 1, False)
 
@@ -115,7 +132,7 @@ def Robot(Robo_info, s = None, reset = False):
 
         return s , True
 
-def get_objecct(s, shape, pos, angle, points, img):
+def get_objecct(s, shape, pos, angle, points, img, get = True):
     pos_brick_up = [0.251, -0.437, 0.05, 3.14, 0.00, 0.00]
     pos_brick_down = [0.251, -0.437, 0.008, 3.14, 0.00, 0.00]  # [ 0.251,   -0.437,  0.034,  3.14,  0.00,  0.00]
 
@@ -171,11 +188,42 @@ def get_objecct(s, shape, pos, angle, points, img):
     # Move robot
     Rm.robot_movej(s, pos_brick_up)
     Rm.robot_movel(s, pos_brick_down)
-    s.send(b'set_digital_out(8, True)' + b"\n")  # Open gripper
+    if get:
+        s.send(b'set_digital_out(8, True)' + b"\n")  # Open gripper
+    else:
+        s.send(b'set_digital_out(8, False)' + b"\n")
+
     time.sleep(0.25)
     Rm.robot_movel(s, pos_brick_up)
 
     return angle_view_v
+
+
+def drop_objecct(s, pos, img, drop = True):
+    pos_brick_up = [0.251, -0.437, 0.05, 3.14, 0.00, 0.00]
+    pos_brick_down = [0.251, -0.437, 0.01, 3.14, 0.00, 0.00]  # [ 0.251,   -0.437,  0.034,  3.14,  0.00,  0.00]
+
+    # Scale and offset position to real world coordinates -  1.01  and 0.98 used for calibration
+    x = Im.imgLen2RealLen(pos[1], 'x', img)
+    y = Im.imgLen2RealLen(pos[0], 'y', img)
+    pos_brick_up[0:2] = [x, y]
+    pos_brick_down[0:2] = [x, y]
+
+    # check if it is possible to grip the object with an angle
+    pos_brick_up[3], pos_brick_up[4], pos_brick_up[5] = Rm.RPY2rotvec(0, math.pi, (180 - pos[2]) * math.pi / 180)
+    pos_brick_down[3:] = pos_brick_up[3:]
+
+    # Move robot
+    Rm.robot_movej(s, pos_brick_up)
+    Rm.robot_movel(s, pos_brick_down)
+    if drop:
+        s.send(b'set_digital_out(8, False)' + b"\n")
+    else:
+        s.send(b'set_digital_out(8, True)' + b"\n")  # Open gripper
+
+    time.sleep(0.1)
+    Rm.robot_movel(s, pos_brick_up)
+
 
 def present_object_cam1(points, s, img, angle_view_v): # TODO: Present the object correct in all all plane. Seems to be switched around in XY plane or Z direction
     pre_angle =  -1000
@@ -231,28 +279,26 @@ def present_object_cam1(points, s, img, angle_view_v): # TODO: Present the objec
     Rm.robot_movej(s, pos_read_up)
 
 
-def present_object_cam2(points, s, img, angle_view_v, type_name, data_type, save_image, show_image, optimize_view):
+def present_object_cam2(points, s, img, angle_view_v, type_name, data_type, save_image, show_image, optimize_view, camera):
 
     pos_brick_angle = [-0.068*math.pi/180, -91.45*math.pi/180, 94.01*math.pi/180, -92.59*math.pi/180, 87*math.pi/180, 180*math.pi/180]
     #pos_brick_angle = [-1.68 * math.pi / 180, -91.63 * math.pi / 180, 78.43 * math.pi / 180, -76.98 * math.pi / 180, 84.27 * math.pi / 180, 1.74 * math.pi / 180]
 
-    cam_pos = [-0.473, -0.1285, 0.6474, 0.041, 0.0412, 1.5704]
+    cam_pos = [-0.476, -0.131 , 0.649, 0.041, 0.0412, 1.5704]
 
     if points[points[0,4]+1,0] != -51 and points[points[0,4]+1,1] != -51:
         Rm.robot_movej(s,pos_brick_angle, 1, False)
         path = None
 
         if save_image:
-            # path = 'C:/Prj/Robopick/Depot.svn/images/' + type_name
-            path = r"C:/Users/simon/Documents/JLI Projects/ROBOPICK (Mads L)/Current working version (tortoiseSVN)/depot.svn/Images" + type_name
-            print("Inside present_object_cam2 path =", path)
+            path = 'C:/Prj/Robopick/Depot.svn/images/' + type_name
             if not os.path.exists(path):
                 os.mkdir(path)
 
-            path += '/' + data_type
-            print("Inside present_object_cam2 path =", path)
+            path += '/'+data_type
             if not os.path.exists(path) and data_type != "Manual select":
                 os.mkdir(path)
+
 
         temp = -1 * (math.atan2(points[0, 3] - points[0, 1], points[0, 2] - points[0, 0]))
 
@@ -262,15 +308,26 @@ def present_object_cam2(points, s, img, angle_view_v, type_name, data_type, save
         for i in range(points[0,4]+1,points[0,4]+1+points[int(points[0,4]+1):,:].shape[0]):
             if points[i, 7] == 0:
                 print("Robot performing point view")
-                Rm.robot_point_view(points[0, :], points[i, :], cam_pos, temp, img, save_image, show_image, path, s, optimize_view)
+                Rm.robot_point_view(points[0, :], points[i, :], cam_pos, temp, img, save_image, show_image, path, s, optimize_view, camera=camera)
             elif points[i, 7] == 2:
                 print("Robot performing point view rotation")
                 Rm.robot_point_rotation(points[0, :], points[i, :], cam_pos, temp, img, save_image, show_image, path, s)
             elif points[i, 7] == 1:
                 print("Robot performing line sweep")
-                Rm.robot_line_sweep(points[0, :], points[i, :], cam_pos, temp, img, save_image, show_image, path, s, optimize_view)
+                try:
+                    if type_name == "Demo":
+                        points[i, 0] = points[i, 2]
+                        points[i,1] = 370
+                    Rm.robot_line_sweep(points[0, :], points[i, :], cam_pos, temp, img, save_image, show_image, path, s, optimize_view, camera=camera)
+                except:
+                    print("LINE SWEEP ERROR!!!")
 
             Rm.robot_movej(s, pos_brick_angle, 1, False)
+
+        #while save_image:
+        #    files = os.listdir('C:/Prj/Robopick/Depot.svn/images/temp')
+        #    if not 'temp_save.png' in files:
+        #        break
 
 if __name__ == '__main__':
     Lookup = SelectObjects()

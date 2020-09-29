@@ -19,7 +19,6 @@ setapi("QString", 2)
 
 
 rootDir = r"C:/Prj/Robopick/Depot.svn/"
-rootDir = r"C:/Users/simon/Documents/JLI Projects/ROBOPICK (Mads L)/Current working version (tortoiseSVN)/depot.svn/"
 
 #This classe contains the control panel in the object learning GUI
 class MainObjectWidget(QWidget):
@@ -169,9 +168,9 @@ class MainObjectWidget(QWidget):
         Program_label.setAlignment(Qt.AlignCenter)
         aProgram_label = QLabel(self)
         pixmap = QPixmap("C:/Prj/Robopick/Depot.svn/Doc/JLI_logo.png")
-        pixmap = pixmap.scaledToWidth(200)
+        pixmap = pixmap.scaledToWidth(100)
         aProgram_label.setPixmap(pixmap)
-        aProgram_label.move(40, 200)
+        aProgram_label.move(40, 100)
         aProgram_label.lower()
         aProgram_label.show()
 
@@ -265,6 +264,7 @@ class MainObjectWidget(QWidget):
         self.button_del_view.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; color: lightGray}')
         self.button_add_view.setStyleSheet('QPushButton{font-size: ' + self.text_size1+'}')
         self.label_view_number.setStyleSheet('font-size: ' + self.text_size3 + '}')
+
 
         self.button_close.move(gbox.horizontalSpacing(),int(screen_height-(gbox.itemAtPosition(20,1).sizeHint().height()+gbox.horizontalSpacing())))
         self.button_close.resize(gbox.sizeHint().width(), gbox.itemAtPosition(20,1).sizeHint().height())
@@ -502,7 +502,7 @@ class MainWindow(QMainWindow):
     signal_exit_library = pyqtSignal()
     def __init__(self, screen_width = None, screen_height = None):
         QMainWindow.__init__(self)
-        # self.showFullScreen()
+        self.showFullScreen()
         self.setWindowTitle('Library')
 
         splitter = QSplitter(Qt.Horizontal)
@@ -677,7 +677,8 @@ class MainWindow(QMainWindow):
         # Find contours
         kernel = np.ones((7, 7), np.uint8)  # avoid colapsing contours, when objects are close together
         ret, thresh = cv2.threshold(imgray, 75, 255, cv2.THRESH_BINARY_INV)
-        _, contours, hierarchy = cv2.findContours(cv2.erode(thresh, kernel, iterations=1), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(cv2.erode(thresh, kernel, iterations=1), cv2.RETR_TREE,
+                                               cv2.CHAIN_APPROX_SIMPLE)
         mask = np.zeros(thresh.shape, np.uint8)
 
         for i in range(len(contours)):
@@ -715,6 +716,8 @@ class MainWindow(QMainWindow):
                 frame = self.img_src
 
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+
 
                 image = QImage(frame, frame.shape[1], frame.shape[0],frame.strides[0], QImage.Format_RGB888)
                 self.label_src.setPixmap(QPixmap.fromImage(image).scaled(self.img_width, 10000, QtCore.Qt.KeepAspectRatio))
