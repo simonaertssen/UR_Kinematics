@@ -65,3 +65,59 @@ while (True):
                 print("Error: ", socketerror)
 print("Program finish")
 
+# # Echo client program
+# import socket
+# import time
+#
+# HOST = "192.168.0.9" # The remote host
+# PORT_502 = 502
+#
+# print "Starting Program"
+#
+# count = 0
+# home_status = 0
+# program_run = 0
+#
+# while (True):
+#  if 1 == 1:
+#  if program_run == 0:
+#  try:
+#  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#  s.settimeout(10)
+#  s.connect((HOST, PORT_502))
+#  time.sleep(0.05)
+#  print ""
+#  print "Modbus set reg 128 to 01"
+#  print "Sending: x00 x01 x00 x00 x00 x06 x00 x06 x00 x80 x00 x01"
+#  s.send ("\x00\x01\x00\x00\x00\x06\x00\x06\x00\x80\x00\x01") #sets register 128 to 1
+#  time.sleep(1.00)
+#  print ""
+#  print "Modbus set reg 128 to 00"
+#  print "Sending: x00 x01 x00 x00 x00 x06 x00 x06 x00 x80 x00 x00"
+#  s.send ("\x00\x01\x00\x00\x00\x06\x00\x06\x00\x80\x00\x00") #sets register 128 to 0
+#  time.sleep(1.00)
+#  s.close() #clear buffer
+#  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#  s.settimeout(10)
+#  s.connect((HOST, PORT_502))
+#  time.sleep(0.05)
+#  print ""
+#  print "Request reg 129"
+#  print "Sending: x00 x04 x00 x00 x00 x06 x00 x03 x00 x81 x00 x01"
+#  msg = ""
+#  s.send ("\x00\x04\x00\x00\x00\x06\x00\x03\x00\x81\x00\x01") #request data from register 128-133 (cartisian data)
+#  print "Modbus command send to read reg 129"
+#  time.sleep(0.75)
+#  print "Received"
+#  msg = s.recv(1024)
+#  print repr(msg) #Print the receive data in \x hex notation (notice that data above 32 hex will berepresented at the ascii code e.g. 50 will show P
+#  print ""
+#  msg = msg.encode("hex") #convert the data from \x hex notation to plain hex
+#  print msg
+#  print ""
+#  home_status = 1
+#  program_run = 0
+#  s.close()
+#  except socket.error as socketerror:
+#  print("Error: ", socketerror)
+# print "Program finish"

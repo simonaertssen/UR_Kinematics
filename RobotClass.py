@@ -1,9 +1,12 @@
-import socket
-import weakref
-import struct
-import binascii
-import threading
 import time
+import socket
+import threading
+import struct
+
+from sys import exit
+from weakref import ref
+from select import select
+from binascii import hexlify
 
 
 class ParameterInfo:
@@ -16,7 +19,7 @@ class ParameterInfo:
         self.Type = numeric_type
         self.Note = note
         self.Value = numerical_value
-        self.Instances.append(weakref.ref(self))
+        self.Instances.append(ref(self))
 
     def __repr__(self):
         return "{}: {}".format(self.Name, self.Value)
@@ -40,9 +43,11 @@ class Reader(socket.socket):
     def __init__(self, ip, port):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.settimeout(5)
+        self.TimeOut = 3
+        self.settimeout(self.TimeOut)
         self.Address = (ip, port)
         self.BufferLength = 1116
+        self.connectSafely()
 
     def read(self):
         raise NotImplementedError
@@ -55,7 +60,8 @@ class Reader(socket.socket):
             self.connect(self.Address)
             print(self.Address, "is safely connected.")
         except socket.timeout:
-            print(self.Address, "connection timed out.")
+            self.close()
+            exit('{} connection timed out.'.format(self.Address))
 
     def shutdownSafely(self):
         print(self.Address, "shutting down safely.")
@@ -65,12 +71,28 @@ class Reader(socket.socket):
 
 class ModBusReader(Reader):
     def __init__(self):
-        IP = "192.168.111.2"
+        IP = "192.168.1.17"
         PORT = 502
         super(ModBusReader, self).__init__(IP, PORT)
 
     def read(self):
-        data = self.recv(self.BufferLength)
+        self.send(b'\x00\x04\x00\x00\x00\x06\x00\x03\x00\x01\x00\x01')
+        data = self.recv(self.BufferLength).hex()
+        if len(data) == 0:
+            return None
+        print(type(data), data)
+        allBits = [int(x) for x in bin(int(data))[2:]][::-1]
+        gripperBit = 8
+        return allBits[gripperBit]
+
+        # Working example:
+        # self.send(b'\x00\x01\x00\x00\x00\x06\x00\x06\x00\x80\x00\x08')  # set register 128 to 1
+        # time.sleep(0.01)
+        # data = self.recv(self.BufferLength).hex()
+        # self.send(b'\x00\x01\x00\x00\x00\x06\x00\x03\x00\x80\x00\x01')
+        # data = self.recv(self.BufferLength).hex()
+        # value = data[-1]
+        # return value
 
 
 class RobotChiefCommunicationOfficer(Reader):
@@ -95,8 +117,9 @@ class RobotChiefCommunicationOfficer(Reader):
         self.toolRX = ParameterInfo('toolRX', 8, 612, '!d', "Cartesian Tool Orientation RX")
         self.toolRY = ParameterInfo('toolRY', 8, 620, '!d', "Cartesian Tool Orientation RY")
         self.toolRZ = ParameterInfo('toolRZ', 8, 628, '!d', "Cartesian Tool Orientation RZ")
-        # Open the connection
-        self.connectSafely()
+
+    def sendCommand(self, command):
+        self.send(command)
 
     def read(self):
         try:
@@ -111,31 +134,36 @@ class RobotChiefCommunicationOfficer(Reader):
             if len(value) == 0:
                 return None
             try:
-                value = struct.unpack(parameter.Type, bytes.fromhex(str(binascii.hexlify(value).decode("utf-8"))))[0]
-            except struct.error as e:
+                value = unpack(parameter.Type, bytes.fromhex(str(hexlify(value).decode("utf-8"))))[0]
+            except error as e:
                 print('An error occurred while reading the robot info...\n', e)
             if index == 0 and (value == 0 or value > self.BufferLength):  # Catch when the message is empty
                 return None
             parameter.Value = value
-        print('Returning values')
-        return self.toolX
-
-    def sendCommand(self, command):
-        self.send(command)
+        return self.BaseAngle
 
 
 class Robot:
     def __init__(self):
         super(Robot, self).__init__()
-        # self.ModBusReader = ModBusReader()
+        self.ModBusReader = ModBusReader()
         self.RobotCCO = RobotChiefCommunicationOfficer()
         self.CommunicationThread = threading.Thread(target=self.readInfo, args=(), daemon=False)
         self.CommunicationThread.start()
 
     def readInfo(self):
-        print("Starting reader threads")
+        print("Starting reader thread")
         while True:
-            print(self.RobotCCO.read())
+            time.sleep(0.5)
+            # result = self.ModBusReader.read()
+            # if result is not None:
+            #     print(result)
+            all_sockets, _, _ = select([self.ModBusReader, self.RobotCCO], [], [])
+            for socket in all_sockets:
+                result = socket.read()
+                print(result)
+                # if result is not None:
+                #     print(str(int(result.Value)))
 
 
 if __name__ == '__main__':
