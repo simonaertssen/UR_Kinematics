@@ -52,6 +52,7 @@ class Reader(socket.socket):
 
         self.ToolInfoQueue = Queue()
         self.ThreadLock = threading.Lock()
+        self.Communicating = True
         self.CommunicationThread = threading.Thread(target=self.readContinuously, args=(), daemon=True)
         self.CommunicationThread.start()
 
@@ -59,7 +60,7 @@ class Reader(socket.socket):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
 
     def readContinuously(self):
-        while True:
+        while self.Communicating:
             self.read()
 
     def read(self):
@@ -83,6 +84,8 @@ class Reader(socket.socket):
 
     def shutdownSafely(self):
         print(self.Address, "shutting down safely.")
+        self.Communicating = False
+        self.CommunicationThread.join()
         self.shutdown(socket.SHUT_RDWR)
         self.close()
 
