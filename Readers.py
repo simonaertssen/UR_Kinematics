@@ -12,7 +12,7 @@ from queue import Queue
 class ParameterInfo:
     Instances = list()
 
-    def __init__(self, name, num_bytes, num_preceding_bytes, numeric_type, note, numerical_value=0):
+    def __init__(self, name, num_bytes, num_preceding_bytes, numeric_type, note, numerical_value=420):
         self.Name = name
         self.SizeInBytes = num_bytes
         self.PrecedingBytes = num_preceding_bytes
@@ -101,15 +101,23 @@ class ModBusReader(Reader):
         self.SpikeOccurred = False
         self.ListOfCurrents = [0]*200
 
+    def sendRequestSafely(self, command):
+        tries, max_tries = 0, 5
+        while tries < max_tries:
+            self.send(command)
+            data = self.recv(self.BufferLength).hex()
+            if len(data) is not 0:
+                return data
+            tries += 1
+        return None
+
     def read(self):
         StabilisedCurrent = False
 
         # Request to read info from register 1, the output bits
-        data = b''
-        while len(data) == 0:
-            self.send(b'\x00\x04\x00\x00\x00\x06\x00\x03\x00\x01\x00\x01')
-            data = self.recv(self.BufferLength).hex()
-
+        data = self.sendRequestSafely(b'\x00\x04\x00\x00\x00\x06\x00\x03\x00\x01\x00\x01')
+        if data is None:
+            return
         allBits = [int(x) for x in bin(int(data))[2:]][::-1]
         gripperBit = 8
         ToolBitValue = allBits[gripperBit]
@@ -118,10 +126,9 @@ class ModBusReader(Reader):
             self.ToolBit = ToolBitValue
 
         # Request to read info from register 770, the tool current (last two digits in the buffer).
-        data = b''
-        while len(data) == 0:
-            self.send(b'\x00\x04\x00\x00\x00\x06\x00\x03\x03\x02\x00\x01')
-            data = self.recv(self.BufferLength).hex()
+        data = self.sendRequestSafely(b'\x00\x04\x00\x00\x00\x06\x00\x03\x03\x02\x00\x01')
+        if data is None:
+            return
         self.ListOfCurrents.append(int(data[-2:], 16))
         self.ListOfCurrents.pop(0)
         DifferenceInCurrent = 0
@@ -186,14 +193,17 @@ class RobotChiefCommunicationOfficer(Reader):
         for index, parameter in enumerate(parameters):
             value = data[parameter.PrecedingBytes:(parameter.PrecedingBytes + parameter.SizeInBytes)]
             if len(value) == 0:
-                return None
+                return
             try:
                 value = unpack(parameter.Type, bytes.fromhex(value.hex()))[0]
             except struct.error as e:
                 print('An error occurred while reading the robot info...\n', e)
             if index == 0 and (value == 0 or value > self.BufferLength):  # Catch when the message is empty
-                return None
-            parameter.Value = value
+                return
+            if abs(parameter.Value - value) < 0.01:
+                parameter.Value = value
+            else:
+                return
 
             if parameter.Name == 'Wrist3Angle':  # Then all angles have been read
                 output = self.BaseAngle.Value, self.ShoulderAngle.Value, self.ElbowAngle.Value, self.Wrist1Angle.Value, self.Wrist2Angle.Value, self.Wrist3Angle.Value
