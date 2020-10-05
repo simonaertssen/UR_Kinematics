@@ -28,12 +28,12 @@ class ParameterInfo:
         # Give me a list of instances of this class for quick recovery. Lists give an ordered representation.
         # See https://effbot.org/pyfaq/how-do-i-get-a-list-of-all-instances-of-a-given-class.htm
         dead = list()
-        for ref in cls.Instances:
-            obj = ref()
+        for reference in cls.Instances:
+            obj = reference()
             if obj is not None:
                 yield obj
             else:
-                dead.append(ref)
+                dead.append(reference)
         for item in dead:
             cls.Instances.remove(item)
 
@@ -54,7 +54,8 @@ class Reader(socket.socket):
     def readContinuously(self):
         while True:
             output = self.read()
-            self.Callback(output)
+            if self.Callback is not None and output is not None:
+                self.Callback(output)
 
     def read(self):
         raise NotImplementedError
@@ -81,16 +82,52 @@ class ModBusReader(Reader):
         IP = "192.168.1.17"
         PORT = 502
         super(ModBusReader, self).__init__(IP, PORT, callback)
+        self.ToolBit = 0
+        self.ToolBitChanged = False
+        self.SpikeOccurred = False
+        self.ListOfCurrents = [0]*100
 
     def read(self):
+        StabilisedCurrent = False
+
+        # Request to read info from register 1, the output bits
         self.send(b'\x00\x04\x00\x00\x00\x06\x00\x03\x00\x01\x00\x01')
         data = self.recv(self.BufferLength).hex()
         if len(data) == 0:
             return None
-
         allBits = [int(x) for x in bin(int(data))[2:]][::-1]
         gripperBit = 8
-        return allBits[gripperBit]
+        ToolBitValue = allBits[gripperBit]
+        if self.ToolBit != ToolBitValue:
+            print("Toolbit changed value!")
+            self.ToolBitChanged = True
+            self.ToolBit = ToolBitValue
+
+        # Request to read info from register 770, the tool current (last two digits in the buffer).
+        self.send(b'\x00\x04\x00\x00\x00\x06\x00\x03\x03\x02\x00\x01')
+        data = self.recv(self.BufferLength).hex()
+        if len(data) == 0:
+            return None
+        self.ListOfCurrents.append(int(data[-2:], 16))
+        self.ListOfCurrents.pop(0)
+        DifferenceInCurrent = 0
+        MaximumStationaryDifference = 4
+        MaximumSpikeDifference = 10
+        if self.ToolBitChanged:
+            DifferenceInCurrent = sum([abs(i - j) for i, j in zip(self.ListOfCurrents[:-1], self.ListOfCurrents[1:])])
+            if not self.SpikeOccurred:
+                self.SpikeOccurred = DifferenceInCurrent > MaximumSpikeDifference
+        if self.SpikeOccurred:
+            print("Spike!")
+            if not StabilisedCurrent:
+                StabilisedCurrent = DifferenceInCurrent < MaximumStationaryDifference
+        if StabilisedCurrent:
+            print("Current stabilised!")
+            self.SpikeOccurred = False
+            self.ToolBitChanged = False
+        # Encode output as: as long as ToolBitChanged == True we haven't settled the current yet!
+        # So as long as the output is False we haven't settled.
+        return self.ToolBit, DifferenceInCurrent, not self.ToolBitChanged
 
 
 class RobotChiefCommunicationOfficer(Reader):
@@ -138,14 +175,14 @@ class RobotChiefCommunicationOfficer(Reader):
             if index == 0 and (value == 0 or value > self.BufferLength):  # Catch when the message is empty
                 return None
             parameter.Value = value
-        return self.BaseAngle
+        return None
 
 
 class Robot:
     def __init__(self):
         super(Robot, self).__init__()
-        self.ModBusReader = ModBusReader(print)
-        self.RobotCCO = RobotChiefCommunicationOfficer(print)
+        self.ModBusReader = ModBusReader()
+        self.RobotCCO = RobotChiefCommunicationOfficer()
 
 
 if __name__ == '__main__':
