@@ -2,14 +2,10 @@ import time
 import socket
 import threading
 
-import numpy as np
-
 from sys import exit
 from weakref import ref
-from select import select
 import struct
 from struct import unpack
-from binascii import hexlify
 
 
 class ParameterInfo:
@@ -55,19 +51,10 @@ class Reader(socket.socket):
         self.CommunicationThread = threading.Thread(target=self.readContinuously, args=(), daemon=False)
         self.CommunicationThread.start()
 
-        self.starttime = time.time()
-        self.n = 0
-        self.avgtime = 0
-
     def readContinuously(self):
         while True:
             output = self.read()
-            # self.Callback(output)
-            timetaken = time.time() - self.starttime
-            self.n += 1
-            self.avgtime += (timetaken - self.avgtime)/self.n
-            print(self.avgtime)
-            self.starttime = time.time()
+            self.Callback(output)
 
     def read(self):
         raise NotImplementedError
