@@ -1,11 +1,14 @@
 import time
 import socket
 import threading
-import struct
+
+import numpy as np
 
 from sys import exit
 from weakref import ref
 from select import select
+import struct
+from struct import unpack
 from binascii import hexlify
 
 
@@ -47,15 +50,24 @@ class Reader(socket.socket):
         self.settimeout(self.TimeOut)
         self.Address = (ip, port)
         self.BufferLength = 1116
-        self.Callback = callback if callback is not None else print
+        self.Callback = callback
         self.connectSafely()
         self.CommunicationThread = threading.Thread(target=self.readContinuously, args=(), daemon=False)
         self.CommunicationThread.start()
 
+        self.starttime = time.time()
+        self.n = 0
+        self.avgtime = 0
+
     def readContinuously(self):
         while True:
             output = self.read()
-            self.Callback(output)
+            # self.Callback(output)
+            timetaken = time.time() - self.starttime
+            self.n += 1
+            self.avgtime += (timetaken - self.avgtime)/self.n
+            print(self.avgtime)
+            self.starttime = time.time()
 
     def read(self):
         raise NotImplementedError
@@ -78,10 +90,10 @@ class Reader(socket.socket):
 
 
 class ModBusReader(Reader):
-    def __init__(self):
+    def __init__(self, callback=None):
         IP = "192.168.1.17"
         PORT = 502
-        super(ModBusReader, self).__init__(IP, PORT)
+        super(ModBusReader, self).__init__(IP, PORT, callback)
 
     def read(self):
         self.send(b'\x00\x04\x00\x00\x00\x06\x00\x03\x00\x01\x00\x01')
@@ -95,10 +107,10 @@ class ModBusReader(Reader):
 
 
 class RobotChiefCommunicationOfficer(Reader):
-    def __init__(self):
+    def __init__(self, callback=None):
         IP = "192.168.1.17"
         PORT = 30003
-        super(RobotChiefCommunicationOfficer, self).__init__(IP, PORT)
+        super(RobotChiefCommunicationOfficer, self).__init__(IP, PORT, callback)
         # These parameters correspond to the 'Meaning'field in the UR excel sheet 'Client_Interface_V3'.
         self.MessageSize = ParameterInfo('MessageSize', 4, 0, '!i', "Total message length in bytes")
         self.Time        = ParameterInfo('Time', 8, 4, '!d', "Time elapsed since the controller was started")
@@ -133,7 +145,7 @@ class RobotChiefCommunicationOfficer(Reader):
             if len(value) == 0:
                 return None
             try:
-                value = struct.unpack(parameter.Type, bytes.fromhex(str(hexlify(value).decode("utf-8"))))[0]
+                value = unpack(parameter.Type, bytes.fromhex(value.hex()))[0]
             except struct.error as e:
                 print('An error occurred while reading the robot info...\n', e)
             if index == 0 and (value == 0 or value > self.BufferLength):  # Catch when the message is empty
@@ -145,8 +157,10 @@ class RobotChiefCommunicationOfficer(Reader):
 class Robot:
     def __init__(self):
         super(Robot, self).__init__()
-        self.ModBusReader = ModBusReader()
-        self.RobotCCO = RobotChiefCommunicationOfficer()
+        self.ModBusReader = ModBusReader(print)
+        self.RobotCCO = RobotChiefCommunicationOfficer(print)
+
 
 if __name__ == '__main__':
     robot = Robot()
+
