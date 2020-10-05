@@ -193,14 +193,14 @@ class RobotChiefCommunicationOfficer(Reader):
             parameter.Value = value
 
             if parameter.Name == 'Wrist3Angle':  # Then all angles have been read
-                output = self.BaseAngle, self.ShoulderAngle, self.ElbowAngle, self.Wrist1Angle, self.Wrist2Angle, self.Wrist3Angle
+                output = self.BaseAngle.Value, self.ShoulderAngle.Value, self.ElbowAngle.Value, self.Wrist1Angle.Value, self.Wrist2Angle.Value, self.Wrist3Angle.Value
                 if output is not None:
                     with self.ThreadLock:
                         self.clearQueue(self.JointAngleQueue)
                         self.JointAngleQueue.put(output)
 
             if parameter.Name == 'toolRZ':  # Then all tool parameters have been read
-                output = self.toolX, self.toolY, self.toolZ, self.toolRX, self.toolRY, self.toolRZ
+                output = self.toolX.Value, self.toolY.Value, self.toolZ.Value, self.toolRX.Value, self.toolRY.Value, self.toolRZ.Value
                 if output is not None:
                     with self.ThreadLock:
                         self.clearQueue(self.ToolInfoQueue)
