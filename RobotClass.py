@@ -10,6 +10,10 @@ class Robot:
         self.ModBusReader = ModBusReader()
         self.RobotCCO = RobotChiefCommunicationOfficer()
 
+    def shutdownSafely(self):
+        self.ModBusReader.shutdownSafely()
+        self.RobotCCO.shutdownSafely()
+
     def send(self, message):
         self.RobotCCO.send(message)
 
