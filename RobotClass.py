@@ -1,11 +1,12 @@
 import time
 import socket
+import struct
 import threading
 
 from sys import exit
 from weakref import ref
-import struct
 from struct import unpack
+from queue import Queue
 
 
 class ParameterInfo:
@@ -48,20 +49,33 @@ class Reader(socket.socket):
         self.BufferLength = 1116
         self.Callback = callback
         self.connectSafely()
-        self.CommunicationThread = threading.Thread(target=self.readContinuously, args=(), daemon=False)
+
+        self.OutputQueue = Queue()
+        self.OutputQueue.put(0)
+        self.ThreadLock = threading.Lock()
+        self.CommunicationThread = threading.Thread(target=self.readContinuously, args=(), daemon=True)
         self.CommunicationThread.start()
+
+    def renewSocket(self):
+        super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
 
     def readContinuously(self):
         while True:
             output = self.read()
-            if self.Callback is not None and output is not None:
-                self.Callback(output)
+            if output is not None:
+                with self.ThreadLock:
+                    self.clearOutputQueue()
+                    self.OutputQueue.put(output)
 
     def read(self):
         raise NotImplementedError
 
-    def renewSocket(self):
-        super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
+    def clearOutputQueue(self):
+        while not self.OutputQueue.empty():
+            self.OutputQueue.get()
+
+    def getLatestReadValue(self):
+        return self.OutputQueue.get()
 
     def connectSafely(self):
         try:
@@ -85,29 +99,29 @@ class ModBusReader(Reader):
         self.ToolBit = 0
         self.ToolBitChanged = False
         self.SpikeOccurred = False
-        self.ListOfCurrents = [0]*100
+        self.ListOfCurrents = [0]*200
 
     def read(self):
         StabilisedCurrent = False
 
         # Request to read info from register 1, the output bits
-        self.send(b'\x00\x04\x00\x00\x00\x06\x00\x03\x00\x01\x00\x01')
-        data = self.recv(self.BufferLength).hex()
-        if len(data) == 0:
-            return None
+        data = b''
+        while len(data) == 0:
+            self.send(b'\x00\x04\x00\x00\x00\x06\x00\x03\x00\x01\x00\x01')
+            data = self.recv(self.BufferLength).hex()
+
         allBits = [int(x) for x in bin(int(data))[2:]][::-1]
         gripperBit = 8
         ToolBitValue = allBits[gripperBit]
         if self.ToolBit != ToolBitValue:
-            print("Toolbit changed value!")
             self.ToolBitChanged = True
             self.ToolBit = ToolBitValue
 
         # Request to read info from register 770, the tool current (last two digits in the buffer).
-        self.send(b'\x00\x04\x00\x00\x00\x06\x00\x03\x03\x02\x00\x01')
-        data = self.recv(self.BufferLength).hex()
-        if len(data) == 0:
-            return None
+        data = b''
+        while len(data) == 0:
+            self.send(b'\x00\x04\x00\x00\x00\x06\x00\x03\x03\x02\x00\x01')
+            data = self.recv(self.BufferLength).hex()
         self.ListOfCurrents.append(int(data[-2:], 16))
         self.ListOfCurrents.pop(0)
         DifferenceInCurrent = 0
@@ -118,16 +132,14 @@ class ModBusReader(Reader):
             if not self.SpikeOccurred:
                 self.SpikeOccurred = DifferenceInCurrent > MaximumSpikeDifference
         if self.SpikeOccurred:
-            print("Spike!")
             if not StabilisedCurrent:
                 StabilisedCurrent = DifferenceInCurrent < MaximumStationaryDifference
         if StabilisedCurrent:
-            print("Current stabilised!")
             self.SpikeOccurred = False
             self.ToolBitChanged = False
         # Encode output as: as long as ToolBitChanged == True we haven't settled the current yet!
         # So as long as the output is False we haven't settled.
-        return self.ToolBit, DifferenceInCurrent, not self.ToolBitChanged
+        return self.ToolBit, not self.ToolBitChanged
 
 
 class RobotChiefCommunicationOfficer(Reader):
@@ -152,9 +164,6 @@ class RobotChiefCommunicationOfficer(Reader):
         self.toolRX = ParameterInfo('toolRX', 8, 612, '!d', "Cartesian Tool Orientation RX")
         self.toolRY = ParameterInfo('toolRY', 8, 620, '!d', "Cartesian Tool Orientation RY")
         self.toolRZ = ParameterInfo('toolRZ', 8, 628, '!d', "Cartesian Tool Orientation RZ")
-
-    def sendCommand(self, command):
-        self.send(command)
 
     def read(self):
         try:
@@ -184,7 +193,31 @@ class Robot:
         self.ModBusReader = ModBusReader()
         self.RobotCCO = RobotChiefCommunicationOfficer()
 
+    def send(self, message):
+        self.RobotCCO.send(message)
+
+    def openGripper(self):  # Equals a tool bit of 0
+        print('openGripper')
+        self.send(b'set_digital_out(8, False)' + b"\n")
+        self.waitForGripperToRead(0)
+        print("Gripper Opened")
+
+    def closeGripper(self):
+        print('closeGripper')
+        self.send(b'set_digital_out(8, True)' + b"\n")
+        self.waitForGripperToRead(1)
+        print("Gripper Closed")
+
+    def waitForGripperToRead(self, bitvalue):
+        while True:
+            toolbit, settled = self.ModBusReader.getLatestReadValue()
+            if toolbit is bitvalue and settled:
+                break
+
 
 if __name__ == '__main__':
     robot = Robot()
-
+    for _ in range(5):
+        time.sleep(2)
+        robot.closeGripper()
+        robot.openGripper()
