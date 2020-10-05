@@ -3,30 +3,22 @@ import matplotlib
 import numpy as np
 import time
 
-import RobotSocket
+from RobotClass import Robot
 from Kinematics import ForwardKinematics
+from Functions import printwrapper
 
 from PyQt5 import QtCore, QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
-
-matplotlib.use('Qt5Agg')
-
-
-def printwrapper(function):
-    def inner(*args, **kwargs):
-        print("Calling", function.__name__)
-        function(*args, **kwargs)
-        print(function.__name__, "is done.")
-    return inner
+matplotlib.use('Qt4Agg')
 
 
 class ThreeDimCanvas(FigureCanvasQTAgg):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
-        fig = Figure(figsize=(width, height), dpi=dpi)
-        super(ThreeDimCanvas, self).__init__(fig)
-        self.axes = fig.gca(projection='3d')  # generates 3D Axes object
+        self.fig = Figure(figsize=(width, height), dpi=dpi, frameon=False)
+        super(ThreeDimCanvas, self).__init__(self.fig)
+        self.axes = self.fig.gca(projection='3d')  # generates 3D Axes object
 
         self.axes.set_xlim3d(-0.5, 0.5)
         self.axes.set_ylim3d(-0.5, 0.5)
@@ -36,12 +28,10 @@ class ThreeDimCanvas(FigureCanvasQTAgg):
         self.arms   = self.axes.plot3D(initPos, initPos, initPos, 'black')[0]
         self.joints = self.axes.scatter3D(initPos, initPos, initPos, c='r')
 
-    @printwrapper
     def updatePlot(self, positions):
-        # self.axes.clear()
         X, Y, Z = positions
-        self.joints._offsets3d = (X, Y, Z)
         self.arms.set_data_3d(X, Y, Z)
+        self.joints._offsets3d = (X, Y, Z)
         self.draw_idle()
 
 
@@ -52,12 +42,11 @@ class RobotJointReader(QtCore.QThread):
         self.updatePlot = update_plot
         self.printMe = print_me
 
-    @printwrapper
     def run(self):
         while True:
             self.updatePlot(self.readJoints())
-            if self.printMe is not None:
-                print([value*180/np.pi for value in self.printMe])
+            # if callable(self.printMe):
+            #     print([value*180/np.pi for value in self.printMe()])
 
 
 class Viewer(QtWidgets.QMainWindow):
@@ -68,16 +57,14 @@ class Viewer(QtWidgets.QMainWindow):
 
         self.shutdownRobot = robot.shutdownSafely
 
-        self.canvas = ThreeDimCanvas(self, width=6, height=6, dpi=50)
+        self.canvas = ThreeDimCanvas(self, width=6, height=6, dpi=75)
         self.setCentralWidget(self.canvas)
 
-        self.jointReader = RobotJointReader(robot.jointPositions, self.canvas.updatePlot, robot.jointAngles)
+        self.jointReader = RobotJointReader(robot.getJointPositions, self.canvas.updatePlot)
         self.jointReader.start()
         time.sleep(0.1)
-
         self.show()
 
-    @printwrapper
     def closeEvent(self, event):
         self.shutdownRobot()
         self.close()
@@ -90,25 +77,20 @@ class RobotRotationEmulator:
         # Initial angles of the robot:
         self.angles = [0, -np.pi/2, 0, -np.pi/2, 0, 0]
 
-    @printwrapper
     def step(self):
-        self.angles[0] += 0.001
+        self.angles[0] += 0.0005
 
-    @printwrapper
-    def jointPositions(self):
-        pos = ForwardKinematics(self.angles)
+    def getJointPositions(self):
         self.step()
-        return pos
+        return ForwardKinematics(self.angles)
 
-    @printwrapper
     def shutdownSafely(self):
         pass
 
-    @printwrapper
-    def jointAngles(self):
+    def getJointAngles(self):
         return self.angles
 
-@printwrapper
+
 def seeViewerAtWork(robot):
     app = QtWidgets.QApplication(sys.argv)
     w = Viewer(robot)
@@ -121,12 +103,12 @@ def seeViewerAtWorkWithEmulator():
 
 
 def seeViewerAtWorkWithRobot():
-    r = RobotSocket.Robot()
+    r = Robot()
     seeViewerAtWork(r)
 
 
 if __name__ == '__main__':
-    seeViewerAtWorkWithEmulator()
+    seeViewerAtWorkWithRobot()
 
 
 
