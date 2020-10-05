@@ -208,10 +208,10 @@ class Robot:
         self.waitForGripperToRead(1)
         print("Gripper Closed")
 
-    def waitForGripperToRead(self, bitvalue):
+    def waitForGripperToRead(self, bit_value):
         while True:
-            toolbit, settled = self.ModBusReader.getLatestReadValue()
-            if toolbit is bitvalue and settled:
+            tool_bit, settled = self.ModBusReader.getLatestReadValue()
+            if tool_bit is bit_value and settled:
                 break
 
 
