@@ -78,7 +78,7 @@ class RobotRotationEmulator:
         self.angles = [0, -np.pi/2, 0, -np.pi/2, 0, 0]
 
     def step(self):
-        self.angles[0] += 0.0005
+        self.angles[1] += 0.0005
 
     def getJointPositions(self):
         self.step()
