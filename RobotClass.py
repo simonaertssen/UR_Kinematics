@@ -45,6 +45,7 @@ class Robot:
 
 
 if __name__ == '__main__':
+    print('Testing the connectivity of the gripper')
     robot = Robot()
     for _ in range(5):
         time.sleep(2)
