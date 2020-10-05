@@ -40,23 +40,22 @@ class ParameterInfo:
 
 
 class Reader(socket.socket):
-    def __init__(self, ip, port):
+    def __init__(self, ip, port, callback=None):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.TimeOut = 3
         self.settimeout(self.TimeOut)
         self.Address = (ip, port)
         self.BufferLength = 1116
+        self.Callback = callback if callback is not None else print
         self.connectSafely()
         self.CommunicationThread = threading.Thread(target=self.readContinuously, args=(), daemon=False)
         self.CommunicationThread.start()
-        self.Printing = False
 
     def readContinuously(self):
         while True:
             output = self.read()
-            if self.Printing is True and output is not None:
-                print(output)
+            self.Callback(output)
 
     def read(self):
         raise NotImplementedError
@@ -148,23 +147,6 @@ class Robot:
         super(Robot, self).__init__()
         self.ModBusReader = ModBusReader()
         self.RobotCCO = RobotChiefCommunicationOfficer()
-        # self.CommunicationThread = threading.Thread(target=self.readInfo, args=(), daemon=False)
-        # self.CommunicationThread.start()
-
-    # def readInfo(self):
-    #     print("Starting reader thread")
-    #     while True:
-    #         time.sleep(0.5)
-    #         # result = self.ModBusReader.read()
-    #         # if result is not None:
-    #         #     print(result)
-    #         all_sockets, _, _ = select([self.ModBusReader, self.RobotCCO], [], [])
-    #         for socket in all_sockets:
-    #             result = socket.read()
-    #             print(result)
-    #             # if result is not None:
-    #             #     print(str(int(result.Value)))
-
 
 if __name__ == '__main__':
     robot = Robot()
