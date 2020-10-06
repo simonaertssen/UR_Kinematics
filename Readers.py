@@ -63,7 +63,7 @@ class ModBusReader(Reader):
         PORT = 502
         super(ModBusReader, self).__init__(IP, PORT)
         self.ToolBitQueue = Queue()
-        self.ToolInfoQueue = Queue()
+        self.ToolPositionQueue = Queue()
         self.JointAngleQueue = Queue()
 
         self.ToolBitChanged = False
@@ -161,13 +161,13 @@ class ModBusReader(Reader):
                 parameter.Value = parameter.Method(data)
         parameterValues = [parameter.Value for parameter in parameters]
         self.storeSafelyInQueue(parameterValues[2:8], self.JointAngleQueue)  # All the robot joint angles
-        self.storeSafelyInQueue(parameterValues[8:], self.ToolInfoQueue)   # All the tool info
+        self.storeSafelyInQueue(parameterValues[8:], self.ToolPositionQueue)   # All the tool info
 
     def getToolBitInfo(self):
         return self.ToolBitQueue.get()
 
-    def getToolInfo(self):
-        return self.ToolInfoQueue.get()
+    def getToolPosition(self):
+        return self.ToolPositionQueue.get()
 
     def getJointAngles(self):
         return self.JointAngleQueue.get()
