@@ -68,7 +68,7 @@ class ModBusReader(Reader):
 
         self.ToolBitChanged = False
         self.SpikeOccurred = False
-        self.ListOfCurrents = [0]*200
+        self.ListOfCurrents = [0]*60
         # Read these parameters from the modbus:
         self.ToolBit       = ParameterInfo(1,   b'\x00\x01', "Vector of output bits. Only interested in number eight.", self.extractToolBit)
         self.ToolCurrent   = ParameterInfo(770, b'\x03\x02', "Current that is applied to the gripper.", self.extractToolCurrent)
@@ -148,7 +148,7 @@ class ModBusReader(Reader):
         value = int(data[-4:], 16)
         if value > 32768:  # If integer value > 32767 we need to take the complement
             value = -(65535 + 1 - value)
-        return value * 0.1
+        return value * 1.0e-4
 
     def read(self):
         parameters = list(ParameterInfo.getInstances())

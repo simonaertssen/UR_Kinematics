@@ -1,5 +1,6 @@
 import time
 import threading
+import winsound
 
 from Kinematics import ForwardKinematics
 from Readers import ModBusReader, RobotChiefCommunicationOfficer
@@ -13,8 +14,11 @@ class Robot:
 
         # Save some important positions as attributes:
         pi180 = 3.14159265359/180
-        self.jointAngleInit = [a * pi180 for a in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
-        self.jointAngleBrickDrop = [a * pi180 for a in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
+        self.JointAngleInit = [i * pi180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
+        self.JointAngleBrickDrop = [i * pi180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
+        self.ToolPositionBrickDrop = [0.08511, -0.51591, 0.04105, 0.00000, 0.00314, 0.00000]
+
+        # self.initialise()
 
     def shutdownSafely(self):
         self.ModBusReader.shutdownSafely()
@@ -27,7 +31,7 @@ class Robot:
         return self.ModBusReader.getToolBitInfo()
 
     def getToolPosition(self):
-        return self.ModBusReader.getToolInfo()
+        return self.ModBusReader.getToolPosition()
 
     def getJointAngles(self):
         return self.ModBusReader.getJointAngles()
@@ -67,19 +71,17 @@ class Robot:
         """
         DESCRIPTION: Moves the robot to the target
         :param move: movej (find best move) or movel (move in a line)
-        :param current_position: current joint angles (p=False) or tool position (given by p)
         :param target_position: target joint angles (p=False) or tool position (given by p)
         :param wait: wait for the program to reach the required position (blocking or not)
         :param p: defines weather the target is a set of joint angles (p=False) or a tool position (p=True).
         """
         if p:
-            current_position = self.getJointAngles()
+            current_position = self.getToolPosition
         else:
-            current_position = self.getToolPosition()
+            current_position = self.getJointAngles
 
         p = "p" if p is True else ""
         command = "{}({}{}) \n".format(move, p, target_position)
-        print(command)
 
         # Send command
         self.send(str.encode(command))
@@ -87,53 +89,66 @@ class Robot:
         if wait:
             self.waitUntilTargetReached(current_position, target_position)
 
+    def moveToolTo(self, target_position, move, wait=True):
+        self.moveTo(target_position, move, wait=wait, p=True)
+
+    def moveJointsTo(self, target_position, move, wait=True):
+        self.moveTo(target_position, move, wait=wait, p=False)
+
+    @staticmethod
+    def spatialDifference(current_position, target_position):
+        x1, y1, z1, _, _, _ = current_position
+        x2, y2, z2, _, _, _ = target_position
+        return ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) ** 0.5
+
     @staticmethod
     def waitUntilTargetReached(current_position, target_position):
         difference = [1000.0 for _ in target_position]
         totalDifferenceTolerance = 5e-3
         while sum(difference) >= totalDifferenceTolerance:
-            difference = [abs(joint.value - pos) for joint, pos in zip(current_position, target_position)]
+            difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
             time.sleep(0.001)
 
     @staticmethod
     def waitForParallelTask(function, arguments=None):
+        print('Task received')
         thread = threading.Thread(target=function, args=[], daemon=True)
         thread.start()
         thread.join()
+        time.sleep(0.02)  # To let momentum fade away
 
     def initialise(self):
         def initialiseInThread():
-            # If the tool is lower than 350 mm, move the tool straight up:
             currentToolPosition = self.getToolPosition()
-            if currentToolPosition[2] < 350:
-                targetToolPosition = currentToolPosition.copy()
-                targetToolPosition[2] = 350
-                self.moveTo(currentToolPosition, targetToolPosition, "movel", wait=True, p=True)
+            if self.isGripperOpen():
+                if currentToolPosition[2] < 0.350:
+                    targetToolPosition = currentToolPosition.copy()
+                    targetToolPosition[2] = 0.350
+                    self.moveToolTo(targetToolPosition, "movel", wait=True)
+            else:
+                if self.spatialDifference(currentToolPosition, self.ToolPositionBrickDrop) < 0.3:
+                    if currentToolPosition[2] < 0.07:
+                        targetToolPosition = currentToolPosition.copy()
+                        targetToolPosition[2] = 0.07
+                        self.moveToolTo(targetToolPosition, "movel", wait=True)
+                else:
+                    self.moveJointsTo(self.JointAngleInit, "movej", wait=True)
 
-            if not self.isGripperOpen():
-                self.moveTo(currentToolPosition, targetToolPosition, "movel", wait=True, p=True)
-
-            # self.moveJointsToAngle("movej", self.jointAngleBrickReady, wait=True, p=False)
-            # self.moveJointsToAngle("movej", self.jointAngleBrickUp, wait=True, p=False)
-            # self.moveJointsToAngle("movej", self.jointAngleBrickReady, wait=True, p=False)
-            # self.moveJointsToAngle("movej", self.jointAngleInit, wait=True, p=False)
+                self.moveJointsTo(self.JointAngleBrickDrop, "movej", wait=True)
+                self.openGripper()
+            self.moveJointsTo(self.JointAngleInit, "movej", wait=True)
             print("Initialisation Done")
 
-        self.waitForParallelTask(function=initialiseInThread(), arguments=None)
+        self.waitForParallelTask(function=initialiseInThread, arguments=None)
 
     def test(self):
+        print('Testing the gripper')
         self.closeGripper()
-        time.sleep(2)
         self.openGripper()
-        time.sleep(2)
 
 
 if __name__ == '__main__':
-    print('Testing the connectivity of the gripper')
     robot = Robot()
-    # time.sleep(100)
+    robot.initialise()
+    winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
 
-    # for _ in range(5):
-    #     time.sleep(1)
-    #     robot.closeGripper()
-    #     robot.openGripper()
