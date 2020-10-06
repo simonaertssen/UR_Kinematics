@@ -24,6 +24,12 @@ class ThreeDimCanvas(FigureCanvasQTAgg):
         self.axes.set_ylim3d(-0.5, 0.5)
         self.axes.set_zlim3d(0, 1)
 
+        self.axes.set_xlabel('$X$')
+        self.axes.set_ylabel('$Y$')
+        self.axes.set_zlabel('$Z$')
+
+        self.axes.view_init(35, -145)
+
         initPos = np.zeros((6,))
         self.arms   = self.axes.plot3D(initPos, initPos, initPos, 'black')[0]
         self.joints = self.axes.scatter3D(initPos, initPos, initPos, c='r')
@@ -46,7 +52,8 @@ class RobotJointReader(QtCore.QThread):
         while True:
             self.updatePlot(self.readJoints())
             # if callable(self.printMe):
-            #     print([value*180/np.pi for value in self.printMe()])
+                # print(self.printMe())
+                # print([value*180/np.pi for value in self.printMe()])
 
 
 class Viewer(QtWidgets.QMainWindow):
@@ -75,10 +82,11 @@ class RobotRotationEmulator:
     def __init__(self):
         super(RobotRotationEmulator, self).__init__()
         # Initial angles of the robot:
-        self.angles = [0, -np.pi/2, 0, -np.pi/2, 0, 0]
+        # self.angles = [0, -np.pi/2, 0, -np.pi/2, 0, 0]
+        self.angles = [item * np.pi / 180 for item in [61.42, -93.0, 94.65, -91.59, -90.0, 0.0]]
 
     def step(self):
-        self.angles[1] += 0.0005
+        self.angles[0] += 0.0005
 
     def getJointPositions(self):
         self.step()

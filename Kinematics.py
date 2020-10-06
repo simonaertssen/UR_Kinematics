@@ -17,13 +17,14 @@ def ForwardKinematics(joint_angles):
     a, b, c, d, e, f = joint_angles
     # print([np.round(angle * 180/3.14) for angle in joint_angles])
     # The joint parameters a, d and alpha can be found here: https://www.universal-robots.com/articles/ur-articles/parameters-for-calculations-of-kinematics-and-dynamics/
-    base     = T(theta=a, d=0.089159, r=0.134,    alpha=np.pi / 2)
+    base     = T(theta=a, d=0.089159, r=-0.134,    alpha=np.pi / 2)
     shoulder = T(theta=b, d=0,        r=-0.425,   alpha=0)
-    elbow    = T(theta=c, d=0.119,    r=0,        alpha=0)
+    elbow    = T(theta=c, d=-0.119,    r=0,        alpha=0)
     elbowend = T(theta=0, d=0,        r=-0.39225, alpha=0)
-    wrist1   = T(theta=d, d=-0.09475, r=0,        alpha=np.pi / 2)
+    wrist1   = T(theta=d, d=0.09475, r=0,        alpha=np.pi / 2)
     wrist2   = T(theta=e, d=0.09475,  r=0,        alpha=-np.pi / 2)
-    wrist3   = T(theta=f, d=-0.0815,  r=0,        alpha=0)
+    wrist3   = T(theta=f, d=0.0815,  r=0,        alpha=0)
+
     base[0, 3], base[1, 3] = -base[1, 3], base[0, 3]
     shoulder = base.dot(shoulder)
     elbow = shoulder.dot(elbow)
