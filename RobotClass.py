@@ -1,8 +1,9 @@
 import time
 import threading
 import winsound
+from sys import exit
 
-from Kinematics import ForwardKinematics
+from Kinematics import ForwardKinematics, detectCollision
 from Readers import ModBusReader, RobotChiefCommunicationOfficer
 
 
@@ -17,10 +18,11 @@ class Robot:
         self.JointAngleInit = [i * pi180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
         self.JointAngleBrickDrop = [i * pi180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
         self.ToolPositionBrickDrop = [0.08511, -0.51591, 0.04105, 0.00000, 0.00314, 0.00000]
-
+        self.ToolPositionTestCollision = [0.08838, -0.79649, 0.24701, -0.3335, 3.11, 0.0202]
         # self.initialise()
 
     def shutdownSafely(self):
+        self.initialise()
         self.ModBusReader.shutdownSafely()
         self.RobotCCO.shutdownSafely()
 
@@ -37,7 +39,8 @@ class Robot:
         return self.ModBusReader.getJointAngles()
 
     def getJointPositions(self):
-        return ForwardKinematics(self.getJointAngles())
+        X, Y, Z, _, _, _ = self.getToolPosition()
+        return ForwardKinematics(self.getJointAngles(), (X, Y, Z))
 
     def isGripperOpen(self):
         tool_bit, _ = self.getToolBitInfo()
@@ -66,6 +69,9 @@ class Robot:
             tool_bit, settled = self.getToolBitInfo()
             if tool_bit is bit_value and settled:
                 break
+
+    def detectCollision(self):
+        detectCollision(self.getJointPositions())
 
     def moveTo(self, target_position, move, wait=True, p=True):
         """
@@ -101,12 +107,13 @@ class Robot:
         x2, y2, z2, _, _, _ = target_position
         return ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) ** 0.5
 
-    @staticmethod
-    def waitUntilTargetReached(current_position, target_position):
+    def waitUntilTargetReached(self, current_position, target_position):
         difference = [1000.0 for _ in target_position]
         totalDifferenceTolerance = 5e-3
         while sum(difference) >= totalDifferenceTolerance:
             difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
+            if self.detectCollision():
+                exit('Bumping in to stuff!')
             time.sleep(0.001)
 
     @staticmethod
@@ -119,11 +126,13 @@ class Robot:
 
     def initialise(self):
         def initialiseInThread():
+            currentJointPosition = self.getJointAngles()
+            distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit)])
             currentToolPosition = self.getToolPosition()
             if self.isGripperOpen():
-                if currentToolPosition[2] < 0.350:
+                if currentToolPosition[2] < 0.300:
                     targetToolPosition = currentToolPosition.copy()
-                    targetToolPosition[2] = 0.350
+                    targetToolPosition[2] = 0.300
                     self.moveToolTo(targetToolPosition, "movel", wait=True)
             else:
                 if self.spatialDifference(currentToolPosition, self.ToolPositionBrickDrop) < 0.3:
@@ -132,11 +141,13 @@ class Robot:
                         targetToolPosition[2] = 0.07
                         self.moveToolTo(targetToolPosition, "movel", wait=True)
                 else:
-                    self.moveJointsTo(self.JointAngleInit, "movej", wait=True)
+                    if distanceFromAngleInit > 0.05:
+                        self.moveJointsTo(self.JointAngleInit, "movej", wait=True)
 
                 self.moveJointsTo(self.JointAngleBrickDrop, "movej", wait=True)
                 self.openGripper()
-            self.moveJointsTo(self.JointAngleInit, "movej", wait=True)
+            if distanceFromAngleInit > 0.05:
+                self.moveJointsTo(self.JointAngleInit, "movej", wait=True)
             print("Initialisation Done")
 
         self.waitForParallelTask(function=initialiseInThread, arguments=None)
@@ -149,6 +160,8 @@ class Robot:
 
 if __name__ == '__main__':
     robot = Robot()
-    robot.initialise()
+    winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
+    robot.moveToolTo(robot.ToolPositionTestCollision, "movel", wait=True)
+    time.sleep(200)
     winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
 
