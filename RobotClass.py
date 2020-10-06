@@ -1,7 +1,7 @@
 import time
 
-from Readers import ModBusReader, RobotChiefCommunicationOfficer
 from Kinematics import ForwardKinematics
+from Readers import ModBusReader, RobotChiefCommunicationOfficer
 
 
 class Robot:
@@ -18,13 +18,13 @@ class Robot:
         self.RobotCCO.send(message)
 
     def getToolBitInfo(self):
+        return self.ModBusReader.getToolBitInfo()
+
+    def getToolInfo(self):
         return self.ModBusReader.getToolInfo()
 
-    def getToolPositionInfo(self):
-        return self.RobotCCO.getToolInfo()
-
     def getJointAngles(self):
-        return self.RobotCCO.getJointInfo()
+        return self.ModBusReader.getJointAngles()
 
     def getJointPositions(self):
         return ForwardKinematics(self.getJointAngles())
@@ -51,7 +51,9 @@ class Robot:
 if __name__ == '__main__':
     print('Testing the connectivity of the gripper')
     robot = Robot()
-    for _ in range(5):
-        time.sleep(2)
-        robot.closeGripper()
-        robot.openGripper()
+    # time.sleep(100)
+
+    # for _ in range(5):
+    #     time.sleep(1)
+    #     robot.closeGripper()
+    #     robot.openGripper()
