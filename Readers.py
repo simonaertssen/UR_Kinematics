@@ -9,7 +9,7 @@ from queue import Queue
 class ParameterInfo:
     Instances = list()
 
-    def __init__(self, decimal, address, note, method=None, numerical_value=420):
+    def __init__(self, decimal, address, note, method=None, numerical_value=-1):
         self.Address = address
         self.Note = note
         self.Method = method
@@ -73,19 +73,19 @@ class ModBusReader(Reader):
         self.ToolBit       = ParameterInfo(1,   b'\x00\x01', "Vector of output bits. Only interested in number eight.", self.extractToolBit)
         self.ToolCurrent   = ParameterInfo(770, b'\x03\x02', "Current that is applied to the gripper.", self.extractToolCurrent)
         # Set the robot joint angles as attributes that are continuously updated:
-        self.BaseAngle     = ParameterInfo(270, b'\x01\x0E', "Position (angle) of the base joint in milli rad")
-        self.ShoulderAngle = ParameterInfo(271, b'\x01\x0F', "Position (angle) of the shoulder joint in milli rad")
-        self.ElbowAngle    = ParameterInfo(272, b'\x01\x10', "Position (angle) of the elbow joint in milli rad")
-        self.Wrist1Angle   = ParameterInfo(273, b'\x01\x11', "Position (angle) of the wrist1 joint in milli rad")
-        self.Wrist2Angle   = ParameterInfo(274, b'\x01\x12', "Position (angle) of the wrist2 joint in milli rad")
-        self.Wrist3Angle   = ParameterInfo(275, b'\x01\x13', "Position (angle) of the wrist3 joint in milli rad")
+        self.BaseAngle     = ParameterInfo(270, b'\x01\x0E', "Position (angle) of the base joint in milli rad", self.extractAngle)
+        self.ShoulderAngle = ParameterInfo(271, b'\x01\x0F', "Position (angle) of the shoulder joint in milli rad", self.extractAngle)
+        self.ElbowAngle    = ParameterInfo(272, b'\x01\x10', "Position (angle) of the elbow joint in milli rad", self.extractAngle)
+        self.Wrist1Angle   = ParameterInfo(273, b'\x01\x11', "Position (angle) of the wrist1 joint in milli rad", self.extractAngle)
+        self.Wrist2Angle   = ParameterInfo(274, b'\x01\x12', "Position (angle) of the wrist2 joint in milli rad", self.extractAngle)
+        self.Wrist3Angle   = ParameterInfo(275, b'\x01\x13', "Position (angle) of the wrist3 joint in milli rad", self.extractAngle)
         # Positions only seem to start from the 588th byte
-        self.toolX = ParameterInfo(400, b'\x01\x91', "Cartesian Tool Coordinate X in tenth of mm from the base frame")
-        self.toolY = ParameterInfo(401, b'\x01\x92', "Cartesian Tool Coordinate Y in tenth of mm from the base frame")
-        self.toolZ = ParameterInfo(402, b'\x01\x93', "Cartesian Tool Coordinate Z in tenth of mm from the base frame")
-        self.toolRX = ParameterInfo(403, b'\x01\x94', "Cartesian Tool Orientation RX in tenth of mm from the base frame")
-        self.toolRY = ParameterInfo(404, b'\x01\x95', "Cartesian Tool Orientation RY in tenth of mm from the base frame")
-        self.toolRZ = ParameterInfo(405, b'\x01\x96', "Cartesian Tool Orientation RZ in tenth of mm from the base frame")
+        self.toolX         = ParameterInfo(400, b'\x01\x90', "Cartesian Tool Coordinate X in tenth of mm from the base frame", self.extractToolInfo)
+        self.toolY         = ParameterInfo(401, b'\x01\x91', "Cartesian Tool Coordinate Y in tenth of mm from the base frame", self.extractToolInfo)
+        self.toolZ         = ParameterInfo(402, b'\x01\x92', "Cartesian Tool Coordinate Z in tenth of mm from the base frame", self.extractToolInfo)
+        self.toolRX        = ParameterInfo(403, b'\x01\x93', "Cartesian Tool Orientation RX in tenth of mm from the base frame", self.extractAngle)
+        self.toolRY        = ParameterInfo(404, b'\x01\x94', "Cartesian Tool Orientation RY in tenth of mm from the base frame", self.extractAngle)
+        self.toolRZ        = ParameterInfo(405, b'\x01\x95', "Cartesian Tool Orientation RZ in tenth of mm from the base frame", self.extractAngle)
 
         self.Communicating = True
         self.CommunicationThread = threading.Thread(target=self.readContinuously, args=(), daemon=True)
@@ -107,12 +107,12 @@ class ModBusReader(Reader):
                 queue.put(value)
 
     def extractToolBit(self, data):
-        allBits = [int(x) for x in bin(int(data))[2:]][::-1]
+        allBits = [int(x) for x in bin(int(data))[2:]][:9:-1]
         gripperBit = 8
         ToolBitValue = allBits[gripperBit]
         if self.ToolBit.Value != ToolBitValue:
             self.ToolBitChanged = True
-            self.ToolBit.Value = ToolBitValue
+        return ToolBitValue
 
     def extractToolCurrent(self, data):
         StabilisedCurrent = False
@@ -134,6 +134,21 @@ class ModBusReader(Reader):
         # Encode output as: as long as ToolBitChanged == True we haven't settled the current yet!
         # So as long as the output is False we haven't settled.
         self.storeSafelyInQueue((self.ToolBit.Value, not self.ToolBitChanged), self.ToolBitQueue)
+        return not self.ToolBitChanged
+
+    @staticmethod
+    def extractAngle(data):
+        value = int(data[-4:], 16)
+        if value > 6284:  # If integer value > 6284 we need to take the complement
+            value = -(65535 + 1 - value)
+        return value * 1.0e-3
+
+    @staticmethod
+    def extractToolInfo(data):
+        value = int(data[-4:], 16)
+        if value > 32768:  # If integer value > 32767 we need to take the complement
+            value = -(65535 + 1 - value)
+        return value * 0.1
 
     def read(self):
         parameters = list(ParameterInfo.getInstances())
@@ -143,15 +158,10 @@ class ModBusReader(Reader):
             if len(data) == 0:
                 continue
             if callable(parameter.Method):  # Custom methods
-                parameter.Method(data)
-            else:
-                value = int(data[-4:], 16)
-                if value > 6284:  # If integer value > 6284 we need to take the complement
-                    value = -(65535 + 1 - value)
-                parameter.Value = value * 1.0e-3
+                parameter.Value = parameter.Method(data)
         parameterValues = [parameter.Value for parameter in parameters]
         self.storeSafelyInQueue(parameterValues[2:8], self.JointAngleQueue)  # All the robot joint angles
-        self.storeSafelyInQueue(parameterValues[8:14], self.ToolInfoQueue)   # All the tool info
+        self.storeSafelyInQueue(parameterValues[8:], self.ToolInfoQueue)   # All the tool info
 
     def getToolBitInfo(self):
         return self.ToolBitQueue.get()
