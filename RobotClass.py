@@ -19,8 +19,9 @@ class Robot:
         self.JointAngleBrickDrop = [i * pi180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
         self.ToolPositionBrickDrop = [0.08511, -0.51591, 0.04105, 0.00000, 0.00314, 0.00000]
         self.ToolPositionCollisionStart = [0.08838, -0.46649, 0.24701, -0.3335, 3.11, 0.0202]
-        self.ToolPositionTestCollision = [0.08838, -0.79649, 0.24701, -0.3335, 3.11, 0.0202]
-        # self.initialise()
+        self.ToolPositionTestCollision = [0.08838, -0.76649, 0.24701, -0.3335, 3.11, 0.0202]
+
+        self.initialise()
 
     def shutdownSafely(self):
         self.initialise()
@@ -100,7 +101,7 @@ class Robot:
     def detectCollision(self):
         return detectCollision(self.getJointPositions())
 
-    def moveTo(self, target_position, move, wait=True, p=True, check_collisions=True):
+    def moveTo(self, target_position, move, wait=True, check_collisions=True, p=True):
         print('Start moving')
         """
         DESCRIPTION: Moves the robot to the target
@@ -117,22 +118,24 @@ class Robot:
 
         command = str.encode("{}({}{}) \n".format(move, "p" if p is True else "", target_position))
         self.send(command)
+        print(command)
 
         start_position = current_position()
         if wait:
             try:
                 self.waitUntilTargetReached(current_position, target_position, check_collisions)
             except RuntimeError as e:
-                self.set_IO_PORT(1, True)
+                self.set_IO_PORT(1, False)
+                # self.send(b'stopl(5) + \n')
                 time.sleep(0.1)
                 self.moveTo(start_position, "movel", wait=True, p=p, check_collisions=False)
             time.sleep(0.075)  # To let momentum fade away
 
     def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
-        self.moveTo(target_position, move, wait=wait, p=True, check_collisions=check_collisions)
+        self.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=True)
 
     def moveJointsTo(self, target_position, move, wait=True, check_collisions=True):
-        self.moveTo(target_position, move, wait=wait, p=False, check_collisions=check_collisions)
+        self.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=False)
 
     @staticmethod
     def spatialDifference(current_position, target_position):
@@ -145,9 +148,9 @@ class Robot:
         totalDifferenceTolerance = 5e-3
         while sum(difference) >= totalDifferenceTolerance:
             difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
-            if check_collisions and self.detectCollision():
-                print('Bumping in to stuff!')
-                raise RuntimeError('Bumping in to stuff!')
+            # if check_collisions and self.detectCollision():
+            #     print('Bumping in to stuff!')
+            #     raise RuntimeError('Bumping in to stuff!')
 
     @staticmethod
     def waitForParallelTask(function, arguments=None):

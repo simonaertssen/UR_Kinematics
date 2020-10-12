@@ -1,5 +1,6 @@
 import numpy as np
 import time
+from numba import jit
 
 
 def T(theta, d, r, alpha):
@@ -46,21 +47,19 @@ def ForwardKinematics(joint_angles, tool_position=None):
 
 def detectCollision(positions):
     X, Y, Z = positions
-    e = 0.1
+    e = 0.05
 
     # Are we inside of the box?
-    print(-0.713 + e, Y)
-    print((-0.713 + e < Y))
-    if not (((-0.832 + e < X) & (X < 0.490 - e)).all() and ((-0.713 + e < Y) & (Y < 0.265 - e)).all() and (-0.0021 - e < Z).all()):
-        # print('Outside of  the box')
+    # print(-0.713 + e, Y)
+    # print((-0.713 + e < Y))
+    if not (((-0.832 + e < X) & (X < 0.490 - e)).all() and ((-0.713 + e < Y) & (Y < 0.265 - e)).all() and (-0.0021 + e < Z).all()):
+        print('Outside')
         return True
     # Are we bumping into the camera and the light?
-    # if ((-0.568 < X) & (X < -0.364)).any() and ((-0.266 < Y) & (Y < 0.031)).any() and (0.765 < Z).any():
-    #     print('Bumping into the screen')
+    # if ((-0.568 + e < X) & (X < -0.364 - e)).any() and ((-0.266 + e < Y) & (Y < 0.031 - e)).any() and (0.765 + e < Z).any():
     #     return True
-    #     # Are we bumping into the camera and the light?
-    # if (X < -0.182).any() and (Y < -0.520).any() and (Z < 0.375).any():
-    #     print('Bumping into the screen')
+    # # Are we bumping into the box?
+    # if (X < -0.182 + e).any() and (Y < -0.520 + e).any() and (Z < 0.375 + e).any():
     #     return True
     return False
 
