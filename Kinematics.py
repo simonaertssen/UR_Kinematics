@@ -1,9 +1,7 @@
 import numpy as np
 import time
-from numba import jit
 
 
-@jit(nopython=True)
 def T(theta, d, r, alpha):
     cos_t = np.cos(theta)
     sin_t = np.sin(theta)
@@ -13,11 +11,10 @@ def T(theta, d, r, alpha):
     result[0, 0], result[0, 1], result[0, 2], result[0, 3] = cos_t, -sin_t*cos_a,  sin_t*sin_a, r*cos_t
     result[1, 0], result[1, 1], result[1, 2], result[1, 3] = sin_t,  cos_t*cos_a, -cos_t*sin_a, r*sin_t
     result[2, 1], result[2, 2], result[2, 3] = sin_a, cos_a, d
-    result[4, 4] = 1
+    result[3, 3] = 1
     return result
 
 
-@jit(nopython=True)
 def ForwardKinematics(joint_angles, tool_position=None):
     a, b, c, d, e, f = np.float64(joint_angles)
     if tool_position is not None:
@@ -49,29 +46,32 @@ def ForwardKinematics(joint_angles, tool_position=None):
 
 def detectCollision(positions):
     X, Y, Z = positions
+    e = 0.1
 
     # Are we inside of the box?
-    if (((-0.832 < X) & (X < 0.490)).any() and ((-0.713 < Y) & (Y < 0.265)).any() and (-0.021 < Z).any()):
+    print(-0.713 + e, Y)
+    print((-0.713 + e < Y))
+    if not (((-0.832 + e < X) & (X < 0.490 - e)).all() and ((-0.713 + e < Y) & (Y < 0.265 - e)).all() and (-0.0021 - e < Z).all()):
+        # print('Outside of  the box')
         return True
     # Are we bumping into the camera and the light?
-    if ((-0.568 < X) & (X < -0.364)).any() and ((-0.266 < Y) & (Y < 0.031)).any() and (0.765 < Z).any():
-        return True
-        # Are we bumping into the camera and the light?
-    if (X < -0.182).any() and (Y < -0.520).any() and (Z < 0.375).any():
-        print('Bumping into the screen')
-        return True
+    # if ((-0.568 < X) & (X < -0.364)).any() and ((-0.266 < Y) & (Y < 0.031)).any() and (0.765 < Z).any():
+    #     print('Bumping into the screen')
+    #     return True
+    #     # Are we bumping into the camera and the light?
+    # if (X < -0.182).any() and (Y < -0.520).any() and (Z < 0.375).any():
+    #     print('Bumping into the screen')
+    #     return True
     return False
 
 
 def SpeedOfCurrentKinematics():
     start = time.time()
-    ForwardKinematics.inspect_types()
     n = 100000
     for _ in range(n):
         toolTip = None
         pos = ForwardKinematics((0.0, -np.pi/2, 0.0, -np.pi/2, 0.0, 0.0))
     interval = time.time() - start
-
     print(n/interval, "iterations per second")
 
 
