@@ -30,6 +30,9 @@ class Robot:
     def send(self, message):
         self.RobotCCO.send(message)
 
+    def receive(self):
+        return self.RobotCCO.recv(self.RobotCCO.BufferLength)
+
     def getToolBitInfo(self):
         return self.ModBusReader.getToolBitInfo()
 
@@ -114,40 +117,22 @@ class Robot:
 
         command = str.encode("{}({}{}) \n".format(move, "p" if p is True else "", target_position))
         self.send(command)
-        print(command)
 
         start_position = current_position()
         if wait:
             try:
-                # print('Start:', start_position)
-                # print('Current:', current_position)
-                print('Target:', target_position)
-                # print('Check:', check_collisions)
                 self.waitUntilTargetReached(current_position, target_position, check_collisions)
             except RuntimeError as e:
-                self.set_IO_PORT(1, False)
+                self.set_IO_PORT(1, True)
                 time.sleep(0.1)
-                command = str.encode("{}({}{}) \n".format(move, "p" if p is True else "", start_position))
-                print('gpoinhbvsvuarv')
-                print(command)
-                self.send(command)
-                # self.send(b'movel(p[0.08838, -0.46649, 0.24701, -0.3335, 3.11, 0.0202]) \n')
-                print(b'movel(p[0.08838, -0.46649, 0.24701, -0.3335, 3.11, 0.0202]) \n')
-                time.sleep(1)
-                # print('Setting port 1')
-                # self.set_IO_PORT(1, False)
-                # time.sleep(3)
-                # print('Set port 1')
-                # print('Moving back')
-                # self.moveTo(start_position, "movel", wait=True, p=p, check_collisions=False)
-                print('Moved back')
+                self.moveTo(start_position, "movel", wait=True, p=p, check_collisions=False)
             time.sleep(0.075)  # To let momentum fade away
 
-    def moveToolTo(self, target_position, move, wait=True):
-        self.moveTo(target_position, move, wait=wait, p=True)
+    def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
+        self.moveTo(target_position, move, wait=wait, p=True, check_collisions=check_collisions)
 
-    def moveJointsTo(self, target_position, move, wait=True):
-        self.moveTo(target_position, move, wait=wait, p=False)
+    def moveJointsTo(self, target_position, move, wait=True, check_collisions=True):
+        self.moveTo(target_position, move, wait=wait, p=False, check_collisions=check_collisions)
 
     @staticmethod
     def spatialDifference(current_position, target_position):
@@ -156,7 +141,6 @@ class Robot:
         return ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) ** 0.5
 
     def waitUntilTargetReached(self, current_position, target_position, check_collisions):
-        start_position = current_position()
         difference = [1000.0 for _ in target_position]
         totalDifferenceTolerance = 5e-3
         while sum(difference) >= totalDifferenceTolerance:
@@ -211,7 +195,7 @@ class Robot:
 
 if __name__ == '__main__':
     robot = Robot()
-    robot.moveToolTo(robot.ToolPositionCollisionStart, "movel", wait=True)
+    robot.moveToolTo(robot.ToolPositionCollisionStart, "movel", wait=True, check_collisions=False)
     robot.moveToolTo(robot.ToolPositionTestCollision, "movel", wait=True)
     time.sleep(1)
     robot.moveToolTo(robot.ToolPositionCollisionStart, "movel", wait=True)
