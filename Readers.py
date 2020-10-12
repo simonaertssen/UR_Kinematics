@@ -159,7 +159,7 @@ class ModBusReader(Reader):
                 continue
             if callable(parameter.Method):  # Custom methods
                 parameter.Value = parameter.Method(data)
-        parameterValues = [parameter.Value for parameter in parameters]
+        parameterValues = tuple([parameter.Value for parameter in parameters])
         self.storeSafelyInQueue(parameterValues[2:8], self.JointAngleQueue)  # All the robot joint angles
         self.storeSafelyInQueue(parameterValues[8:], self.ToolPositionQueue)   # All the tool info
 
