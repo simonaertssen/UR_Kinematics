@@ -61,10 +61,10 @@ class Robot:
         byte_string = str.encode('set_digital_out({},{}) \n'.format(port_number, on))
         print(byte_string)
         self.send(byte_string)
-        self.sleep(0.1)
 
     def turnWhiteLampON(self):
         self.set_IO_PORT(0, True)
+        time.sleep(2)
 
     def turnWhiteLampOFF(self):
         self.set_IO_PORT(0, False)
@@ -184,10 +184,16 @@ class Robot:
         self.closeGripper()
         self.openGripper()
 
+    @staticmethod
+    def beep():
+        winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
+
 
 if __name__ == '__main__':
     robot = Robot()
-    robot.set_IO_PORT(0, False)
+    robot.turnWhiteLampON()
+    robot.test()
+    robot.turnWhiteLampOFF()
     # winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
     # robot.moveToolTo(robot.ToolPositionTestCollision, "movel", wait=True)
     # time.sleep(200)
