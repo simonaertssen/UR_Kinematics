@@ -47,9 +47,10 @@ class RobotJointReader(QtCore.QThread):
         self.readJoints = read_joints
         self.updatePlot = update_plot
         self.printMe = print_me
+        self.running = True
 
     def run(self):
-        while True:
+        while self.running:
             self.updatePlot(self.readJoints())
             # if callable(self.printMe):
                 # print(self.printMe())
@@ -73,6 +74,8 @@ class Viewer(QtWidgets.QMainWindow):
         self.show()
 
     def closeEvent(self, event):
+        self.jointReader.running = False
+        self.jointReader.join()
         self.shutdownRobot()
         self.close()
 
