@@ -62,7 +62,7 @@ def detectCollision(positions):
         return True
     return False
 
-# 'f8(f8, f8, f8, f8)',
+
 def SpeedOfCurrentKinematics():
     start = time.time()
     ForwardKinematics.inspect_types()
