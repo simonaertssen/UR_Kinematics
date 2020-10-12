@@ -42,6 +42,33 @@ class Robot:
         X, Y, Z, _, _, _ = self.getToolPosition()
         return ForwardKinematics(self.getJointAngles(), (X, Y, Z))
 
+    def set_IO_PORT(self, port_number, on):
+        """
+        DESCRIPTION: Set robot I/O port described with by 'port_number' and the status of the port described by 'on'.
+        :param port_number: integer
+        :param on: boolean
+        :return: None
+        """
+        if not (0 <= port_number <= 8) or not isinstance(port_number, int):
+            print("set_IO_PORT: port number value error")
+            return
+        if not isinstance(on, bool):
+            print("set_IO_PORT: boolean value error")
+            return
+
+        # byte_string = b'set_digital_out(' + str(port_number).encode('utf-8') + b', ' + str(on).encode('utf-8') + b')' + b"\n"
+        # s.send(byte_string)
+        byte_string = str.encode('set_digital_out({},{}) \n'.format(port_number, on))
+        print(byte_string)
+        self.send(byte_string)
+        self.sleep(0.1)
+
+    def turnWhiteLampON(self):
+        self.set_IO_PORT(0, True)
+
+    def turnWhiteLampOFF(self):
+        self.set_IO_PORT(0, False)
+
     def isGripperOpen(self):
         tool_bit, _ = self.getToolBitInfo()
         return tool_bit == 0
@@ -87,10 +114,10 @@ class Robot:
             current_position = self.getJointAngles
 
         p = "p" if p is True else ""
-        command = "{}({}{}) \n".format(move, p, target_position)
+        command = str.encode("{}({}{}) \n".format(move, p, target_position))
 
         # Send command
-        self.send(str.encode(command))
+        self.send(command)
         # Wait for the robot arm to reach the position
         if wait:
             self.waitUntilTargetReached(current_position, target_position)
@@ -160,8 +187,9 @@ class Robot:
 
 if __name__ == '__main__':
     robot = Robot()
-    winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
-    robot.moveToolTo(robot.ToolPositionTestCollision, "movel", wait=True)
-    time.sleep(200)
-    winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
+    robot.set_IO_PORT(0, False)
+    # winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
+    # robot.moveToolTo(robot.ToolPositionTestCollision, "movel", wait=True)
+    # time.sleep(200)
+    # winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
 
