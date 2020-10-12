@@ -18,6 +18,7 @@ class Robot:
         self.JointAngleInit = [i * pi180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
         self.JointAngleBrickDrop = [i * pi180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
         self.ToolPositionBrickDrop = [0.08511, -0.51591, 0.04105, 0.00000, 0.00314, 0.00000]
+        self.ToolPositionCollisionStart = [0.08838, -0.46649, 0.24701, -0.3335, 3.11, 0.0202]
         self.ToolPositionTestCollision = [0.08838, -0.79649, 0.24701, -0.3335, 3.11, 0.0202]
         # self.initialise()
 
@@ -55,12 +56,8 @@ class Robot:
         if not isinstance(on, bool):
             print("set_IO_PORT: boolean value error")
             return
-
-        # byte_string = b'set_digital_out(' + str(port_number).encode('utf-8') + b', ' + str(on).encode('utf-8') + b')' + b"\n"
-        # s.send(byte_string)
-        byte_string = str.encode('set_digital_out({},{}) \n'.format(port_number, on))
-        print(byte_string)
-        self.send(byte_string)
+        command = str.encode('set_digital_out({},{}) \n'.format(port_number, on))
+        self.send(command)
 
     def turnWhiteLampON(self):
         self.set_IO_PORT(0, True)
@@ -115,10 +112,7 @@ class Robot:
 
         p = "p" if p is True else ""
         command = str.encode("{}({}{}) \n".format(move, p, target_position))
-
-        # Send command
         self.send(command)
-        # Wait for the robot arm to reach the position
         if wait:
             self.waitUntilTargetReached(current_position, target_position)
 
@@ -141,7 +135,6 @@ class Robot:
             difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
             if self.detectCollision():
                 exit('Bumping in to stuff!')
-            time.sleep(0.001)
 
     @staticmethod
     def waitForParallelTask(function, arguments=None):
@@ -149,7 +142,7 @@ class Robot:
         thread = threading.Thread(target=function, args=[], daemon=True)
         thread.start()
         thread.join()
-        time.sleep(0.02)  # To let momentum fade away
+        time.sleep(0.05)  # To let momentum fade away
 
     def initialise(self):
         def initialiseInThread():
@@ -176,7 +169,6 @@ class Robot:
             if distanceFromAngleInit > 0.05:
                 self.moveJointsTo(self.JointAngleInit, "movej", wait=True)
             print("Initialisation Done")
-
         self.waitForParallelTask(function=initialiseInThread, arguments=None)
 
     def test(self):
@@ -191,10 +183,8 @@ class Robot:
 
 if __name__ == '__main__':
     robot = Robot()
-    robot.turnWhiteLampON()
-    robot.test()
-    robot.turnWhiteLampOFF()
-    # winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
+    robot.moveToolTo
+    robot.moveToolTo(robot.ToolPositionCollisionStart, "movel", wait=True)
     # robot.moveToolTo(robot.ToolPositionTestCollision, "movel", wait=True)
     # time.sleep(200)
     # winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
