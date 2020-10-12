@@ -41,7 +41,7 @@ class Robot:
 
     def getJointPositions(self):
         X, Y, Z, _, _, _ = self.getToolPosition()
-        return ForwardKinematics(self.getJointAngles(), (X, Y, Z))
+        return ForwardKinematics(tuple(self.getJointAngles()), (X, Y, Z))
 
     def set_IO_PORT(self, port_number, on):
         """
@@ -95,26 +95,53 @@ class Robot:
                 break
 
     def detectCollision(self):
-        detectCollision(self.getJointPositions())
+        return detectCollision(self.getJointPositions())
 
-    def moveTo(self, target_position, move, wait=True, p=True):
+    def moveTo(self, target_position, move, wait=True, p=True, check_collisions=True):
+        print('Start moving')
         """
         DESCRIPTION: Moves the robot to the target
         :param move: movej (find best move) or movel (move in a line)
         :param target_position: target joint angles (p=False) or tool position (given by p)
         :param wait: wait for the program to reach the required position (blocking or not)
         :param p: defines weather the target is a set of joint angles (p=False) or a tool position (p=True).
+        :param check_collisions: check whether a collision occurs during the move
         """
         if p:
             current_position = self.getToolPosition
         else:
             current_position = self.getJointAngles
 
-        p = "p" if p is True else ""
-        command = str.encode("{}({}{}) \n".format(move, p, target_position))
+        command = str.encode("{}({}{}) \n".format(move, "p" if p is True else "", target_position))
         self.send(command)
+        print(command)
+
+        start_position = current_position()
         if wait:
-            self.waitUntilTargetReached(current_position, target_position)
+            try:
+                # print('Start:', start_position)
+                # print('Current:', current_position)
+                print('Target:', target_position)
+                # print('Check:', check_collisions)
+                self.waitUntilTargetReached(current_position, target_position, check_collisions)
+            except RuntimeError as e:
+                self.set_IO_PORT(1, False)
+                time.sleep(0.1)
+                command = str.encode("{}({}{}) \n".format(move, "p" if p is True else "", start_position))
+                print('gpoinhbvsvuarv')
+                print(command)
+                self.send(command)
+                # self.send(b'movel(p[0.08838, -0.46649, 0.24701, -0.3335, 3.11, 0.0202]) \n')
+                print(b'movel(p[0.08838, -0.46649, 0.24701, -0.3335, 3.11, 0.0202]) \n')
+                time.sleep(1)
+                # print('Setting port 1')
+                # self.set_IO_PORT(1, False)
+                # time.sleep(3)
+                # print('Set port 1')
+                # print('Moving back')
+                # self.moveTo(start_position, "movel", wait=True, p=p, check_collisions=False)
+                print('Moved back')
+            time.sleep(0.075)  # To let momentum fade away
 
     def moveToolTo(self, target_position, move, wait=True):
         self.moveTo(target_position, move, wait=wait, p=True)
@@ -128,13 +155,15 @@ class Robot:
         x2, y2, z2, _, _, _ = target_position
         return ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) ** 0.5
 
-    def waitUntilTargetReached(self, current_position, target_position):
+    def waitUntilTargetReached(self, current_position, target_position, check_collisions):
+        start_position = current_position()
         difference = [1000.0 for _ in target_position]
         totalDifferenceTolerance = 5e-3
         while sum(difference) >= totalDifferenceTolerance:
             difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
-            if self.detectCollision():
-                exit('Bumping in to stuff!')
+            if check_collisions and self.detectCollision():
+                print('Bumping in to stuff!')
+                raise RuntimeError('Bumping in to stuff!')
 
     @staticmethod
     def waitForParallelTask(function, arguments=None):
@@ -142,7 +171,6 @@ class Robot:
         thread = threading.Thread(target=function, args=[], daemon=True)
         thread.start()
         thread.join()
-        time.sleep(0.05)  # To let momentum fade away
 
     def initialise(self):
         def initialiseInThread():
@@ -183,9 +211,11 @@ class Robot:
 
 if __name__ == '__main__':
     robot = Robot()
-    robot.moveToolTo
     robot.moveToolTo(robot.ToolPositionCollisionStart, "movel", wait=True)
-    # robot.moveToolTo(robot.ToolPositionTestCollision, "movel", wait=True)
+    robot.moveToolTo(robot.ToolPositionTestCollision, "movel", wait=True)
+    time.sleep(1)
+    robot.moveToolTo(robot.ToolPositionCollisionStart, "movel", wait=True)
+    robot.beep()
     # time.sleep(200)
     # winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
 
