@@ -4,6 +4,7 @@
 import os
 import cv2
 import sys
+import time
 
 import numpy as np
 from win32api import GetSystemMetrics
@@ -16,40 +17,32 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QSizePo
 
 
 class MainObjectWidget(QWidget):
-    def __init__(self, screen_width, screen_height, parent=None):
+    def __init__(self, screen_width, screen_height, parent):
         super(MainObjectWidget, self).__init__(parent)
+        self.showFullScreen()
         self.rootDir = os.getcwd()
         self.libDir = os.path.join(self.rootDir, "Library")
 
         self.screen_width = screen_width
         self.screen_height = screen_height
 
+        self.save_images = False
+        self.save_images_name = None
+        self.show_images = False
+        self.optimize_view = False
+        self.image_files = []
+
+        # Select objects panel
+        program_label = QLabel("Picking Program")
+        program_label.setAlignment(Qt.AlignCenter)
         label_select_type = QLabel("Select type:")
         directories = sorted(os.listdir(self.libDir))
         self.select_objects = QComboBox(self)
         self.select_objects.addItems(directories)
         self.select_objects.activated.connect(self.registerSelectedObject)
         self.registerSelectedObject(0)
-
-        self.save_images = False
-        self.show_images = False
-        self.manual_pick = True
-        self.optimize_view = False
-        self.image_files = []
-
-        # Layout: setting the style sheetzz
-        text_size1 = str(int(self.screen_width * 0.01 * 1.2)) + 'px'
-        text_size2 = str(int(self.screen_width * 0.0125 * 1.2)) + 'px'
-        text_size3 = str(int(self.screen_width * 0.0075 * 1.2)) + 'px'
-
-        # Select objects panel
-        program_label = QLabel("Picking Program")
-        program_label.setAlignment(Qt.AlignCenter)
-        self.button_type = QPushButton("&Open library", self)
-        self.button_type.clicked.connect(self.openLibrary)
-
-        program_label.setStyleSheet('font-size: ' + text_size2 + '; font-weight: bold')
-        self.button_type.setStyleSheet('QPushButton{font-size: ' + text_size1 + '}')
+        self.button_open_library = QPushButton("&Open library", self)
+        self.button_open_library.clicked.connect(self.openLibraryButtonClicked)
 
         # Robot control panel
         robot_panel_label = QLabel("\nRobot control panel")
@@ -63,50 +56,77 @@ class MainObjectWidget(QWidget):
         self.button_grip_close = QPushButton("&Close gripper", self)
         self.button_grip_close.clicked.connect(self.closeGripperButtonClicked)
         self.button_start_robot = QPushButton("&Start Robot", self)
-        self.button_start_robot.setStyleSheet("background-color: green")
         self.button_start_robot.clicked.connect(self.startRobotButtonClicked)
         self.button_stop_robot = QPushButton("&Stop Robot", self)
-        self.button_stop_robot.setStyleSheet("background-color: red")
         self.button_stop_robot.clicked.connect(self.stopRobotButtonClicked)
+        robot_status_label = QLabel("Robot status: ")
+        self.robot_status_text = QLabel()
 
         # Save and view panel
         label_view_options = QLabel("\nSave & View options")
         label_view_options.setAlignment(Qt.AlignCenter)
-
-        self.button_exit = QPushButton("&Exit program", self)
-        # self.button_exit.clicked.connect(self.exit)
-
-
-        self.button_show = QPushButton("&Show views", self)
-        # self.button_show.clicked.connect(self.show_view)
-        label_data_type = QLabel("Save image:")
-        self.data_type = QComboBox(self)
-
-        self.data_type.addItems(("Don't save", "Unknown", "Error", "Correct", "Manual select"))
-
+        self.button_show_views = QPushButton("&Show views", self)
+        self.button_show_views.clicked.connect(self.showViewButtonClicked)
         self.button_optimize_view = QPushButton("&Optimize view", self)
-        # self.button_optimize_view.clicked.connect(self.opt_view)
-
-        self.Robot_status1 = QLabel("Robot status: ")
-        self.Robot_status2 = QLabel("Not running")
-        self.Robot_status2.setStyleSheet("color: red")
-        self.Camera_status1 = QLabel("Camera status: ")
-        self.Camera_status2 = QLabel("Running")
-        self.Camera_status2.setStyleSheet("color: red")
-        self.Objects_status1 = QLabel("Type " + self.select_objects.currentText() + " objects found:")
-        self.Objects_status2 = QLabel("0")
-        self.User_message = QLabel(" ", self)
-
-        # self.JLI_logo = QLabel()
-        # logo_pm = QPixmap()
-        # logo_pm.loadFromData(JLI_logo_bytes)
-        # self.JLI_logo.setPixmap(logo_pm.scaled(float(self.JLI_logo.width() * 0.5), float(self.JLI_logo.height() * 0.5), Qt.KeepAspectRatio))
-        #
-        # self.JLI_logo.setAlignment(Qt.AlignCenter)
-
+        self.button_optimize_view.clicked.connect(self.optimizeViewButtonClicked)
         label_detector = QLabel("Surface detector:")
-        self.detector = QComboBox(self)
-        self.detector.addItems(['None', 'Scratch'])
+        self.select_detector = QComboBox(self)
+        self.detector = None
+        detectScratches = lambda x: print('Provide function handle to scratch detector')
+        detectHoles = lambda x: print('Provide function handle to hole detector')
+        self.select_detector_dispatch_table = {'Scratches': detectScratches, 'Holes': detectHoles}
+        self.select_detector.addItems(self.select_detector_dispatch_table.keys())
+        self.select_detector.activated.connect(self.registerDetector)
+        self.registerDetector(0)
+        label_data_type = QLabel("Save image:")
+        self.select_data_type = QComboBox(self)
+        self.select_data_type_table = {"Don't save": False, "Unknown": True, "Error": True, "Correct": True, "Manual select": self.manualSelection}
+        self.select_data_type.addItems(self.select_data_type_table.keys())
+        self.select_data_type.activated.connect(self.registerDataType)
+        self.registerDataType(0)
+        camera_status_label = QLabel("Camera status: ")
+        self.camera_status_text = QLabel()
+        self.objects_status_label = QLabel("Type " + self.select_objects.currentText() + " objects found:")
+        self.objects_status_text = QLabel("0")
+
+        # At the bottom
+        self.user_message = QLabel(" ", self)
+        self.button_exit = QPushButton("Exit program", self)
+        self.button_exit.clicked.connect(parent.closeEvent)
+
+        # Stylesheet options
+        self.text_size1 = str(int(self.screen_width * 0.01 * 1.2)) + 'px'
+        self.text_size2 = str(int(self.screen_width * 0.0125 * 1.2)) + 'px'
+        self.text_size3 = str(int(self.screen_width * 0.0075 * 1.2)) + 'px'
+
+        program_label.setStyleSheet('font-size: ' + self.text_size2 + '; font-weight: bold')
+        label_select_type.setStyleSheet('font-size: ' + self.text_size1)
+        self.select_objects.setStyleSheet('QComboBox{font-size: ' + self.text_size1 + '}')
+        self.button_open_library.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '}')
+
+        robot_panel_label.setStyleSheet("font-size: " + self.text_size3 + '; font-weight: bold')
+        self.button_auto_pick.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; background-color: None}')
+        self.button_replace.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; background-color: None}')
+        self.button_grip_open.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '}')
+        self.button_grip_close.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '}')
+        self.button_start_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: green}')
+        self.button_stop_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: darkred}')
+        robot_status_label.setStyleSheet("font-size: " + self.text_size3 + ";")
+
+        label_view_options.setStyleSheet('font-size: ' + self.text_size3 + '; font-weight: bold')
+        self.button_show_views.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; background-color: None}')
+        self.button_optimize_view.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; background-color: None}')
+        label_detector.setStyleSheet('font-size: ' + self.text_size1)
+        self.select_detector.setStyleSheet('QComboBox{font-size: ' + self.text_size1 + '}')
+        label_data_type.setStyleSheet('font-size: ' + self.text_size1)
+        self.select_data_type.setStyleSheet('QComboBox{font-size: ' + self.text_size1 + '}')
+        camera_status_label.setStyleSheet("font-size: " + self.text_size3 + ";")
+        self.camera_status_text.setStyleSheet("font-size: " + self.text_size3 + ";")
+        self.objects_status_label.setStyleSheet("font-size: " + self.text_size3 + ";")
+        self.camera_status_text.setStyleSheet("font-size: " + self.text_size3 + ";")
+
+        self.user_message.setStyleSheet("font-size: " + self.text_size3 + ";")
+        self.button_exit.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold}')
 
         # Position of widgets
         gbox = QGridLayout()
@@ -115,85 +135,84 @@ class MainObjectWidget(QWidget):
         gbox.addWidget(program_label, 0, 0, 1, 2)
         gbox.addWidget(label_select_type, 1, 0)
         gbox.addWidget(self.select_objects, 1, 1)
-        gbox.addWidget(self.button_type, 2, 1)
+        gbox.addWidget(self.button_open_library, 2, 1)
 
         gbox.addWidget(robot_panel_label, 3, 0, 1, 2)
         gbox.addWidget(self.button_auto_pick, 4, 0)
         gbox.addWidget(self.button_replace, 4, 1)
         gbox.addWidget(self.button_grip_open, 5, 1)
         gbox.addWidget(self.button_grip_close, 5, 0)
-
         gbox.addWidget(self.button_start_robot, 6, 1)
         gbox.addWidget(self.button_stop_robot, 6, 0)
-        gbox.addWidget(self.Robot_status1, 7, 0)
-        gbox.addWidget(self.Robot_status2, 7, 1)
+        gbox.addWidget(robot_status_label, 7, 0)
+        gbox.addWidget(self.robot_status_text, 7, 1)
+
         gbox.addWidget(label_view_options, 8, 0, 1, 2)
-        gbox.addWidget(self.button_show, 9, 0)
+        gbox.addWidget(self.button_show_views, 9, 0)
         gbox.addWidget(self.button_optimize_view, 9, 1)
         gbox.addWidget(label_detector, 10, 0)
-        gbox.addWidget(self.detector, 10, 1, Qt.AlignBottom)
+        gbox.addWidget(self.select_detector, 10, 1, Qt.AlignBottom)
         gbox.addWidget(label_data_type, 11, 0)
-        gbox.addWidget(self.data_type, 11, 1, Qt.AlignBottom)
-
-        gbox.addWidget(self.Camera_status1, 13, 0)
-        gbox.addWidget(self.Camera_status2, 13, 1)
-        gbox.addWidget(self.Objects_status1, 14, 0)
-        gbox.addWidget(self.Objects_status2, 14, 1)
-        # gbox.addWidget(space_label, 16, 0, 1, 2)
-        # gbox.addWidget(self.JLI_logo, 15, 0, 1, 2)
-
+        gbox.addWidget(self.select_data_type, 11, 1, Qt.AlignBottom)
+        gbox.addWidget(camera_status_label, 13, 0)
+        gbox.addWidget(self.camera_status_text, 13, 1)
+        gbox.addWidget(self.objects_status_label, 14, 0)
+        gbox.addWidget(self.objects_status_text, 14, 1)
         vbox = QVBoxLayout()
         vbox.addLayout(gbox)
         vbox.addStretch(1.0)
-
+        vbox.addWidget(self.user_message)
+        vbox.addWidget(self.button_exit)
         self.setLayout(vbox)
 
+        self.verifyComponentsAreWorking()
 
-
-
-        
-        self.select_objects.setStyleSheet('QComboBox{font-size: ' + text_size1 + '}')
-        self.button_show.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; background-color: None}')
-        self.button_optimize_view.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; background-color: None}')
-
-        self.data_type.setStyleSheet('QComboBox{font-size: ' + text_size1 + '}')
-        label_data_type.setStyleSheet('font-size: ' + text_size1)
-        label_view_options.setStyleSheet('font-size: ' + text_size3 + '; font-weight: bold')
-        self.button_grip_open.setStyleSheet('QPushButton{font-size: ' + text_size1 + '}')
-        self.button_grip_close.setStyleSheet('QPushButton{font-size: ' + text_size1 + '}')
-        self.button_auto_pick.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; background-color: None}')
-        self.button_replace.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; background-color: None}')
-        self.button_start_robot.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; background-color: None}')
-        self.button_stop_robot.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; font-weight: bold; background-color: darkred}')
-        self.button_exit.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; font-weight: bold}')
-        label_select_type.setStyleSheet('font-size: ' + text_size1)
-        robot_panel_label.setStyleSheet("font-size: " + text_size3 + '; font-weight: bold')
-        self.Robot_status2.setStyleSheet("font-size: " + text_size3 + "; color: red")
-        self.Robot_status1.setStyleSheet("font-size: " + text_size3 + ";")
-        self.Camera_status2.setStyleSheet("font-size: " + text_size3 + "; color: green")
-        self.Camera_status1.setStyleSheet("font-size: " + text_size3 + ";")
-        self.Objects_status2.setStyleSheet("font-size: " + text_size3 + ";")
-        self.Objects_status1.setStyleSheet("font-size: " + text_size3 + ";")
-        self.User_message.setStyleSheet("font-size: " + text_size3 + ";")
-        label_detector.setStyleSheet('font-size: ' + text_size1)
-        self.detector.setStyleSheet('QComboBox{font-size: ' + text_size1 + '}')
-
-        self.User_message.move(gbox.horizontalSpacing(), int(screen_height - 2.2 * (gbox.itemAtPosition(2, 1).sizeHint().height() * 2 + gbox.horizontalSpacing())))
-        self.User_message.resize(gbox.sizeHint().width(), gbox.itemAtPosition(2, 1).sizeHint().height() * 4)
-        self.User_message.show()
-        self.button_exit.move(gbox.horizontalSpacing(), int(screen_height - (gbox.itemAtPosition(2, 1).sizeHint().height() + gbox.horizontalSpacing())))
-        self.button_exit.resize(gbox.sizeHint().width() * 1.03, gbox.itemAtPosition(2, 1).sizeHint().height())
-        self.button_exit.show()
-        #
-        # #Initialize setup
-        # self.show_view()
-        # self.auto_pick()
-        # self.opt_view()
+    def test(self):
+        print(self.select_detector_dispatch_table[str(self.select_detector.currentText())])
 
     def registerSelectedObject(self, index):
         selected_object = self.select_objects.itemText(index)
+        print('Selected object {}'.format(selected_object))
         images_of_selected_object = os.listdir(os.path.join(self.libDir, selected_object, "src"))
         self.image_files = [image.split('.')[0] for image in images_of_selected_object if image.endswith('.png')]
+        self.objects_status_label = QLabel("Type " + selected_object + " objects found:")
+
+    def registerDetector(self, index):
+        selected_detector = self.select_detector.itemText(index)
+        print('Selected detector {}'.format(selected_detector))
+        self.detector = self.select_detector_dispatch_table[str(selected_detector)]
+
+    def registerDataType(self, index):
+        selected_data_type = self.select_detector.itemText(index)
+        print('Selected data type {}'.format(selected_data_type))
+        save_images = self.select_detector_dispatch_table[str(selected_data_type)]
+        if callable(save_images):
+            self.save_images = True
+            self.save_images_name = self.select_detector_dispatch_table[str(selected_data_type)]
+        else:
+            self.save_images = self.select_detector_dispatch_table[str(selected_data_type)]
+            self.save_images_name = str(selected_data_type)
+
+    def manualSelection(self):
+        print('Requesting data type manually')
+
+    def openLibraryButtonClicked(self):
+        print("Opening Library")
+        self.button_stop_robot.setStyleSheet('QPushButton{font-weight: bold}')
+        self.robot_status_text.setStyleSheet('font-size: ' + self.self.text_size3 + '; color: red')
+        self.robot_status_text.setText("Not running")
+        self.camera_status_text.setStyleSheet('font-size: ' + self.self.text_size3 + '; color: red')
+        self.camera_status_text.setText("Not running")
+        # self.libraryWin = Ol_gui.MainWindow(int(0.75 * self.screen_width), int(0.75 * self.screen_height))
+        # self.libraryWin.signal_exit_library.connect(self.libray_closed)
+        # self.libraryWin.show()
+        print("Library Opened")
+
+    def closeLibrary(self):
+        print("Closing Library")
+        # self.signal_start_capture.emit()
+        # self.update_param()
+        print("Library Closed")
 
     def autoPickButtonClicked(self):
         print('Starting automised picking')
@@ -212,38 +231,37 @@ class MainObjectWidget(QWidget):
 
     def startRobotButtonClicked(self):
         print('Starting robot')
-        self.button_stop_robot.setStyleSheet("background-color: red")
-        self.button_start_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: darkGreen}')
-        self.button_stop_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; background-color: None}')
-        self.Robot_status2.setStyleSheet('font-size: ' + self.text_size3 + '; color: green')
-        self.Robot_status2.setText("Running")
-        self.Camera_status2.setStyleSheet('font-size: ' + self.text_size3 + '; color: green')
-        self.Camera_status2.setText("Running")
+        # Start robot async
+        self.button_start_robot.setEnabled(False)
+        self.button_start_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: lightgrey}')
+        self.robot_status_text.setText("Running")
+        self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: green")
+        self.camera_status_text.setText("Running")
+        self.camera_status_text.setStyleSheet('font-size: ' + self.text_size3 + '; color: green')
         print('Robot started')
 
     def stopRobotButtonClicked(self):
         print('Stopping robot')
+        self.button_start_robot.setEnabled(True)
+        self.button_start_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: green}')
+        self.robot_status_text.setText("Not running")
+        self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
         print('Robot stopped')
 
-    def openLibrary(self):
-        print("Opening Library")
-        self.Robot_status2.setStyleSheet('font-size: ' + self.text_size3 + '; color: red')
-        self.Robot_status2.setText("Not running")
-        self.Camera_status2.setStyleSheet('font-size: ' + self.text_size3 + '; color: red')
-        self.Camera_status2.setText("Not running")
-        self.button_start.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + ';  background-color: None}')
-        self.button_stop.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: darkred}')
-        self.signal_stop_capture.emit()
-        # self.libraryWin = Ol_gui.MainWindow(int(0.75 * self.screen_width), int(0.75 * self.screen_height))
-        # self.libraryWin.signal_exit_library.connect(self.libray_closed)
-        # self.libraryWin.show()
-        print("Library Opened")
+    def showViewButtonClicked(self):
+        print('Showing view')
+        print('View shown')
 
-    def closeLibrary(self):
-        print("Closing Library")
-        self.signal_start_capture.emit()
-        self.update_param()
-        print("Library Closed")
+    def optimizeViewButtonClicked(self):
+        print('Optimizing view')
+        print('View optimized')
+
+    def verifyComponentsAreWorking(self):
+        print('Testing whether all components are connected')
+        self.camera_status_text.setText("Not connected")
+        self.camera_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
+        self.robot_status_text.setText("Not connected")
+        self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
 
 
 class MainWindow(QMainWindow):
@@ -265,7 +283,8 @@ class MainWindow(QMainWindow):
         self.img_src_display.setPixmap(QPixmap.fromImage(image))
 
         splitter = QSplitter(Qt.Horizontal)
-        splitter.addWidget(MainObjectWidget(self.screen_width, self.screen_height))
+        self.properties = MainObjectWidget(self.screen_width, self.screen_height, self)
+        splitter.addWidget(self.properties)
         splitter.addWidget(self.img_src_display)
         self.setCentralWidget(splitter)
 
@@ -289,6 +308,8 @@ class MainWindow(QMainWindow):
             self.closeEvent(event)
 
     def closeEvent(self, event):
+        self.properties.user_message.setText("Exiting the application...")
+        time.sleep(1)
         self.close()
 
 
@@ -607,6 +628,8 @@ if __name__ == '__main__':
     appQt = QApplication(sys.argv)
     RectScreen0 = appQt.desktop().screenGeometry(0)
     win = MainWindow(RectScreen0.width(), RectScreen0.height())
-    win.move(RectScreen0.left(), RectScreen0.top())
+    # win.move(RectScreen0.left(), RectScreen0.top())
+    # win.resize(RectScreen0.width(), RectScreen0.height())
+
     win.show()
     sys.exit(appQt.exec_())
