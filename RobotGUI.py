@@ -11,99 +11,98 @@ from win32api import GetSystemMetrics
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap, QImage, QIntValidator, QPixmap, QPainter, QPen, QImage, QBrush, QKeySequence
 from PyQt5.QtCore import pyqtSignal, Qt, QThreadPool, QRunnable, pyqtSlot, QThread, QRect, QObject
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QSizePolicy, QSpinBox, QComboBox,
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QSizePolicy, QSpinBox, QComboBox, QStatusBar,
                              QGridLayout, QVBoxLayout, QSplitter, QPushButton, QLineEdit, QRadioButton, QCheckBox, QShortcut)
 
 
 class MainObjectWidget(QWidget):
-    # """
-    # Widget for editing OBJECT parameters
-    # """
-    # signal_start = pyqtSignal(name='start_robot')
-    # signal_stop = pyqtSignal(name='stop_robot')
-    # signal_stop_capture = pyqtSignal()
-    # signal_start_capture = pyqtSignal()
-    # signal_exit = pyqtSignal()
-    # signal_pick = pyqtSignal()
-
     def __init__(self, screen_width, screen_height, parent=None):
-        print('Starting MainObjectWidget')
         super(MainObjectWidget, self).__init__(parent)
         self.rootDir = os.getcwd()
+        self.libDir = os.path.join(self.rootDir, "Library")
 
         self.screen_width = screen_width
         self.screen_height = screen_height
 
         label_select_type = QLabel("Select type:")
-        directories = sorted(os.listdir(self.rootDir))
-        self.select_directories = QComboBox(self)
-        self.select_directories.addItems(directories)
+        directories = sorted(os.listdir(self.libDir))
+        self.select_objects = QComboBox(self)
+        self.select_objects.addItems(directories)
+        self.select_objects.activated.connect(self.registerSelectedObject)
+        self.registerSelectedObject(0)
 
         self.save_images = False
         self.show_images = False
         self.manual_pick = True
         self.optimize_view = False
+        self.image_files = []
 
-        # path = os.path.join(os.path.join(self.rootDir + 'Library'), self.select_directories.currentText())
-        # if os.path.exists(path) and not (self.select_directories.currentText() == ""):
-        #     self.files = sorted([file for file in os.listdir(self.rootDir +'Library//' + directories[0] + "/src") if file.endswith('.png')])
-        #     self.files = [x.split('.')[0] for x in self.files]
-        # else:
-        #     self.files = []
-        #
+        # Layout: setting the style sheetzz
+        text_size1 = str(int(self.screen_width * 0.01 * 1.2)) + 'px'
+        text_size2 = str(int(self.screen_width * 0.0125 * 1.2)) + 'px'
+        text_size3 = str(int(self.screen_width * 0.0075 * 1.2)) + 'px'
 
+        # Select objects panel
+        program_label = QLabel("Picking Program")
+        program_label.setAlignment(Qt.AlignCenter)
         self.button_type = QPushButton("&Open library", self)
-        # self.button_type.clicked.connect(self.library)
-        label_save_options = QLabel("\nSave options")
+        self.button_type.clicked.connect(self.openLibrary)
+
+        program_label.setStyleSheet('font-size: ' + text_size2 + '; font-weight: bold')
+        self.button_type.setStyleSheet('QPushButton{font-size: ' + text_size1 + '}')
+
+        # Robot control panel
+        robot_panel_label = QLabel("\nRobot control panel")
+        robot_panel_label.setAlignment(Qt.AlignCenter)
+        self.button_auto_pick = QPushButton("&Auto pick", self)
+        self.button_auto_pick.clicked.connect(self.autoPickButtonClicked)
+        self.button_replace = QPushButton("&Replace")
+        self.button_replace.clicked.connect(self.replaceButtonClicked)
+        self.button_grip_open = QPushButton("&Open gripper", self)
+        self.button_grip_open.clicked.connect(self.openGripperButtonClicked)
+        self.button_grip_close = QPushButton("&Close gripper", self)
+        self.button_grip_close.clicked.connect(self.closeGripperButtonClicked)
+        self.button_start_robot = QPushButton("&Start Robot", self)
+        self.button_start_robot.setStyleSheet("background-color: green")
+        self.button_start_robot.clicked.connect(self.startRobotButtonClicked)
+        self.button_stop_robot = QPushButton("&Stop Robot", self)
+        self.button_stop_robot.setStyleSheet("background-color: red")
+        self.button_stop_robot.clicked.connect(self.stopRobotButtonClicked)
+
+        # Save and view panel
         label_view_options = QLabel("\nSave & View options")
         label_view_options.setAlignment(Qt.AlignCenter)
+
+        self.button_exit = QPushButton("&Exit program", self)
+        # self.button_exit.clicked.connect(self.exit)
+
+
         self.button_show = QPushButton("&Show views", self)
         # self.button_show.clicked.connect(self.show_view)
         label_data_type = QLabel("Save image:")
         self.data_type = QComboBox(self)
 
         self.data_type.addItems(("Don't save", "Unknown", "Error", "Correct", "Manual select"))
-        self.button_grip_open = QPushButton("&Open gripper", self)
-        # self.button_grip_open.clicked.connect(self.open_gripper)
-        self.button_grip_close = QPushButton("&Close gripper", self)
-        # self.button_grip_close.clicked.connect(self.close_gripper)
-
-        self.button_auto_pick = QPushButton("&Auto pick", self)
-        # self.button_auto_pick.clicked.connect(self.auto_pick)
-        self.button_replace = QPushButton("&Replace")
 
         self.button_optimize_view = QPushButton("&Optimize view", self)
         # self.button_optimize_view.clicked.connect(self.opt_view)
 
-        self.button_start = QPushButton("&Start Robot", self)
-        # self.button_start.clicked.connect(self.start_robot)
-        self.button_stop = QPushButton("&Stop Robot", self)
-        # self.button_stop.clicked.connect(self.stop_robot)
-        self.button_exit = QPushButton("&Exit program", self)
-        # self.button_exit.clicked.connect(self.exit)
-        self.button_start.setStyleSheet("background-color: green")
-        self.button_stop.setStyleSheet("background-color: red")
         self.Robot_status1 = QLabel("Robot status: ")
         self.Robot_status2 = QLabel("Not running")
         self.Robot_status2.setStyleSheet("color: red")
-        self.Robot_panel = QLabel("\nRobot control panel")
-        self.Robot_panel.setAlignment(Qt.AlignCenter)
         self.Camera_status1 = QLabel("Camera status: ")
         self.Camera_status2 = QLabel("Running")
         self.Camera_status2.setStyleSheet("color: red")
-        self.Objects_status1 = QLabel("Type " + self.select_directories.currentText() + " objects found:")
+        self.Objects_status1 = QLabel("Type " + self.select_objects.currentText() + " objects found:")
         self.Objects_status2 = QLabel("0")
         self.User_message = QLabel(" ", self)
-        self.Program_label = QLabel("Picking Program")
-        self.Program_label.setAlignment(Qt.AlignCenter)
 
-        self.JLI_logo = QLabel()
-        logo_pm = QPixmap()
-        logo_pm.loadFromData(JLI_logo_bytes)
-        self.JLI_logo.setPixmap(logo_pm.scaled(float(self.JLI_logo.width() * 0.5), float(self.JLI_logo.height() * 0.5), Qt.KeepAspectRatio))
-
-        self.JLI_logo.setAlignment(Qt.AlignCenter)
-        space_label = QLabel(" ")
+        # self.JLI_logo = QLabel()
+        # logo_pm = QPixmap()
+        # logo_pm.loadFromData(JLI_logo_bytes)
+        # self.JLI_logo.setPixmap(logo_pm.scaled(float(self.JLI_logo.width() * 0.5), float(self.JLI_logo.height() * 0.5), Qt.KeepAspectRatio))
+        #
+        # self.JLI_logo.setAlignment(Qt.AlignCenter)
 
         label_detector = QLabel("Surface detector:")
         self.detector = QComboBox(self)
@@ -113,19 +112,19 @@ class MainObjectWidget(QWidget):
         gbox = QGridLayout()
         gbox.setColumnMinimumWidth(0, int(self.screen_width * 0.1))
         gbox.setColumnMinimumWidth(1, int(self.screen_width * 0.1))
-        gbox.addWidget(self.Program_label, 0, 0, 1, 2)
+        gbox.addWidget(program_label, 0, 0, 1, 2)
         gbox.addWidget(label_select_type, 1, 0)
-        gbox.addWidget(self.select_directories, 1, 1)
+        gbox.addWidget(self.select_objects, 1, 1)
         gbox.addWidget(self.button_type, 2, 1)
 
-        gbox.addWidget(self.Robot_panel, 3, 0, 1, 2)
+        gbox.addWidget(robot_panel_label, 3, 0, 1, 2)
         gbox.addWidget(self.button_auto_pick, 4, 0)
         gbox.addWidget(self.button_replace, 4, 1)
         gbox.addWidget(self.button_grip_open, 5, 1)
         gbox.addWidget(self.button_grip_close, 5, 0)
 
-        gbox.addWidget(self.button_start, 6, 1)
-        gbox.addWidget(self.button_stop, 6, 0)
+        gbox.addWidget(self.button_start_robot, 6, 1)
+        gbox.addWidget(self.button_stop_robot, 6, 0)
         gbox.addWidget(self.Robot_status1, 7, 0)
         gbox.addWidget(self.Robot_status2, 7, 1)
         gbox.addWidget(label_view_options, 8, 0, 1, 2)
@@ -141,7 +140,7 @@ class MainObjectWidget(QWidget):
         gbox.addWidget(self.Objects_status1, 14, 0)
         gbox.addWidget(self.Objects_status2, 14, 1)
         # gbox.addWidget(space_label, 16, 0, 1, 2)
-        gbox.addWidget(self.JLI_logo, 15, 0, 1, 2)
+        # gbox.addWidget(self.JLI_logo, 15, 0, 1, 2)
 
         vbox = QVBoxLayout()
         vbox.addLayout(gbox)
@@ -149,29 +148,26 @@ class MainObjectWidget(QWidget):
 
         self.setLayout(vbox)
 
-        # Layout: setting the style sheetzz
-        text_size1 = str(int(self.screen_width * 0.01 * 1.5)) + 'px'
-        text_size2 = str(int(self.screen_width * 0.0125 * 1.5)) + 'px'
-        text_size3 = str(int(self.screen_width * 0.0075 * 1.5)) + 'px'
+
+
+
         
-        self.select_directories.setStyleSheet('QComboBox{font-size: ' + text_size1 + '}')
+        self.select_objects.setStyleSheet('QComboBox{font-size: ' + text_size1 + '}')
         self.button_show.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; background-color: None}')
         self.button_optimize_view.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; background-color: None}')
 
         self.data_type.setStyleSheet('QComboBox{font-size: ' + text_size1 + '}')
         label_data_type.setStyleSheet('font-size: ' + text_size1)
         label_view_options.setStyleSheet('font-size: ' + text_size3 + '; font-weight: bold')
-        self.button_type.setStyleSheet('QPushButton{font-size: ' + text_size1 + '}')
         self.button_grip_open.setStyleSheet('QPushButton{font-size: ' + text_size1 + '}')
         self.button_grip_close.setStyleSheet('QPushButton{font-size: ' + text_size1 + '}')
         self.button_auto_pick.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; background-color: None}')
         self.button_replace.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; background-color: None}')
-        self.button_start.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; background-color: None}')
-        self.button_stop.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; font-weight: bold; background-color: darkred}')
+        self.button_start_robot.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; background-color: None}')
+        self.button_stop_robot.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; font-weight: bold; background-color: darkred}')
         self.button_exit.setStyleSheet('QPushButton{font-size: ' + text_size1 + '; font-weight: bold}')
-        self.Program_label.setStyleSheet('font-size: ' + text_size2 + '; font-weight: bold')
         label_select_type.setStyleSheet('font-size: ' + text_size1)
-        self.Robot_panel.setStyleSheet("font-size: " + text_size3 + '; font-weight: bold')
+        robot_panel_label.setStyleSheet("font-size: " + text_size3 + '; font-weight: bold')
         self.Robot_status2.setStyleSheet("font-size: " + text_size3 + "; color: red")
         self.Robot_status1.setStyleSheet("font-size: " + text_size3 + ";")
         self.Camera_status2.setStyleSheet("font-size: " + text_size3 + "; color: green")
@@ -194,11 +190,70 @@ class MainObjectWidget(QWidget):
         # self.auto_pick()
         # self.opt_view()
 
+    def registerSelectedObject(self, index):
+        selected_object = self.select_objects.itemText(index)
+        images_of_selected_object = os.listdir(os.path.join(self.libDir, selected_object, "src"))
+        self.image_files = [image.split('.')[0] for image in images_of_selected_object if image.endswith('.png')]
+
+    def autoPickButtonClicked(self):
+        print('Starting automised picking')
+        print('Automised picking started')
+
+    def replaceButtonClicked(self):
+        print('Starting replacement')
+
+    def openGripperButtonClicked(self):
+        print('Opening gripper')
+        print('Opened gripper')
+
+    def closeGripperButtonClicked(self):
+        print('Closing gripper')
+        print('Closed gripper')
+
+    def startRobotButtonClicked(self):
+        print('Starting robot')
+        self.button_stop_robot.setStyleSheet("background-color: red")
+        self.button_start_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: darkGreen}')
+        self.button_stop_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; background-color: None}')
+        self.Robot_status2.setStyleSheet('font-size: ' + self.text_size3 + '; color: green')
+        self.Robot_status2.setText("Running")
+        self.Camera_status2.setStyleSheet('font-size: ' + self.text_size3 + '; color: green')
+        self.Camera_status2.setText("Running")
+        print('Robot started')
+
+    def stopRobotButtonClicked(self):
+        print('Stopping robot')
+        print('Robot stopped')
+
+    def openLibrary(self):
+        print("Opening Library")
+        self.Robot_status2.setStyleSheet('font-size: ' + self.text_size3 + '; color: red')
+        self.Robot_status2.setText("Not running")
+        self.Camera_status2.setStyleSheet('font-size: ' + self.text_size3 + '; color: red')
+        self.Camera_status2.setText("Not running")
+        self.button_start.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + ';  background-color: None}')
+        self.button_stop.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: darkred}')
+        self.signal_stop_capture.emit()
+        # self.libraryWin = Ol_gui.MainWindow(int(0.75 * self.screen_width), int(0.75 * self.screen_height))
+        # self.libraryWin.signal_exit_library.connect(self.libray_closed)
+        # self.libraryWin.show()
+        print("Library Opened")
+
+    def closeLibrary(self):
+        print("Closing Library")
+        self.signal_start_capture.emit()
+        self.update_param()
+        print("Library Closed")
+
 
 class MainWindow(QMainWindow):
     def __init__(self, screen_width=None, screen_height=None):
         QMainWindow.__init__(self)
-        self.setWindowTitle('Robot GUI')
+        self.setWindowTitle('JLI Vision Robot GUI')
+        JLI_icon_pm = QPixmap()
+        JLI_icon_pm.loadFromData(JLI_icon_bytes)
+        self.setWindowIcon(QIcon(JLI_icon_pm))
+
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.image_width = int(GetSystemMetrics(0) * 0.75)  # laptop screen
@@ -228,6 +283,13 @@ class MainWindow(QMainWindow):
         # self.keyPressEvent = self.MainKeyPressEvent
         # self.keyReleaseEvent = self.MainKeyReleaseEvent
         # self.mousePressEvent = self.MainMousePressEvent
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Escape:
+            self.closeEvent(event)
+
+    def closeEvent(self, event):
+        self.close()
 
 
 JLI_logo_bytes = bytearray(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x01\xf4\x00\x00\x01\xf4\x08\x06\x00\x00\x00\xcb\xd6\xdf\x8a\x00\x00\x80\x00IDATx\xda\xec\x9d\x07x\x14U\xd7\xc7\xffw\xb6\xa6w\x92\x90@\x08\x10 \xf4\xde{WAT\x94\x8e(\x08\xf6\xcf\x8a]\x10\xc5\x8e\xbd\xbe\x88\x15\x11DPA\x91\x12\x8a\xd2{\xef\x01\x12BI\x02IHO\xb6\xcd\xfd\x9e\x19\x04I\xd9dw\xb3\xb3\xd9M\xce\xefyx\xde\xd7\xec\xee\xec\xcc\x99\xbb\xf7?\xe7\xdeS\xd4 '
@@ -524,10 +586,27 @@ JLI_logo_bytes = bytearray(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x01\xf4
                            b'\x98U\xb7\xbbt\xde\xc8<\xb2\x0eA\x90\xa0\x13\x84Sx\xf1E.\xbdv|E\x07\xd8l=4\\\xea\xc1!w\x97\xc1z0\x19I\x8cqz\xa6\x1a"\xdc\\D1\x1c\x97\xc0w3H{lL\xde\r\x8df\xf73I\xa3\x8fL\x9f\xced\xb2\x10A\x90\xa0\x13\x84\xfb\xf9\xfb\xcaP]\xa9-\x99Yy\x92d\xe3\x89\xd0 '
                            b'\t\xe0\x89\x9c#\t\x8c%\x06\xea\xfa<g\xac\x0c\x9c\x9f`\x0c\xc7\x01v\x026\x1c\x975\xec\x04\xd7\xb2\xe3\x96PM\x1aea#\x08\x12t\x82\xf0-n_\xdb<\xa8\xcc\x94\xc8\xf5<\t\x9c\'\xca\xc2\xa3G\x1b\xc6\xd1\\\x06b\x18\xe3\xd1\x8c#\xdc\xb7\xc4\x1a\xc5\x9c\xb3|\t\xc8\xe3\x0c\xb9\x9c\xe3\xa4$\xe18\x18;\xc1\xcc\xecxE\x88\xe1\x04\xbe\x1a\x96K7\x9f H\xd0\t"\xa0\xe8{'
                            b'\xf7V\xdd\x01SI4\x03\x8f6\x99\xad1\x12c\xd1Z\xc81V\xb0h&\xb3\x18\x89!\x9a39\x82\x83\xe99\x87\x81q\xe8\x99\xc4\rP\xfe-\xc3\xc0\x19\xf4\x1a\x06\x03\x07\xf4\xe0L\xcf\x01\x03 \xeb\xab~]23\xc0\x04\xc6\x95\xff\x9am\x1c&\xc6af\x12L\x007s\x99\x998\x83\x991\x98\x18\xb8\x99q\xa9H\xe6\xc8\xe7\x12\xcf\xd3\x82\xe7[!\xe5\xc9\x9c\xe7\x1b\xf4\xda<\x0e\x96\x9fb\x08\xcb\xdf\xf6i?\x0b\xdd5\x82\xf0\x0e\xfe/\x00\x00\xff\xff\xa7<\x1e\xdb\xca\xb6\xbf\x83\x00\x00\x00\x00IEND\xaeB`\x82')
+JLI_icon_bytes = bytearray(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00 \x00\x00\x00 \x08\x06\x00\x00\x00szz\xf4\x00\x00\x00\x01sRGB\x00\xae\xce\x1c\xe9\x00\x00\x00\x04gAMA\x00\x00\xb1\x8f\x0b\xfca\x05\x00\x00\x00\tpHYs\x00\x00\x1d\x86\x00\x00\x1d\x86\x01]\xa2\x13\x81\x00\x00\x06lIDATXG\x9d\x97\xfbSUU\x14\xc7\xef\x8f\xfd\xd4?\xd1\xbfP\xcd\xd8\xc3f\xaa)-\xad|0\x89@\x86\x89J\x06Z*\x9a\xa1\xe2\xf8LL4uBM1\x05Q@\x05\xf1\x85\x80<T\x10T\x1e\x82\xa0<\x05\x04\x11T\xde\x8f\xcbku>\x8b\xbb\xef\x9c'
+                           b'\xab\x18\xd0w\xe6\xcc={\x9d{\xcf^\xfb\xbb\xbe\xeb\xbb\xf7u\xc8$1<2\xa2\x17\xe8\xeb\xef\x97\xae\xee\x1e\x19\x1c\x1c\xd2\xf1\xff\xc1\xa4\x12\xe8\xe9\xed\x95\xc2\xfb\xe5\xd2\xd6\xd1\xa9\xe3+\x99\xd7e\xf7\xe1cr\xaf\xfc\xa1\x8e\xcb*\xab%\xeb\xd6mi}\xfeB\xc7\x13\xc1\xa4\x12\xd8\xba/R\x826l\xd1\xfb\x9a\xfa\xc7\x12aM~\xf8d\xbc\x0c\x0c\x0ej\xac\xba\xae^\xc2#\x8f\xc8\xc5\xf4,'
+                           b'\x1dO\x04\x93J\xa0\xdf\xe9\x94\x8e\xaen\xbd\x87\x85\xbdG\x8f\xcb\xc1\x98\xd3:\xee\xee\xe9\x95\xc8\xe8S\x92\x9dwG\xc7 1%]\xd6l\xdb%\xbd}\xfd\xae\xc8\xab\x98p\x02\xact~\xd0*\xad\x7f{g\xa7\x14\x94\xdc\x17\xa7s\xc0\xf5T\xa4\xb3\xbb[\xe6,\t\x96\x8f\xbf] \xf7+*]Q\x91]\x07\x8f\xca\xfec\xd1\xae\xd1\xab\x187\x01&\xac{'
+                           b'\xdc\xa4W}c\x93\xc6\xce]I\x93\xb7\xbf\x9c+\xc7\xe2\xcf\xe9\x98D`\x00<\xa8\xaa\xd1\xdf\xbch\xef\x90#\xa7\xce\xc8\xc3\xeaZ\x8d#\xd4\x9a\xba\x06\xbd\xb7c\xdc\x04\x9c\x03\x03\xb2|\xe36IN\xcbpEF\xc1D\x94chhH\xa2\xe2\xce\xca\xbce\xbfh\xcc\x80\x12M\xf3\x0b\x90\xa9s|\xb5S\xc0\xea\xad\xe1\x92[P\xa4\xf7\x06\xff\x99@\x8b\xa5\xe6\x86\xa6f\xe9\xe9\xebS\xa1=m}&3\xbe_\xea^9\x18\xb1V{'
+                           b'\xea\xfc%e\xe4rF\xb6+:\n&.\xaf\xaav\x8dFur86\xde5\x1a\xc5\x98\t\xf0R\xb0\xe3\xc0!\xf9b\xc1\x12\xbd\x07\xb4\xd7\xd4\xb9~\x12\xbcq\xab\n\x8b\xa4H\x0e\xc0\x04\x80\xea\xf8\x8b)\x12s.Y\xd938\x14\x13\xa7"\x05v/\x193\x81\x8a\x9aZIN\xcd\xd0I\xea\x9b\x9eHSs\x8b\xa4^\xcf\xd1\t\xe9\x04\x04\x07\xb6\xfc\xf9\x97\xf8-\x0f\x91\x82\xd22\x1d\x03V\xfd\x99\xcf\x0f\xca\x88\xbd\xe6t\x041\x18\xadmx,'
+                           b'\xc5e\x0f4\xfeJ\x02\xd7\xf3\xefJYE\x95\xf5\xf2H\xb7\xcaO\x9cI\xd2\x1f\xe7\xdc-\xd4\xb1\x01\xec\x10G\x03v\xe4\xdc)\x94\xe3\tIna\x02X\xcd\xce\xbb\xad\xba\xc1\xd0b\x93.\xaa\x93\xba\x13\xc8\xc8\xc9S\x1a\xdf\x9f5_\x9e\xb7\xb5{\xd8k\xcb\xb3\xe7Zg\xb3r\x03\x94~\xbb\xb8\xc4M5]b|\xc2\x94\x11\xe7\xf4\t^-\x8f\x1a\x1au\xcc\x1c\x08\xd1t\x94cxxX\xad4 d\xbd\xd6\xf8VA\xb1>\xe0\x8b(\x18\xe5\xda\x01u\x9b"\x0e('
+                           b'\x95v\xb0\xbawfx\xc9\x87s|4a\x83\xd3\xc9\x97\x95%\x16\x00`\xf5\xe7M;\xdc\x82uP\xd7\xfc\xa2{RY[\xe7\x16\x06u\'\x8e\xed.Z\x1d\xaa1\x83U\x9bw\xea\x0b\xa3-\x91\xd9\x91~#W>\xf2\xf2\x93\xe9V\xeb\xf1.\x03X\x0b\xdb\xbd\xdf]s\xc0\x1eb\xda\xd1]\x02\xc4EvL\xfe\xcd\xa2e\xea\xeb\x1d\x9d]\xda\x8avT=\xaa\x93\xbfc\x13\xd4\x98\xec\x80\xc9\xfc\xa2\x12\xf7D\xd4\x9fw\xd8q5\xfb\xa6[/,'
+                           b'\x16\x96\x1dL\x9c\x91\x9b\xa7\xae\xb5v\xfb\x1f\xfaC\x0c\x84\xda\x99/\xd2R^\x81+T\x1b&\x060\x9b\xa5\xbf\x86YV\x1b\xe3\xa1\x19:\x81V\x9d\xf2\xf5<\xc9\xcc\xcdwEE;\xe6\x93y\xfez\xcf\xcey\xe9Z\x968\xa0('
+                           b'4|\xaf\xec\x8b\x8a\x16\xff\x95\xeb\xf4\xa1\x1d\xb0\xc2\x86\x02\xedPg\x07\xbb!\xf1O\xbd\xfd\xa5\xe4A\x85+*\xd2\xd8\xfcT\x85\x87&X\xb5\x01>\x10\x1a\xbeG\xefK\x1fVJ\x9c\xa5\x0f\x07\x13\xa4Z_\x82j\xa3L\x80\xad\x9a\xb6\xab\xa8}\xa4Fbo+p\xd7\xda\x90\xbc\x97\xad\x94u\xbfG\xc8\xb3\x17m\xae\xe8('
+                           b'\xe8\x8e\x94\xac\x1bzOy\x8ca\x01J\xd3\xf4\xb4E\x19\x1d\xd3\x88\xc0\x8a\xb0m\xba:L\xc9\x8ek7oi\xb9\xd8\x11\x01\x89\x1b\xaf\xa7T\xd8\xb4iA\x80\x98Yy\xd0\xfa-\x9a\x04\xe6\xf6S\xe8f\xf5\n\xa0\t\xd06d\x83z\x17\xaf\xd9\xa0}\x9dt5]\x1d\xed\xe5\x95\x91\x14\x17;\xa2\x1diV\x17`\xd3t\x02]e@\x89\x89\xb1\x87\xc0 \xe6\xc3\x19\xe2IK\xab>\xd7\x04(AX\xc4h\xab\xbck\xd5\xedd\xe2\x05}h`|\x1e\xf8\xadXc\xf5\xba\xaf\x1e\xbdd\xb0['
+                           b'F\x9c\xf4\xfc\xa0\x14\x96\x96\xcb4\xdf\x00\x99\x15\x10\xe4f\x07\xf0[L\x8e\xc5aRF\xacll\x88Y\x13\xc0\x9b\xa1\t\xea\xce\xa7^s\x9f\xf1\x00\xcc 6N:F\xfdOZ-V\xda-\x07L\x9d"}qo\x88\xf3\x86\x975S\x9b4[/ES\xbc\'\xaf\xb0X/\x03\xec\x17c\xc3\xb0\xd8!\xffIH\xd4\xf2x\xf8\xc0X@\xddP\xfe\xd5\xc2\x1f=D8\x90\xe3#\xbd\'\x1d\xd2\x17\xeb\xd0\xcf\xa1\xea(\xd7\x13\xd1\x05\xbc7\xcb['
+                           b'\xa6\x7f\xb7\xd8\x15\x11u\xce\x00\xab\xbcf/0\x07W\x0f\x11\xb2\t\xa1X<`\xa6\x7f\xa0\xeerP\x86\x8d\xd2\xb3<3p\xde\xf4\xd6\xc9\xcd5T{\xdc\xf5D\xd4\xf7\x11\xb1\xb1u\x03\xd8\x81\x15{\xdc#\x01\xf6\x7f\xdf\xe0\x10}\xc1\xcc\x85\x81*H;(\x01\xed\xd3\xd5\xd3/\xc3\xed\xa5\xd2\x9f\xfc\x96\xf4\xc6\xbf)\xce\xcc\xcfe\xa0\xabQ\x8d\t\x91\xd9\x81\xef\xe3/\xd0\r\xd6\xee\xd8\xed\xb1\x10\x8f\x04h\x11L\x89\xbas\x96\xc3,'
+                           b'\xec`L9\xe6\x07\xad\x94\xd6\xb6.+2"#\x9d\xa3z\x89\x8ag\xcb\x9e\xa3Gw;\x98\xfcBz\xa6\xeac\xac2{$0\x16\xb0L\xda\x86~\xa7\xa5B,Wd\x87\xb4\xefx 1%\xcdZ\xedv-\x1f\xad\xcb\xb9\x82\x0e\xa0\xa5\xd9S\x102\x9f/c\xcc\x04`\xe0\xb7\x9d{\xd4\xb10\x0cV\xcd\xa4\xd4\x90\xcb\xd0L+\x9e8{'
+                           b'^\x8d\x88\xf2\xb0B\x9e\x05\xae\x0b\xd3vDl\x80D^\xf7\xdf\xe0\xb5\x0c\xa0\xe4\xd9\x8b\x83\xf4\x9e\x1e\xc6\x8e\x81\xf1\x04V\x89Q}0\xdbGO7\x80\xc9y^d\xb1\xc01\x0e\xc5\xa3\x01\x93\xc8X\x18\xb7\x04\xf44\xa6\xc1\x0b\x01\x7f4\xd8\x17\xa0\x93\xbfgP\xcew\xb0a\xec\x96Zs\x16D\x90\xfc\xce\x88\xefu\x187\x01\xc0&\x15\x7f\xe1\x8a\xbe0\xe1R\x8a\xfe\xd3A\x03\xb0\x82\x8br6\xa0\xbdp<\xbc\xe2\xce\xbd\xd2\t\xffA\x9dP\x02\x001\x99\xf61\x9f\x1c@pP\xfb\x1f\x92\xc9A\xe4_\xa0\x80ks\x06'
+                           b'\x98KX\x00\x00\x00\x00IEND\xaeB`\x82')
+
 
 if __name__ == '__main__':
     appQt = QApplication(sys.argv)
     RectScreen0 = appQt.desktop().screenGeometry(0)
     win = MainWindow(RectScreen0.width(), RectScreen0.height())
+    win.move(RectScreen0.left(), RectScreen0.top())
     win.show()
     sys.exit(appQt.exec_())
