@@ -190,3 +190,7 @@ class RobotChiefCommunicationOfficer(Reader):
         print(self.Address, "shutting down safely.")
         self.shutdown(socket.SHUT_RDWR)
         self.close()
+
+
+if __name__ == '__main__':
+    ModBusReader()
