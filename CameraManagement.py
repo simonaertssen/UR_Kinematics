@@ -37,7 +37,6 @@ class Camera:
         self.info = pylon.CDeviceInfo()
         self.camera = None
         self.imageEventHandler = ImageEventHandler()
-        self.grabbedImage = None
         self.setCamera()
         self.registerGrabbingStrategy()
 
@@ -47,10 +46,13 @@ class Camera:
         self.pixelHeight = self.camera.Height.Value
         self.camera.Close()
 
+    def getShape(self):
+        return self.pixelWidth, self.pixelHeight
+
     def formatImage(self, image_to_format):
         if len(image_to_format.shape) == 3 and self.grayScale:
             image_to_format = cv.cvtColor(image_to_format, cv.COLOR_RGB2GRAY)
-        return image_to_format.astype('uint8')
+        return image_to_format
 
     def setCamera(self):
         try:
@@ -82,30 +84,33 @@ class Camera:
         self.camera.RegisterConfiguration(pylon.SoftwareTriggerConfiguration(), pylon.RegistrationMode_ReplaceAll, pylon.Cleanup_Delete)
         self.camera.RegisterImageEventHandler(self.imageEventHandler, pylon.RegistrationMode_Append, pylon.Cleanup_Delete)
 
-    def grabImage(self):
+    def grabImage(self, image):
         self.Open()
         grabbedImage = None
         if not self.camera.IsGrabbing():
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
-        if self.camera.WaitForFrameTriggerReady(0, pylon.TimeoutHandling_Return):
-            self.camera.ExecuteSoftwareTrigger()
-        while grabbedImage is None:
-            cameraContextValue, grabbedImage = self.imageEventHandler.imageQueue.get()
-        return self.formatImage(grabbedImage)
+        try:
+            if self.camera.WaitForFrameTriggerReady(0, pylon.TimeoutHandling_Return):
+                self.camera.ExecuteSoftwareTrigger()
+            while grabbedImage is None:
+                _, grabbedImage = self.imageEventHandler.imageQueue.get()
+            np.copyto(image, self.formatImage(grabbedImage))
+            return 0
+        except genicam.RuntimeException as e:
+            print('Runtime Exception: {}'.format(e))
+            return -1
 
 
 class CameraArray:
-    def __init__(self, serial_numbers=[], grayscale=True):
+    def __init__(self, serial_numbers=(), grayscale=True):
         super(CameraArray, self).__init__()
         self.serialNumbers = serial_numbers
         self.grayScale = grayscale
-        self.maxCamerasToUse = 4
-        self.inProcessOfClosing = False
         # Parameters for continuous extraction of data:
         self.numCameras = len(self.serialNumbers)
-        if self.numCameras == 0:
+        if self.numCameras == 0 or self.numCameras > 4:
             raise ValueError
-        self.cameraArray = pylon.InstantCameraArray(min(self.numCameras, self.maxCamerasToUse))
+        self.cameraArray = pylon.InstantCameraArray(self.numCameras)
         self.pixelWidths, self.pixelHeights = [], []
         self.imageEventHandler = ImageEventHandler()
         self.setCameras()
@@ -116,6 +121,9 @@ class CameraArray:
             self.pixelWidths.append(camera.Width.Value)
             self.pixelHeights.append(camera.Height.Value)
             camera.Close()
+
+    def getShape(self):
+        return self.pixelWidths, self.pixelHeights
 
     def formatImage(self, image_to_format):
         if len(image_to_format.shape) == 3 and self.grayScale:
@@ -154,89 +162,45 @@ class CameraArray:
     def imageFromQueue(self):
         return self.imageEventHandler.imageQueue.get
 
-    def grabImage(self, grabbedImages):
-        alreadyReplaced = 0
+    def grabImage(self, images):
         if not self.cameraArray.IsGrabbing():
             self.cameraArray.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
-
         try:
             for cam in self.cameraArray:
-                if cam.WaitForFrameTriggerReady(10, pylon.TimeoutHandling_Return):
+                if cam.WaitForFrameTriggerReady(10, pylon.TimeoutHandling_ThrowException):
                     cam.ExecuteSoftwareTrigger()
-            for cam in self.cameraArray:
+            for _ in range(2):
                 context, grabbedImage = self.imageEventHandler.imageQueue.get()
-                grabbedImages[context] = self.formatImage(grabbedImage)
+                np.copyto(images[context], self.formatImage(grabbedImage))
             return 0
         except genicam.RuntimeException as e:
-            # raise SystemExit('Runtime Exception: {}'.format(self.serialNumbers, e))
+            print('Runtime Exception: {}'.format(e))
             return -1
 
 
 def runSingleCamera():
     # This works well
-    camera = Camera("21565643")
+    camera = Camera("22290932")
     testWindow = 'window1'
     cv.namedWindow(testWindow)
     cv.moveWindow(testWindow, 20, 20)
 
+    h, w = camera.getShape()
+    image = np.zeros((w, h), dtype=np.uint8)
+
     start = time.time()
-
     while True:
-        image = camera.grabImage()
-        w, h = image.shape
-        image = cv.resize(image, (int(h/4), int(w/4)))
+        if camera.grabImage(image) != 0:
+            continue
 
-        cv.imshow(testWindow, image)
+        cv.imshow(testWindow, cv.resize(image, (int(h/4), int(w/4))))
         if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
             break
         now = time.time()
         print("FPS =", 1 / (time.time() - start))
         start = now
-
     camera.Destroy()
     cv.destroyAllWindows()
-
-
-def runDuoCamera():
-    # This does not work well
-    camera1 = Camera("21565643")
-    camera2 = Camera("22290932")
-    testWindow1 = 'window1'
-    testWindow2 = 'window2'
-    cv.namedWindow(testWindow1)
-    cv.moveWindow(testWindow1, 20, 20)
-    cv.namedWindow(testWindow2)
-    cv.moveWindow(testWindow2, 500, 20)
-
-    start = time.time()
-
-    while True:
-        # image1 = camera1.grabImage()
-        # w, h = image1.shape
-        # image1 = cv.resize(image1, (int(h/8), int(w/8)))
-        # cv.imshow(testWindow1, image1)
-
-        image2 = camera2.grabImage()
-        w, h = image2.shape
-        image2 = cv.resize(image2, (int(h / 8), int(w / 8)))
-        cv.imshow(testWindow2, image2)
-        if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
-            break
-        now = time.time()
-        print("FPS =", 1 / (time.time() - start))
-        start = now
-
-    camera1.Destroy()
-    camera2.Destroy()
-    cv.destroyAllWindows()
-
-
-def hconcat_resize_min(im_list, interpolation=cv.INTER_CUBIC):
-    im_list = [cv.resize(image, (int(image.shape[1] / 4), int(image.shape[0] / 4))) for image in im_list]
-    h_min = min(im.shape[0] for im in im_list)
-    im_list_resize = [cv.resize(im, (int(im.shape[1] * h_min / im.shape[0]), h_min), interpolation=interpolation)
-                      for im in im_list]
-    return cv.hconcat(im_list_resize)
 
 
 def runCameraArray():
@@ -245,9 +209,16 @@ def runCameraArray():
     cv.namedWindow(testWindow)
     cv.moveWindow(testWindow, 20, 20)
 
-    start = time.time()
+    def hconcat_resize_min(im_list, interpolation=cv.INTER_CUBIC):
+        im_list = [cv.resize(image, (int(image.shape[1] / 4), int(image.shape[0] / 4))) for image in im_list]
+        h_min = min(im.shape[0] for im in im_list)
+        im_list_resize = [cv.resize(im, (int(im.shape[1] * h_min / im.shape[0]), h_min), interpolation=interpolation)
+                          for im in im_list]
+        return cv.hconcat(im_list_resize)
 
-    images = [None, None]
+    images = [np.zeros((w, h), dtype=np.uint8) for w, h in cameras.getShape()]
+
+    start = time.time()
     while True:
         if cameras.grabImage(images) != 0:
             continue
@@ -258,11 +229,44 @@ def runCameraArray():
         now = time.time()
         print("FPS =", 1 / (time.time() - start))
         start = now
-
     cameras.Destroy()
     cv.destroyAllWindows()
 
 
+def runCamerasAlternate():
+    cameraOn = Camera("21565643")
+    cameraOff = Camera("22290932")
+    testWindow = 'window1'
+    cv.namedWindow(testWindow)
+    cv.moveWindow(testWindow, 20, 20)
+
+    h, w = cameraOn.getShape()
+    imageOn = np.zeros((w, h), dtype=np.uint8)
+
+    start = time.time()
+    while True:
+        if cameraOn.grabImage(imageOn) != 0:
+            continue
+
+        cv.imshow(testWindow, cv.resize(imageOn, (int(h/4), int(w/4))))
+        if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
+            break
+
+        if cv.waitKey(5) & 0xFF == ord('q'):  # Switch cameras
+            cameraOn.Close()
+            cameraOn, cameraOff = cameraOff, cameraOn
+            cameraOn.Open()
+            h, w = cameraOn.getShape()
+            imageOn = np.zeros((w, h), dtype=np.uint8)
+
+        now = time.time()
+        print("FPS =", 1 / (time.time() - start))
+        start = now
+    cameraOn.Destroy()
+    cameraOn.Destroy()
+    cv.destroyAllWindows()
+
+
 if __name__ == '__main__':
-    runSingleCamera()
+    runCamerasAlternate()
 
