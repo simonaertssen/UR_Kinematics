@@ -1,20 +1,18 @@
-import sys
-from pypylon import pylon
-from pypylon import genicam
-import cv2 as cv
 import time
+import cv2 as cv
 import numpy as np
 
-# Inherit camera1 attributes and methods programmatically?
-# cam.Open()
-# for attributeName in dir(cam):
-#     try:
-#         attribute = getattr(cam, attributeName)
-#         if callable(attribute):
-#             setattr(self, attributeName, attribute)
-#     except genicam.GenericException as e:
-#         print("OS error: {0}".format(e))
-# cam.Close()
+from sys import exit
+from pypylon import pylon
+from pypylon import genicam
+
+
+class SampleImageEventHandler(pylon.ImageEventHandler):
+    def __init__(self, callback):
+        super(SampleImageEventHandler).__init__()
+
+    def OnImageGrabbed(self, camera, grabResult):
+        print("CSampleImageEventHandler.OnImageGrabbed called.")
 
 
 class ImageEventHandler(pylon.ImageEventHandler):
@@ -23,21 +21,18 @@ class ImageEventHandler(pylon.ImageEventHandler):
         self.returnImageCallback = callback
         self.cameraContextValue = None
         self.grabbedImage = None
-        self.start = time.time()
 
-    def OnImageGrabbed(self, camera, grabResult):
+    def OnImageGrabbed(self, camera, grab_result):
+        print('Inside event handler')
         try:
-            if grabResult.GrabSucceeded():
-                with grabResult.GetArrayZeroCopy() as ZCArray:
+            if grab_result.GrabSucceeded():
+                with grab_result.GetArrayZeroCopy() as ZCArray:
                     self.grabbedImage = ZCArray
-                    # self.cameraContextValue = grabResult.GetCameraContext()
-
-                # print("FPS =", 1 / (time.time() - self.start))
-                self.start = time.time()
                 self.returnImageCallback(self.grabbedImage)
+                grab_result.Release()
 
         except genicam.GenericException as e:
-            print("An exception occurred. {}".format(e))
+            print("ImageEventHandler Exception: {}".format(e))
 
 
 class Camera:
@@ -55,29 +50,33 @@ class Camera:
         self.imageEventHandler = ImageEventHandler(self.getLatestImage)
         self.grabbedImage = None
         self.setCamera()
+        self.registerGrabbingStrategy()
 
-        # Open camera1 briefly to avoid errors.
+        # Open camera briefly to avoid errors.
         self.camera.Open()
         self.pixelWidth = self.camera.Width.Value
         self.pixelHeight = self.camera.Height.Value
-        # self.fps = max(100, self.camera1.AcquisitionFrameRate.Value)
+        self.fps = max(100, self.camera.AcquisitionFrameRate.Value)
         self.camera.Close()
 
     def getLatestImage(self, image=None):
         self.grabbedImage = image
 
-    def formatImage(self, imageToFormat):
-        if len(imageToFormat.shape) == 3 and self.grayScale:
-            imageToFormat = cv.cvtColor(imageToFormat, cv.COLOR_RGB2GRAY)
-        return imageToFormat
+    def formatImage(self, image_to_format):
+        if len(image_to_format.shape) == 3 and self.grayScale:
+            image_to_format = cv.cvtColor(image_to_format, cv.COLOR_RGB2GRAY)
+        return image_to_format
 
     def setCamera(self):
-        if self.serialNumber is None:
-            self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
-        else:
-            self.info.SetSerialNumber(self.serialNumber)
-            self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(self.info))
-        print("Camera {} is connected.".format(self.serialNumber))
+        try:
+            if self.serialNumber is None:
+                self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
+            else:
+                self.info.SetSerialNumber(self.serialNumber)
+                self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(self.info))
+            print("Camera {} is connected.".format(self.serialNumber))
+        except genicam.GenericException as e:
+            exit('Camera {} could not be found: {}'.format(self.serialNumber, e))
 
     def Open(self):
         if not self.camera.IsOpen():
@@ -95,20 +94,26 @@ class Camera:
         self.camera.DestroyDevice()
 
     def registerGrabbingStrategy(self):
-        self.camera.RegisterConfiguration(pylon.SoftwareTriggerConfiguration(), pylon.RegistrationMode_Append, pylon.Cleanup_Delete)
+        self.camera.RegisterConfiguration(pylon.SoftwareTriggerConfiguration(), pylon.RegistrationMode_ReplaceAll, pylon.Cleanup_Delete)
         self.camera.RegisterImageEventHandler(self.imageEventHandler, pylon.RegistrationMode_Append, pylon.Cleanup_Delete)
 
     def grabImage(self):
         self.Open()
         grabbedImage = None
         if not self.camera.IsGrabbing():
-            self.registerGrabbingStrategy()
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
-            # self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
+            # self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
+
         if self.camera.WaitForFrameTriggerReady(100, pylon.TimeoutHandling_Return):
             self.camera.ExecuteSoftwareTrigger()
+
         while grabbedImage is None:
             grabbedImage = self.imageEventHandler.grabbedImage
+
+        # with self.camera.RetrieveResult(50, pylon.TimeoutHandling_Return) as grabResult:
+        #     if grabResult.GrabSucceeded():
+        #         with grabResult.GetArrayZeroCopy() as ZCArray:
+        #             grabbedImage = ZCArray
         return self.formatImage(grabbedImage)
 
 
@@ -276,87 +281,114 @@ class CameraArray:
         return grabbedImages
 
 
-if __name__ == '__main__':
-
-    serials = ["22290932", "21565643"]
-    cameras = [Camera(serial_number) for serial_number in serials]
-
-    window = "Show me"
-    cv.namedWindow(window)
-    cv.moveWindow(window, 20, 20)
+def runSingleCamera():
+    camera = Camera("40072162")
+    testWindow = 'window1'
+    cv.namedWindow(testWindow)
+    cv.moveWindow(testWindow, 20, 20)
 
     start = time.time()
-    cameraindex = 0
-    camera = cameras[cameraindex]
 
-    while True:
-        if cv.waitKey(1) & 0xFF == ord('q'):
-            break
+    image = camera.grabImage()
+
+    while False:
         image = camera.grabImage()
-        image = cv.resize(image, (int(camera.pixelWidth / 3), int(camera.pixelHeight / 3)))
+        w, h = image.shape
+        image = cv.resize(image, (int(h/8), int(w/8)))
 
-        cv.imshow(window, image)
-
-        if cv.waitKey(1) & 0xFF == ord('c'):
-            camera.Close()
-            cameraindex += 1
-            cameraindex = cameraindex % 2
-            camera = cameras[cameraindex]
-            camera.Open()
-
+        cv.imshow(testWindow, image)
+        if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
+            break
         now = time.time()
-        print("Camera FPS =", 1 / (time.time() - start))
+        print("FPS =", 1 / (time.time() - start))
         start = now
 
-    for camera in cameras:
-        camera.Close()
-
+    camera.Close()
     cv.destroyAllWindows()
-    sys.exit()
 
-    import threading
-    import multiprocessing
-    import queue
 
-    def runCamera(queue, serial_number):
-        camera = Camera(serial_number)
+if __name__ == '__main__':
+    runSingleCamera()
 
-        cv.namedWindow(serial_number)
-        cv.moveWindow(serial_number, 20, 20)
-
-        start = time.time()
-        while True:
-            lock = queue.get()
-            lock.acquire()
-            image = camera.grabImage()
-            lock.release()
-            queue.put(lock)
-
-            image = cv.resize(image, (int(camera.pixelWidth / 3), int(camera.pixelHeight / 3)))
-
-            cv.imshow(serial_number, image)
-
-            if cv.waitKey(1) & 0xFF == ord('q'):
-                break
-            now = time.time()
-            print("Camera FPS =", 1 / (time.time() - start))
-            start = now
-
-        camera.Close()
-        cv.destroyAllWindows()
-
-    serials = ["22290932", "21565643"]
-    threadLock = threading.Lock()
-    lockQueue = queue.Queue()
-    lockQueue.put(threadLock)
-    cameraThread1 = threading.Thread(target=runCamera, args=(lockQueue, "22290932", ), daemon=True)
-    cameraThread1.start()
-
-    cameraThread2 = threading.Thread(target=runCamera, args=(lockQueue, "21565643",), daemon=True)
-    cameraThread2.start()
-    cameraThread2.join()
-
-    sys.exit()
+    # serials = ["22290932", "21565643"]
+    # cameras = [Camera(serial_number) for serial_number in serials]
+    #
+    # window = "Show me"
+    # cv.namedWindow(window)
+    # cv.moveWindow(window, 20, 20)
+    #
+    # start = time.time()
+    # cameraindex = 0
+    # camera = cameras[cameraindex]
+    #
+    # while True:
+    #     if cv.waitKey(1) & 0xFF == ord('q'):
+    #         break
+    #     image = camera.grabImage()
+    #     image = cv.resize(image, (int(camera.pixelWidth / 3), int(camera.pixelHeight / 3)))
+    #
+    #     cv.imshow(window, image)
+    #
+    #     if cv.waitKey(1) & 0xFF == ord('c'):
+    #         camera.Close()
+    #         cameraindex += 1
+    #         cameraindex = cameraindex % 2
+    #         camera = cameras[cameraindex]
+    #         camera.Open()
+    #
+    #     now = time.time()
+    #     print("Camera FPS =", 1 / (time.time() - start))
+    #     start = now
+    #
+    # for camera in cameras:
+    #     camera.Close()
+    #
+    # cv.destroyAllWindows()
+    # sys.exit()
+    #
+    # import threading
+    # import multiprocessing
+    # import queue
+    #
+    # def runCamera(queue, serial_number):
+    #     camera = Camera(serial_number)
+    #
+    #     cv.namedWindow(serial_number)
+    #     cv.moveWindow(serial_number, 20, 20)
+    #
+    #     start = time.time()
+    #     while True:
+    #         lock = queue.get()
+    #         lock.acquire()
+    #         image = camera.grabImage()
+    #         lock.release()
+    #         queue.put(lock)
+    #
+    #         image = cv.resize(image, (int(camera.pixelWidth / 3), int(camera.pixelHeight / 3)))
+    #
+    #         cv.imshow(serial_number, image)
+    #
+    #         if cv.waitKey(1) & 0xFF == ord('q'):
+    #             break
+    #         now = time.time()
+    #         print("Camera FPS =", 1 / (time.time() - start))
+    #         start = now
+    #
+    #     camera.Close()
+    #     cv.destroyAllWindows()
+    #
+    # serials = ["22290932", "21565643"]
+    # threadLock = threading.Lock()
+    # lockQueue = queue.Queue()
+    # lockQueue.put(threadLock)
+    # cameraThread1 = threading.Thread(target=runCamera, args=(lockQueue, "22290932", ), daemon=True)
+    # cameraThread1.start()
+    #
+    # cameraThread2 = threading.Thread(target=runCamera, args=(lockQueue, "21565643",), daemon=True)
+    # cameraThread2.start()
+    # cameraThread2.join()
+    #
+    # sys.exit()
 
     # # Example on how to use a single camera and how to threshold:
     # camera1 = Camera("22290932")
