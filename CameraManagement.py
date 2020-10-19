@@ -2,37 +2,26 @@ import time
 import cv2 as cv
 import numpy as np
 
+from queue import Queue
 from sys import exit
-from pypylon import pylon
-from pypylon import genicam
-
-
-class SampleImageEventHandler(pylon.ImageEventHandler):
-    def __init__(self, callback):
-        super(SampleImageEventHandler).__init__()
-
-    def OnImageGrabbed(self, camera, grabResult):
-        print("CSampleImageEventHandler.OnImageGrabbed called.")
+from pypylon import pylon, genicam
 
 
 class ImageEventHandler(pylon.ImageEventHandler):
-    def __init__(self, callback):
-        super(ImageEventHandler).__init__()
-        self.returnImageCallback = callback
-        self.cameraContextValue = None
-        self.grabbedImage = None
+    imageQueue = Queue()
 
     def OnImageGrabbed(self, camera, grab_result):
-        print('Inside event handler')
         try:
+            while not self.imageQueue.empty():
+                self.imageQueue.get()
             if grab_result.GrabSucceeded():
                 with grab_result.GetArrayZeroCopy() as ZCArray:
-                    self.grabbedImage = ZCArray
-                self.returnImageCallback(self.grabbedImage)
-                grab_result.Release()
-
+                    grabbedImage = ZCArray
+                self.imageQueue.put(grabbedImage)
         except genicam.GenericException as e:
             print("ImageEventHandler Exception: {}".format(e))
+        finally:
+            grab_result.Release()
 
 
 class Camera:
@@ -47,7 +36,7 @@ class Camera:
         # Parameters for continuous extraction of data:
         self.info = pylon.CDeviceInfo()
         self.camera = None
-        self.imageEventHandler = ImageEventHandler(self.getLatestImage)
+        self.imageEventHandler = ImageEventHandler()
         self.grabbedImage = None
         self.setCamera()
         self.registerGrabbingStrategy()
@@ -58,9 +47,6 @@ class Camera:
         self.pixelHeight = self.camera.Height.Value
         self.fps = max(100, self.camera.AcquisitionFrameRate.Value)
         self.camera.Close()
-
-    def getLatestImage(self, image=None):
-        self.grabbedImage = image
 
     def formatImage(self, image_to_format):
         if len(image_to_format.shape) == 3 and self.grayScale:
@@ -102,18 +88,10 @@ class Camera:
         grabbedImage = None
         if not self.camera.IsGrabbing():
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
-            # self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
-
-        if self.camera.WaitForFrameTriggerReady(100, pylon.TimeoutHandling_Return):
+        if self.camera.WaitForFrameTriggerReady(0, pylon.TimeoutHandling_Return):
             self.camera.ExecuteSoftwareTrigger()
-
         while grabbedImage is None:
-            grabbedImage = self.imageEventHandler.grabbedImage
-
-        # with self.camera.RetrieveResult(50, pylon.TimeoutHandling_Return) as grabResult:
-        #     if grabResult.GrabSucceeded():
-        #         with grabResult.GetArrayZeroCopy() as ZCArray:
-        #             grabbedImage = ZCArray
+            grabbedImage = self.imageEventHandler.imageQueue.get()
         return self.formatImage(grabbedImage)
 
 
@@ -289,9 +267,7 @@ def runSingleCamera():
 
     start = time.time()
 
-    image = camera.grabImage()
-
-    while False:
+    while True:
         image = camera.grabImage()
         w, h = image.shape
         image = cv.resize(image, (int(h/8), int(w/8)))
