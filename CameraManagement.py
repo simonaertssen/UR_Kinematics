@@ -17,7 +17,7 @@ class ImageEventHandler(pylon.ImageEventHandler):
                 cameraContextValue = grab_result.GetCameraContext()
                 with grab_result.GetArrayZeroCopy() as ZCArray:
                     grabbedImage = ZCArray
-                self.imageQueue.put((cameraContextValue, grabbedImage))
+                self.imageQueue.put((cameraContextValue, grabbedImage.data))
         except genicam.GenericException as e:
             print("ImageEventHandler Exception: {}".format(e))
         finally:
@@ -171,90 +171,6 @@ class CameraArray:
             # raise SystemExit('Runtime Exception: {}'.format(self.serialNumbers, e))
             return -1
 
-    def grabImageOld(self):
-        grabbedImage = None
-        cameraContextValue = None
-
-        if not self.cameraArray.IsGrabbing():
-            self.cameraArray.StartGrabbing(pylon.GrabStrategy_OneByOne, pylon.GrabLoop_ProvidedByInstantCamera)
-        try:
-            grabResult = self.cameraArray.RetrieveResult(100)
-            if grabResult.GrabSucceeded():
-                cameraContextValue = grabResult.GetCameraContext()
-                with grabResult.GetArrayZeroCopy() as ZCArray:
-                    grabbedImage = self.formatImage(ZCArray)
-        except genicam.GenericException as e:
-            print("An exception occurred. {}".format(e))
-        return grabbedImage, cameraContextValue
-
-    def grabImageOld(self):
-        camera_done = [0, 0]
-        grabbedImages = [None, None]
-
-        if not self.cameraArray.IsGrabbing():
-            self.cameraArray.StartGrabbing()
-
-        # for i, camera in enumerate(self.cameraArray):
-        #     try:
-        #         if not camera.IsGrabbing():
-        #             # self.registerGrabbingStrategy(camera)
-        #             camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
-        #             print("Started grabbing")
-        #         if camera.WaitForFrameTriggerReady(10, pylon.TimeoutHandling_Return):
-        #             camera.ExecuteSoftwareTrigger()
-        #         while grabbedImage is None:
-        #             print("waiting")
-        #             grabbedImage = self.imageEventHandlers[i].grabbedImage
-        #         self.grabbedImages[self.imageEventHandlers[i].cameraContextValue] = grabbedImage
-        #     except genicam.GenericException as e:
-        #         print("An exception occurred. {}".format(e))
-
-        # Kind of works, but with delays...
-        try:
-            grabResult = self.cameraArray.RetrieveResult(50)
-            if grabResult.GrabSucceeded():
-                cameraContextValue = grabResult.GetCameraContext()
-                print(cameraContextValue)
-                if camera_done[cameraContextValue] == 0:
-                    with grabResult.GetArrayZeroCopy() as ZCArray:
-                        grabbedImage = ZCArray
-                        grabbedImages[cameraContextValue] = self.formatImage(grabbedImage)
-                        camera_done[cameraContextValue] = 1
-        except genicam.GenericException as e:
-            print("An exception occurred. {}".format(e))
-
-        # try:
-        #     # if self.cameraArray.WaitForFrameTriggerReady(100, pylon.TimeoutHandling_ThrowException):
-        #     #     self.cameraArray.ExecuteSoftwareTrigger()
-        #
-        #     grabResult = self.cameraArray.RetrieveResult(100, pylon.TimeoutHandling_Return)
-        #     if grabResult.GrabSucceeded():
-        #         cameraContextValue = grabResult.GetCameraContext()
-        #         if camera_done[cameraContextValue] == 0:
-        #             with grabResult.GetArrayZeroCopy() as ZCArray:
-        #                 grabbedImage = ZCArray
-        #                 self.grabbedImages[cameraContextValue] = self.formatImage(grabbedImage)
-        #                 camera_done[cameraContextValue] = 1
-        # except genicam.GenericException as e:
-        #     print("An exception occurred. {}".format(e))
-
-        return grabbedImages
-
-    def grabImageOld(self):
-        grabbedImages = []
-        for i, camera in enumerate(self.cameraArray):
-            camera.Open()
-            grabbedImage = None
-            if not camera.IsGrabbing():
-                # self.registerGrabbingStrategy(camera_number)
-                camera.StartGrabbing(pylon.GrabStrategy_OneByOne, pylon.GrabLoop_ProvidedByInstantCamera)
-            if camera.WaitForFrameTriggerReady(100, pylon.TimeoutHandling_Return):
-                camera.ExecuteSoftwareTrigger()
-            while grabbedImage is None:
-                grabbedImage = self.imageEventHandlers[i].grabbedImage
-            grabbedImages.append(self.formatImage(grabbedImage))
-        return grabbedImages
-
 
 def runSingleCamera():
     # This works well
@@ -348,5 +264,5 @@ def runCameraArray():
 
 
 if __name__ == '__main__':
-    runCameraArray()
+    runSingleCamera()
 
