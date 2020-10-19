@@ -283,6 +283,39 @@ def runSingleCamera():
     cv.destroyAllWindows()
 
 
+def runDuoCamera():
+    camera1 = Camera("40072162")
+    camera2 = Camera("40072162")
+    testWindow1 = 'window1'
+    testWindow2 = 'window1'
+    cv.namedWindow(testWindow1)
+    cv.moveWindow(testWindow1, 20, 20)
+    cv.namedWindow(testWindow2)
+    cv.moveWindow(testWindow2, 500, 20)
+
+    start = time.time()
+
+    while True:
+        image1 = camera1.grabImage()
+        w, h = image1.shape
+        image1 = cv.resize(image1, (int(h/8), int(w/8)))
+        cv.imshow(testWindow1, image1)
+
+        image2 = camera2.grabImage()
+        w, h = image2.shape
+        image2 = cv.resize(image2, (int(h / 8), int(w / 8)))
+        cv.imshow(testWindow2, image2)
+        if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
+            break
+        now = time.time()
+        print("FPS =", 1 / (time.time() - start))
+        start = now
+
+    camera1.Close()
+    camera2.Close()
+    cv.destroyAllWindows()
+
+
 if __name__ == '__main__':
     runSingleCamera()
 
