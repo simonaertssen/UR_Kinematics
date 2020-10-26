@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QSizePo
                              QGridLayout, QVBoxLayout, QSplitter, QPushButton, QLineEdit, QRadioButton, QCheckBox, QShortcut)
 
 
+
 class MainObjectWidget(QWidget):
     def __init__(self, screen_width, screen_height, parent):
         super(MainObjectWidget, self).__init__(parent)
@@ -167,9 +168,6 @@ class MainObjectWidget(QWidget):
 
         self.verifyComponentsAreWorking()
 
-    def test(self):
-        print(self.select_detector_dispatch_table[str(self.select_detector.currentText())])
-
     def registerSelectedObject(self, index):
         selected_object = self.select_objects.itemText(index)
         print('Selected object {}'.format(selected_object))
@@ -199,20 +197,31 @@ class MainObjectWidget(QWidget):
     def openLibraryButtonClicked(self):
         print("Opening Library")
         self.button_stop_robot.setStyleSheet('QPushButton{font-weight: bold}')
-        self.robot_status_text.setStyleSheet('font-size: ' + self.self.text_size3 + '; color: red')
         self.robot_status_text.setText("Not running")
-        self.camera_status_text.setStyleSheet('font-size: ' + self.self.text_size3 + '; color: red')
+        self.robot_status_text.setStyleSheet('font-size: ' + self.text_size3 + '; color: red')
         self.camera_status_text.setText("Not running")
-        # self.libraryWin = Ol_gui.MainWindow(int(0.75 * self.screen_width), int(0.75 * self.screen_height))
-        # self.libraryWin.signal_exit_library.connect(self.libray_closed)
-        # self.libraryWin.show()
+        self.camera_status_text.setStyleSheet('font-size: ' + self.text_size3 + '; color: red')
+        libraryWindow = LibraryWindow(int(0.75 * self.screen_width), int(0.75 * self.screen_height), self.text_size1, self.text_size2, self.text_size3, self)
+        libraryWindow.signal_exit_library.connect(self.closeLibrary)
+        libraryWindow.show()
         print("Library Opened")
 
     def closeLibrary(self):
         print("Closing Library")
-        # self.signal_start_capture.emit()
-        # self.update_param()
+        self.updateParameters()
+        self.signal_start_capture.emit()
         print("Library Closed")
+
+    def update_param(self):
+        print("Updating parameters")
+        directories = sorted(os.listdir(self.libDir))
+        current_object = self.select_objects.currentText()
+        self.select_objects.clear()
+        self.select_objects.addItems(directories)
+        index = self.select_objects.findText(current_object)
+        if index > 0:
+            self.select_objects.setCurrentIndex(index)
+        print("Parameters updated")
 
     def autoPickButtonClicked(self):
         print('Starting automised picking')
@@ -231,7 +240,6 @@ class MainObjectWidget(QWidget):
 
     def startRobotButtonClicked(self):
         print('Starting robot')
-        # Start robot async
         self.button_start_robot.setEnabled(False)
         self.button_start_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: lightgrey}')
         self.robot_status_text.setText("Running")
@@ -272,8 +280,8 @@ class MainWindow(QMainWindow):
         JLI_icon_pm.loadFromData(JLI_icon_bytes)
         self.setWindowIcon(QIcon(JLI_icon_pm))
 
-        self.screen_width = screen_width
-        self.screen_height = screen_height
+        self.screen_width = GetSystemMetrics(0) if screen_width is None else screen_width
+        self.screen_height = GetSystemMetrics(1) if screen_height is None else screen_height
         self.image_width = int(GetSystemMetrics(0) * 0.75)  # laptop screen
 
         self.frame = np.zeros((800, 1024), dtype=np.uint8)
@@ -288,15 +296,15 @@ class MainWindow(QMainWindow):
         splitter.addWidget(self.img_src_display)
         self.setCentralWidget(splitter)
 
-        # self.props.signal_start.connect(self.start)
-        # self.props.signal_stop.connect(self.stop)
-        # self.props.signal_stop_capture.connect(self.stop_capture)
-        # self.props.signal_start_capture.connect(self.start_capture)
-        # self.props.signal_exit.connect(self.exit)
-        # self.props.combo1.currentIndexChanged.connect(self.update_lookup)
-        # #self.props.camera.currentIndexChanged.connect(self.update_cam)
-        # self.props.button_replace.clicked.connect(self.replae_objets)
-        # self.props.signal_pick.connect(lambda: self.update_pick_list(True))
+        # self.properties.signal_start.connect(self.start)
+        # self.properties.signal_stop.connect(self.stop)
+        # self.properties.signal_stop_capture.connect(self.stop_capture)
+        # self.properties.signal_start_capture.connect(self.start_capture)
+        # self.properties.signal_exit.connect(self.exit)
+        # self.properties.combo1.currentIndexChanged.connect(self.update_lookup)
+        # #self.properties.camera.currentIndexChanged.connect(self.update_cam)
+        # self.properties.button_replace.clicked.connect(self.replae_objets)
+        # self.properties.signal_pick.connect(lambda: self.update_pick_list(True))
 
         splitter.setMouseTracking(True)
         # self.keyPressEvent = self.MainKeyPressEvent
