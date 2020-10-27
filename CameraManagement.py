@@ -179,9 +179,8 @@ class CameraArray:
 
 
 class TopCamera(Camera):
-    def __init__(self, serial_number=None, grayscale=True):
+    def __init__(self, serial_number="22290932", grayscale=True):
         super(TopCamera, self).__init__(serial_number, grayscale)
-        self.TopView = np.zeros(self.getShape(), dtype=np.uint8)
 
     @staticmethod
     def extractInfo(image_to_extract):
@@ -227,6 +226,37 @@ class TopCamera(Camera):
                     raise ValueError('Too many tries on one image.')
             np.copyto(TopView, self.formatImage(grabbedImage))
             return TopView, self.extractInfo(TopView)
+
+        except genicam.RuntimeException as e:
+            print('Runtime Exception: {}'.format(e))
+            return None
+        except ValueError as e:
+            print('Value Exception: {}'.format(e))
+            return None
+
+
+class SurfaceCamera(Camera):
+    def __init__(self, serial_number="21565643", grayscale=True):
+        super(SurfaceCamera, self).__init__(serial_number, grayscale)
+
+    def grabImage(self):
+        self.Open()
+        grabbedImage = None
+        SurfaceView = np.zeros(self.getShape(), dtype=np.uint8)
+        if not self.camera.IsGrabbing():
+            self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
+        try:
+            if self.camera.WaitForFrameTriggerReady(0, pylon.TimeoutHandling_Return):
+                self.camera.ExecuteSoftwareTrigger()
+            max_tries = 5
+            for i in range(max_tries):
+                cam_num, grabbedImage = self.imageEventHandler.imageQueue.get()
+                if grabbedImage is not None:
+                    break
+                elif i == max_tries-1:
+                    raise ValueError('Too many tries on one image.')
+            np.copyto(SurfaceView, self.formatImage(grabbedImage))
+            return SurfaceView
 
         except genicam.RuntimeException as e:
             print('Runtime Exception: {}'.format(e))
