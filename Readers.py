@@ -56,6 +56,7 @@ class Reader(socket.socket):
             print(self.Address, "is safely connected.")
         except socket.timeout:
             self.close()
+            self.Connected = False
             exit('{} connection timed out.'.format(self.Address))
 
     def isConnected(self):
@@ -180,6 +181,7 @@ class ModBusReader(Reader):
     def shutdownSafely(self):
         print(self.Address, "shutting down safely.")
         self.Communicating = False
+        self.Connected = False
         self.CommunicationThread.join()
         self.shutdown(socket.SHUT_RDWR)
         self.close()
@@ -193,6 +195,7 @@ class RobotChiefCommunicationOfficer(Reader):
 
     def shutdownSafely(self):
         print(self.Address, "shutting down safely.")
+        self.Connected = False
         self.shutdown(socket.SHUT_RDWR)
         self.close()
 

@@ -37,6 +37,7 @@ class Camera:
         self.info = pylon.CDeviceInfo()
         self.camera = None
         self.imageEventHandler = ImageEventHandler()
+        self.Connected = False
         self.setCamera()
         self.registerGrabbingStrategy()
 
@@ -61,8 +62,10 @@ class Camera:
             else:
                 self.info.SetSerialNumber(self.serialNumber)
                 self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(self.info))
+            self.Connected = True
             print("Camera {} is connected.".format(self.serialNumber))
         except genicam.GenericException as e:
+            self.Connected = False
             raise SystemExit('Camera {} could not be found: {}'.format(self.serialNumber, e))
 
     def Open(self):
@@ -76,6 +79,7 @@ class Camera:
             self.camera.Close()
 
     def Destroy(self):
+        self.Connected = False
         self.Close()
         self.camera.DetachDevice()
         self.camera.DestroyDevice()
