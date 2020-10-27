@@ -42,6 +42,7 @@ class Reader(socket.socket):
         self.settimeout(self.TimeOut)
         self.Address = (ip, port)
         self.BufferLength = 1116
+        self.Connected = False
         self.connectSafely()
         self.ThreadLock = threading.Lock()
 
@@ -51,10 +52,14 @@ class Reader(socket.socket):
     def connectSafely(self):
         try:
             self.connect(self.Address)
+            self.Connected = True
             print(self.Address, "is safely connected.")
         except socket.timeout:
             self.close()
             exit('{} connection timed out.'.format(self.Address))
+
+    def isConnected(self):
+        return self.Connected
 
 
 class ModBusReader(Reader):

@@ -148,9 +148,9 @@ class Robot:
         totalDifferenceTolerance = 5e-3
         while sum(difference) >= totalDifferenceTolerance:
             difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
-            # if check_collisions and self.detectCollision():
-            #     print('Bumping in to stuff!')
-            #     raise RuntimeError('Bumping in to stuff!')
+            if check_collisions and self.detectCollision():
+                print('Bumping in to stuff!')
+                raise RuntimeError('Bumping in to stuff!')
 
     @staticmethod
     def waitForParallelTask(function, arguments=None):
