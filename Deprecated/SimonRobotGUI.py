@@ -2,9 +2,9 @@ import sys
 import time
 import numpy as np
 import cv2 as cv
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 from CameraManagement import Camera
-from RobotSocket import Robot
+from Deprecated.RobotSocket import Robot
 from vispy import scene
 
 

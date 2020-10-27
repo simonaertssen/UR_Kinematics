@@ -4,7 +4,7 @@ import numpy as np
 import cv2 as cv
 from PyQt5 import QtGui, QtCore, QtWidgets
 from CameraManagement import CameraArray
-from RobotSocket import Robot
+from Deprecated.RobotSocket import Robot
 
 
 class updateViewThread(QtCore.QThread):
