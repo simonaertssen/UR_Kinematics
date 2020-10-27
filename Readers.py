@@ -59,9 +59,6 @@ class Reader(socket.socket):
             self.Connected = False
             exit('{} connection timed out.'.format(self.Address))
 
-    def isConnected(self):
-        return self.Connected
-
 
 class ModBusReader(Reader):
     def __init__(self):

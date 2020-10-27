@@ -8,6 +8,7 @@ import time
 import shutil
 
 import numpy as np
+from Corpus import MainManager
 from win32api import GetSystemMetrics
 
 from PyQt5 import QtCore, QtWidgets
@@ -424,6 +425,7 @@ class MainObjectWidget(StandardObjectWidget):
 
     def __init__(self, screen_width, screen_height, parent):
         super(MainObjectWidget, self).__init__(screen_width, screen_height, parent)
+        self.manager = MainManager()
         self.showFullScreen()
         self.rootDir = os.getcwd()
         self.libDir = os.path.join(self.rootDir, "Library")
@@ -670,10 +672,19 @@ class MainObjectWidget(StandardObjectWidget):
 
     def verifyComponentsAreWorking(self):
         print('Testing whether all components are connected')
-        self.camera_status_text.setText("Not connected")
-        self.camera_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
-        self.robot_status_text.setText("Not connected")
-        self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
+        if self.manager.isRobotConnected():
+            self.robot_status_text.setText("Connected")
+            self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: green")
+        else:
+            self.robot_status_text.setText("Not connected")
+            self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
+
+        if self.manager.isTopCameraConnected() and self.manager.isDetailCameraConnected():
+            self.camera_status_text.setText("Connected")
+            self.camera_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: green")
+        else:
+            self.camera_status_text.setText("Not connected")
+            self.camera_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
 
 
 class MainWindow(StandardMainWindow):
