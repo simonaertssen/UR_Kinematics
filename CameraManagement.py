@@ -235,9 +235,9 @@ class TopCamera(Camera):
             return None
 
 
-class SurfaceCamera(Camera):
+class DetailCamera(Camera):
     def __init__(self, serial_number="21565643", grayscale=True):
-        super(SurfaceCamera, self).__init__(serial_number, grayscale)
+        super(DetailCamera, self).__init__(serial_number, grayscale)
 
     def grabImage(self):
         self.Open()
