@@ -721,9 +721,13 @@ class MainWindow(StandardMainWindow):
         self.manager.getContinuousImages(self.updateTopcamView)
 
     def updateTopcamView(self, new_image):
-        image = QImage(new_image.data, new_image.shape[1], new_image.shape[0], new_image.strides[0], QImage.Format_RGB888)
-        self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(self.img_width, 10000, QtCore.Qt.KeepAspectRatio))
-        self.img_src_display.update()
+        if new_image is None:
+            return
+        print(type(new_image))
+        print(new_image.shape)
+        # image = QImage(new_image, new_image.shape[1], new_image.shape[0], new_image.strides[0], QImage.Format_RGB888)
+        # self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(self.img_width, 10000, QtCore.Qt.KeepAspectRatio))
+        # self.img_src_display.update()
 
     def startRobot(self):
         print("Starting robot")

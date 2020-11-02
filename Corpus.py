@@ -13,21 +13,16 @@ class MainManager(Thread):
         self.tryConnect()
         self.actions = dict()
         self.start()
-        self.join()
 
     def tryConnect(self):
-        print('Starting connection process')
         self.robot = Robot()
-        print('Robot connected')
         self.topCam = TopCamera()
         self.detailCam = DetailCamera()
-        print('Ending connection process')
 
     def run(self):
-        print('Starting loop')
         while True:
             for function_name, function_to_call in self.actions.items():
-                print(function_name)
+                # print(function_name)
                 try:
                     function_to_call()
                 except TypeError:
@@ -65,10 +60,8 @@ class MainManager(Thread):
             raise ValueError('Continuous Image Callback not callable')
         else:
             def wrap_callback():
-                self.test()
-                # image_to_yield = self.topCam.grabImage()
-                # continuous_image_callback(image_to_yield)
-
+                image_to_yield = self.topCam.grabImage()
+                continuous_image_callback(image_to_yield)
             self.actions[str(continuous_image_callback)] = wrap_callback
 
     def test(self):

@@ -213,6 +213,9 @@ class TopCamera(Camera):
         return output
 
     def grabImage(self):
+        if not self.Connected:
+            return None
+
         self.Open()
         grabbedImage = None
         TopView = np.zeros(self.getShape(), dtype=np.uint8)
