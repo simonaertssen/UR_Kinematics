@@ -55,7 +55,12 @@ class Reader(socket.socket):
         try:
             self.connect(self.Address)
             self.Connected = True
-            print(self.Address, "is safely connected.")
+            
+            def sprint(*args, sep=" ", end="", **kwargs):
+                joined_string = sep.join([str(arg) for arg in args])
+                print(joined_string + "\n", sep=sep, end=end, **kwargs)
+            sprint(self.Address, "is safely connected")
+
         except socket.timeout:
             self.close()
             self.Connected = False
