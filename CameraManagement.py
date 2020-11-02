@@ -191,8 +191,8 @@ class TopCamera(Camera):
 
     @staticmethod
     def extractInfo(image_to_extract):
-        _, image_to_extract = cv.threshold(image_to_extract, 50, 255, cv.THRESH_BINARY)
-        _, contours, hierarchy = cv.findContours(image_to_extract, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        _, image_to_analyse = cv.threshold(image_to_extract, 50, 255, cv.THRESH_BINARY)
+        _, contours, hierarchy = cv.findContours(image_to_analyse, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         output = list()
         for contour in contours:
             M = cv.moments(contour)
@@ -215,15 +215,14 @@ class TopCamera(Camera):
             pts = np.array([[midX[i], midY[i]] for i in longest_side + [0, 2]])
             angle = sign * np.arccos(np.abs(pts[1] - pts[0]).dot(np.array([1, 0])) / np.linalg.norm(pts[0] - pts[1]))
             output.append((X, Y, angle*180/np.pi))
+        output.insert(0, image_to_analyse)
         return output
 
     def grabImage(self):
         if not self.Connected:
             return None
-
         self.Open()
         grabbedImage = None
-        TopView = np.zeros(self.getShape(), dtype=np.uint8)
         if not self.camera.IsGrabbing():
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
         try:
@@ -236,9 +235,7 @@ class TopCamera(Camera):
                     break
                 elif i == max_tries-1:
                     raise ValueError('Too many tries on one image.')
-            np.copyto(TopView, grabbedImage)
-            return TopView, self.extractInfo(TopView)
-
+            return self.extractInfo(np.asarray(grabbedImage))
         except genicam.RuntimeException as e:
             print('Runtime Exception: {}'.format(e))
             return None
