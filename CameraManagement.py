@@ -191,7 +191,8 @@ class TopCamera(Camera):
 
     @staticmethod
     def extractInfo(image_to_extract):
-        _, image_to_analyse = cv.threshold(image_to_extract, 50, 255, cv.THRESH_BINARY)
+        image_to_extract = image_to_extract[60:-90, 170:-210].copy()
+        _, image_to_analyse = cv.threshold(image_to_extract, 100, 255, cv.THRESH_BINARY)
         _, contours, hierarchy = cv.findContours(image_to_analyse, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         output = list()
         for contour in contours:
@@ -215,7 +216,7 @@ class TopCamera(Camera):
             pts = np.array([[midX[i], midY[i]] for i in longest_side + [0, 2]])
             angle = sign * np.arccos(np.abs(pts[1] - pts[0]).dot(np.array([1, 0])) / np.linalg.norm(pts[0] - pts[1]))
             output.append((X, Y, angle*180/np.pi))
-        output.insert(0, image_to_analyse)
+        output.insert(0, image_to_extract)
         return output
 
     def grabImage(self):
@@ -314,11 +315,11 @@ def debugTopCameraForMemoryLeaks():
     counter = 0
     while True:
         counter += 1
-        newImage, _ = camera.grabImage()
-        if newImage is None:
+        output = camera.grabImage()
+        if output[0] is None:
             continue
 
-        cv.imshow(testWindow, cv.resize(newImage, (int(w/4), int(h/4))))
+        cv.imshow(testWindow, cv.resize(output[0], (int(w/4), int(h/4))))
         if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
             break
         if counter >= 100:
