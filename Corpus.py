@@ -7,16 +7,18 @@ from threading import Thread
 class MainManager(Thread):
     def __init__(self):
         super(MainManager, self).__init__(daemon=True)
-        self.start()
         self.robot = None
         self.topCam = None
         self.detailCam = None
+        self.start()
+        self.join()
 
     def tryConnect(self):
         print('Starting connection process')
         self.robot = Robot()
-
-        print('Starting connection process')
+        self.topCam = TopCamera()
+        self.detailCam = DetailCamera()
+        print('Ending connection process')
 
     def run(self):
         self.tryConnect()
