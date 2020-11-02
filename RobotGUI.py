@@ -1,6 +1,8 @@
 # This script contains the pyQt application that is the front end of communication with the robot.
 # It has been reworked from Mads' previous work.
 
+import tracemalloc
+
 import os
 import cv2
 import sys
@@ -35,6 +37,8 @@ class StandardObjectWidget(QWidget):
 
 class StandardMainWindow(QMainWindow):
     def __init__(self, window_name, screen_width=None, screen_height=None):
+        tracemalloc.start(10)
+
         super(StandardMainWindow, self).__init__()
         self.setWindowTitle(window_name)
         JLI_icon_pm = QPixmap()
@@ -718,16 +722,23 @@ class MainWindow(StandardMainWindow):
         self.manageContinuousImagesFromTopcam()
 
     def manageContinuousImagesFromTopcam(self):
-        self.manager.getContinuousImages(self.updateTopcamView)
+        self.manager.getContinuousImages(self.updateTopcamView, self.updateTopCamInfo)
 
     def updateTopcamView(self, new_image):
         if new_image is None:
             return
-        print(type(new_image))
-        print(new_image.shape)
-        # image = QImage(new_image, new_image.shape[1], new_image.shape[0], new_image.strides[0], QImage.Format_RGB888)
-        # self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(self.img_width, 10000, QtCore.Qt.KeepAspectRatio))
-        # self.img_src_display.update()
+
+        snapshot = tracemalloc.take_snapshot()
+        for i, stat in enumerate(snapshot.statistics('filename')[:5], 1):
+            print(str(stat))
+
+        height, width = new_image.shape
+        image = QImage(new_image.data, width, height, QImage.Format_Grayscale8)
+        self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(width/2, height/2, QtCore.Qt.KeepAspectRatio))
+        self.img_src_display.show()
+
+    def updateTopCamInfo(self, new_info):
+        print('Info {}'.format(new_info))
 
     def startRobot(self):
         print("Starting robot")

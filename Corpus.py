@@ -10,14 +10,22 @@ class MainManager(Thread):
         self.robot = None
         self.topCam = None
         self.detailCam = None
-        self.tryConnect()
         self.actions = dict()
+        self.tryConnect()
         self.start()
 
+    def startAsync(self, attribute, constructor):
+        setattr(self, attribute, constructor())
+
     def tryConnect(self):
-        self.robot = Robot()
-        self.topCam = TopCamera()
-        self.detailCam = DetailCamera()
+        startThreads = [Thread(target=self.startAsync, args=('robot', Robot,)),
+                        Thread(target=self.startAsync, args=('topCam', TopCamera,)),
+                        Thread(target=self.startAsync, args=('detailCam', DetailCamera,))]
+        for thread in startThreads:
+            thread.start()
+        for thread in startThreads:
+            thread.join()
+        print('All connected')
 
     def run(self):
         while True:
@@ -55,14 +63,17 @@ class MainManager(Thread):
         except:
             return False
 
-    def getContinuousImages(self, continuous_image_callback):
+    def getContinuousImages(self, continuous_image_callback, continuous_info_callback):
         if not callable(continuous_image_callback):
             raise ValueError('Continuous Image Callback not callable')
-        else:
-            def wrap_callback():
-                image_to_yield = self.topCam.grabImage()
-                continuous_image_callback(image_to_yield)
-            self.actions[str(continuous_image_callback)] = wrap_callback
+        if not callable(continuous_info_callback):
+            raise ValueError('Continuous Info Callback not callable')
+
+        def wrap_callback():
+            image_to_yield, info_to_yield = self.topCam.grabImage()
+            continuous_image_callback(image_to_yield)
+            continuous_info_callback(info_to_yield)
+        self.actions[str(continuous_image_callback)] = wrap_callback
 
     def test(self):
         print('Testing')

@@ -234,7 +234,7 @@ class TopCamera(Camera):
                     break
                 elif i == max_tries-1:
                     raise ValueError('Too many tries on one image.')
-            np.copyto(TopView, self.formatImage(grabbedImage))
+            np.copyto(TopView, grabbedImage)
             return TopView, self.extractInfo(TopView)
 
         except genicam.RuntimeException as e:
