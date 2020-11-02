@@ -81,7 +81,7 @@ class Camera:
         if self.camera.IsOpen():
             self.camera.Close()
 
-    def Destroy(self):
+    def Shutdown(self):
         self.Connected = False
         self.Close()
         self.camera.DetachDevice()
@@ -162,7 +162,7 @@ class CameraArray:
         if self.cameraArray.IsOpen():
             self.cameraArray.Close()
 
-    def Destroy(self):
+    def Shutdown(self):
         self.Close()
         self.cameraArray.DestroyDevice()
 
@@ -297,7 +297,7 @@ def runSingleCamera():
         now = time.time()
         print("FPS =", 1 / (time.time() - start))
         start = now
-    camera.Destroy()
+    camera.Shutdown()
     cv.destroyAllWindows()
 
 
@@ -327,7 +327,7 @@ def debugTopCameraForMemoryLeaks():
             snapshot = tracemalloc.take_snapshot()
             for i, stat in enumerate(snapshot.statistics('filename')[:5], 1):
                 print(str(stat))
-    camera.Destroy()
+    camera.Shutdown()
     cv.destroyAllWindows()
 
 
@@ -357,7 +357,7 @@ def runCameraArray():
         now = time.time()
         print("FPS =", 1 / (time.time() - start))
         start = now
-    cameras.Destroy()
+    cameras.Shutdown()
     cv.destroyAllWindows()
 
 
@@ -390,8 +390,8 @@ def runCamerasAlternate():
         now = time.time()
         print("FPS =", 1 / (time.time() - start))
         start = now
-    cameraOn.Destroy()
-    cameraOn.Destroy()
+    cameraOn.Shutdown()
+    cameraOn.Shutdown()
     cv.destroyAllWindows()
 
 
