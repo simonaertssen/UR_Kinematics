@@ -5,6 +5,8 @@ import cv2 as cv
 import numpy as np
 from pypylon import pylon, genicam
 
+import tracemalloc
+
 
 class ImageEventHandler(pylon.ImageEventHandler):
     imageQueue = Queue()
@@ -18,6 +20,7 @@ class ImageEventHandler(pylon.ImageEventHandler):
                 with grab_result.GetArrayZeroCopy() as ZCArray:
                     grabbedImage = ZCArray
                 self.imageQueue.put((cameraContextValue, grabbedImage.data))
+                grab_result.Release()
         except genicam.GenericException as e:
             print("ImageEventHandler Exception: {}".format(e))
         finally:
@@ -92,7 +95,7 @@ class Camera:
         self.Open()
         grabbedImage = None
         if not self.camera.IsGrabbing():
-            self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
+            self.camera.StartGrabbing(pylon.GrabStrategy_OneByOne, pylon.GrabLoop_ProvidedByInstantCamera)
         try:
             if self.camera.WaitForFrameTriggerReady(0, pylon.TimeoutHandling_Return):
                 self.camera.ExecuteSoftwareTrigger()
@@ -281,7 +284,7 @@ def runSingleCamera():
     cv.moveWindow(testWindow, 20, 20)
 
     h, w = camera.getShape()
-    image = np.zeros((h,w), dtype=np.uint8)
+    image = np.zeros((h, w), dtype=np.uint8)
 
     start = time.time()
     while True:
@@ -294,6 +297,36 @@ def runSingleCamera():
         now = time.time()
         print("FPS =", 1 / (time.time() - start))
         start = now
+    camera.Destroy()
+    cv.destroyAllWindows()
+
+
+def debugTopCameraForMemoryLeaks():
+    # This works well
+    camera = TopCamera()
+    testWindow = 'window1'
+    cv.namedWindow(testWindow)
+    cv.moveWindow(testWindow, 20, 20)
+
+    h, w = camera.getShape()
+    image = np.zeros((h, w), dtype=np.uint8)
+    tracemalloc.start(10)
+
+    counter = 0
+    while True:
+        counter += 1
+        newImage, _ = camera.grabImage()
+        if newImage is None:
+            continue
+
+        cv.imshow(testWindow, cv.resize(newImage, (int(w/4), int(h/4))))
+        if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
+            break
+        if counter >= 100:
+            counter = 0
+            snapshot = tracemalloc.take_snapshot()
+            for i, stat in enumerate(snapshot.statistics('filename')[:5], 1):
+                print(str(stat))
     camera.Destroy()
     cv.destroyAllWindows()
 
@@ -363,5 +396,5 @@ def runCamerasAlternate():
 
 
 if __name__ == '__main__':
-    runSingleCamera()
+    debugTopCameraForMemoryLeaks()
 
