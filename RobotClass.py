@@ -16,10 +16,8 @@ class Robot:
             setattr(self, attribute, constructor())
         startThreads = [Thread(target=startAsync, args=('ModBusReader', ModBusReader,)),
                         Thread(target=startAsync, args=('RobotCCO', RobotChiefCommunicationOfficer,))]
-        for thread in startThreads:
-            thread.start()
-        for thread in startThreads:
-            thread.join()
+        [x.start() for x in startThreads]
+        [x.join() for x in startThreads]
 
         # Save some important positions as attributes:
         pi180 = 3.14159265359/180
@@ -33,8 +31,9 @@ class Robot:
 
     def shutdownSafely(self):
         self.initialise()
-        self.ModBusReader.shutdownSafely()
-        self.RobotCCO.shutdownSafely()
+        shutdownThreads = [Thread(target=self.ModBusReader.shutdownSafely), Thread(target=self.RobotCCO.shutdownSafely)]
+        [x.start() for x in shutdownThreads]
+        [x.join() for x in shutdownThreads]
 
     def send(self, message):
         self.RobotCCO.send(message)
