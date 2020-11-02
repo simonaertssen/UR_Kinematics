@@ -55,15 +55,11 @@ class Reader(socket.socket):
         try:
             self.connect(self.Address)
             self.Connected = True
-            print_lock = Lock()
-            with print_lock:
-                print(self.Address, "is safely connected.")
+            print(self.Address, "is safely connected.")
         except socket.timeout:
             self.close()
             self.Connected = False
-            print_lock = Lock()
-            with print_lock:
-                exit('{} connection timed out.'.format(self.Address))
+            exit('{} connection timed out.'.format(self.Address))
 
 
 class ModBusReader(Reader):
