@@ -48,7 +48,7 @@ class Camera:
         self.camera.Close()
 
     def getShape(self):
-        return self.pixelWidth, self.pixelHeight
+        return self.pixelHeight, self.pixelWidth
 
     def formatImage(self, image_to_format):
         if len(image_to_format.shape) == 3 and self.grayScale:
@@ -127,7 +127,7 @@ class CameraArray:
             camera.Close()
 
     def getShape(self):
-        return self.pixelWidths, self.pixelHeights
+        return self.pixelHeights, self.pixelWidths
 
     def formatImage(self, image_to_format):
         if len(image_to_format.shape) == 3 and self.grayScale:
@@ -281,14 +281,14 @@ def runSingleCamera():
     cv.moveWindow(testWindow, 20, 20)
 
     h, w = camera.getShape()
-    image = np.zeros((w, h), dtype=np.uint8)
+    image = np.zeros((h,w), dtype=np.uint8)
 
     start = time.time()
     while True:
         if camera.grabImage(image) != 0:
             continue
 
-        cv.imshow(testWindow, cv.resize(image, (int(h/4), int(w/4))))
+        cv.imshow(testWindow, cv.resize(image, (int(w/4), int(h/4))))
         if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
             break
         now = time.time()
@@ -336,7 +336,7 @@ def runCamerasAlternate():
     cv.moveWindow(testWindow, 20, 20)
 
     h, w = cameraOn.getShape()
-    imageOn = np.zeros((w, h), dtype=np.uint8)
+    imageOn = np.zeros((h, w), dtype=np.uint8)
 
     start = time.time()
     while True:
@@ -363,5 +363,5 @@ def runCamerasAlternate():
 
 
 if __name__ == '__main__':
-    runCamerasAlternate()
+    runSingleCamera()
 
