@@ -1,8 +1,6 @@
 # This script contains the pyQt application that is the front end of communication with the robot.
 # It has been reworked from Mads' previous work.
 
-import tracemalloc
-
 import os
 import cv2
 import sys
@@ -37,7 +35,6 @@ class StandardObjectWidget(QWidget):
 
 class StandardMainWindow(QMainWindow):
     def __init__(self, window_name, screen_width=None, screen_height=None):
-        tracemalloc.start(10)
 
         super(StandardMainWindow, self).__init__()
         self.setWindowTitle(window_name)
@@ -695,8 +692,9 @@ class MainObjectWidget(StandardObjectWidget):
 class MainWindow(StandardMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__('JLI Vision Robot GUI')
-        init_frame = np.zeros((800, 1024), dtype=np.uint8)
+
         self.img_src_display = QLabel(self)
+        init_frame = np.zeros((600, 960), dtype=np.uint8)
         frame_height, frame_width = init_frame.shape
         image = QImage(init_frame.data, frame_width, frame_height, init_frame.strides[0], QImage.Format_Grayscale8)
         self.img_src_display.setPixmap(QPixmap.fromImage(image))
@@ -728,12 +726,8 @@ class MainWindow(StandardMainWindow):
         if new_image is None:
             return
 
-        snapshot = tracemalloc.take_snapshot()
-        for i, stat in enumerate(snapshot.statistics('filename')[:5], 1):
-            print(str(stat))
-
         height, width = new_image.shape
-        image = QImage(new_image.data, width, height, QImage.Format_Grayscale8)
+        image = QImage(new_image, width, height, QImage.Format_Grayscale8)
         self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(width/2, height/2, QtCore.Qt.KeepAspectRatio))
         self.img_src_display.show()
 
@@ -742,6 +736,7 @@ class MainWindow(StandardMainWindow):
 
     def startRobot(self):
         print("Starting robot")
+        self.manager.moveToolTo()
         print("Robot started")
 
     def stopRobot(self):
@@ -753,7 +748,10 @@ class MainWindow(StandardMainWindow):
             self.closeEvent(event)
 
     def closeEvent(self, event):
+        if not self.manager.running:  # It happens that the close event is called twice
+            return
         self.properties.user_message.setText("Exiting the application...")
+        self.manager.shutdownAllComponents()
         self.close()
 
 

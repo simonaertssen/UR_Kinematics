@@ -3,6 +3,8 @@ from RobotClass import Robot
 from CameraManagement import TopCamera, DetailCamera
 from threading import Thread
 
+import cv2
+
 
 class MainManager(Thread):
     def __init__(self):
@@ -30,8 +32,8 @@ class MainManager(Thread):
                 # print(function_name)
                 try:
                     function_to_call()
-                except TypeError:
-                    print('An uncallable function was encountered.')
+                except TypeError as e:
+                    print('An uncallable function was encountered: {}'.format(e))
 
     def shutdownAllComponents(self):
         self.running = False
@@ -76,13 +78,21 @@ class MainManager(Thread):
             raise ValueError('Continuous Info Callback not callable')
 
         def wrap_callback():
-            image_to_yield, info_to_yield = self.topCam.grabImage()
-            continuous_image_callback(image_to_yield)
-            continuous_info_callback(info_to_yield)
+            output = self.topCam.grabImage()
+            if output:
+                continuous_image_callback(output[0])
+            elif len(output) > 1:
+                continuous_info_callback(output[1:])
         self.actions[str(continuous_image_callback)] = wrap_callback
 
     def test(self):
         print('Testing')
+
+    def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
+        self.robot.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=True)
+
+    def moveJointsTo(self, target_position, move, wait=True, check_collisions=True):
+        self.robot.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=False)
 
 
 if __name__ == '__main__':
