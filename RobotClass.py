@@ -1,7 +1,6 @@
 import time
-import threading
+from threading import Thread
 import winsound
-from sys import exit
 
 from Kinematics import ForwardKinematics, detectCollision
 from Readers import ModBusReader, RobotChiefCommunicationOfficer
@@ -10,8 +9,17 @@ from Readers import ModBusReader, RobotChiefCommunicationOfficer
 class Robot:
     def __init__(self):
         super(Robot, self).__init__()
-        self.ModBusReader = ModBusReader()
-        self.RobotCCO = RobotChiefCommunicationOfficer()
+        self.ModBusReader = None
+        self.RobotCCO = None
+
+        def startAsync(parent, attribute, constructor):
+            setattr(parent, attribute, constructor())
+        startThreads = [Thread(target=startAsync, args=(self, 'ModBusReader', ModBusReader,)),
+                        Thread(target=startAsync, args=(self, 'RobotCCO', RobotChiefCommunicationOfficer,))]
+        for thread in startThreads:
+            thread.start()
+        for thread in startThreads:
+            thread.join()
 
         # Save some important positions as attributes:
         pi180 = 3.14159265359/180
@@ -22,8 +30,6 @@ class Robot:
         self.ToolPositionTestCollision = [0.08838, -0.76649, 0.24701, -0.3335, 3.11, 0.0202]
 
         self.initialise()
-        # self.openGripper()
-        # self.closeGripper()
 
     def shutdownSafely(self):
         self.initialise()
@@ -154,7 +160,7 @@ class Robot:
     @staticmethod
     def waitForParallelTask(function, arguments=None):
         print('Task received')
-        thread = threading.Thread(target=function, args=[], daemon=True)
+        thread = Thread(target=function, args=[], daemon=True)
         thread.start()
         thread.join()
 

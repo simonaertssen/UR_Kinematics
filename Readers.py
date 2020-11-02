@@ -5,6 +5,8 @@ from sys import exit
 from weakref import ref
 from queue import Queue
 
+from threading import Lock
+
 
 class ParameterInfo:
     Instances = list()
@@ -53,11 +55,15 @@ class Reader(socket.socket):
         try:
             self.connect(self.Address)
             self.Connected = True
-            print(self.Address, "is safely connected.")
+            print_lock = Lock()
+            with print_lock:
+                print(self.Address, "is safely connected.")
         except socket.timeout:
             self.close()
             self.Connected = False
-            exit('{} connection timed out.'.format(self.Address))
+            print_lock = Lock()
+            with print_lock:
+                exit('{} connection timed out.'.format(self.Address))
 
 
 class ModBusReader(Reader):
