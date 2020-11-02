@@ -191,7 +191,8 @@ class TopCamera(Camera):
 
     @staticmethod
     def extractInfo(image_to_extract):
-        _, contours, hierarchy = cv.findContours((image_to_extract < 20).astype(np.uint8), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+        _, image_to_extract = cv.threshold(image_to_extract, 50, 255, cv.THRESH_BINARY)
+        _, contours, hierarchy = cv.findContours(image_to_extract, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
         output = list()
         for contour in contours:
             M = cv.moments(contour)
@@ -199,6 +200,7 @@ class TopCamera(Camera):
                 break
             X = int(M['m10'] / M['m00'])
             Y = int(M['m01'] / M['m00'])
+
             rect = cv.minAreaRect(contour)
             box = cv.boxPoints(rect)
             box = np.int0(box)
