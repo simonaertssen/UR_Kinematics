@@ -12,10 +12,10 @@ class Robot:
         self.ModBusReader = None
         self.RobotCCO = None
 
-        def startAsync(parent, attribute, constructor):
-            setattr(parent, attribute, constructor())
-        startThreads = [Thread(target=startAsync, args=(self, 'ModBusReader', ModBusReader,)),
-                        Thread(target=startAsync, args=(self, 'RobotCCO', RobotChiefCommunicationOfficer,))]
+        def startAsync(attribute, constructor):
+            setattr(self, attribute, constructor())
+        startThreads = [Thread(target=startAsync, args=('ModBusReader', ModBusReader,)),
+                        Thread(target=startAsync, args=('RobotCCO', RobotChiefCommunicationOfficer,))]
         for thread in startThreads:
             thread.start()
         for thread in startThreads:
