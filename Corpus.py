@@ -10,20 +10,28 @@ class MainManager(Thread):
         self.robot = None
         self.topCam = None
         self.detailCam = None
+        self.tryConnect()
+        self.actions = dict()
         self.start()
         self.join()
 
     def tryConnect(self):
         print('Starting connection process')
         self.robot = Robot()
+        print('Robot connected')
         self.topCam = TopCamera()
         self.detailCam = DetailCamera()
         print('Ending connection process')
 
     def run(self):
-        self.tryConnect()
+        print('Starting loop')
         while True:
-            1
+            for function_name, function_to_call in self.actions.items():
+                print(function_name)
+                try:
+                    function_to_call()
+                except TypeError:
+                    print('An uncallable function was encountered.')
 
     def checkComponentsAreConnected(self):
         return self.isRobotConnected() and self.isModBusConnected() and self.isTopCameraConnected() and self.isDetailCameraConnected()
@@ -51,6 +59,20 @@ class MainManager(Thread):
             return self.detailCam.Connected
         except:
             return False
+
+    def getContinuousImages(self, continuous_image_callback):
+        if not callable(continuous_image_callback):
+            raise ValueError('Continuous Image Callback not callable')
+        else:
+            def wrap_callback():
+                self.test()
+                # image_to_yield = self.topCam.grabImage()
+                # continuous_image_callback(image_to_yield)
+
+            self.actions[str(continuous_image_callback)] = wrap_callback
+
+    def test(self):
+        print('Testing')
 
 
 if __name__ == '__main__':

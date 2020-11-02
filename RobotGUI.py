@@ -49,6 +49,7 @@ class StandardMainWindow(QMainWindow):
         self.screen_height = GetSystemMetrics(1) if screen_height is None else screen_height
         self.image_width = int(GetSystemMetrics(0) * 0.75)  # laptop screen
 
+        self.manager = MainManager()
         self.splitter = QSplitter(Qt.Horizontal)
         self.splitter.setMouseTracking(True)
         self.setCentralWidget(self.splitter)
@@ -425,13 +426,13 @@ class MainObjectWidget(StandardObjectWidget):
 
     def __init__(self, screen_width, screen_height, parent):
         super(MainObjectWidget, self).__init__(screen_width, screen_height, parent)
-        self.manager = MainManager()
         self.showFullScreen()
         self.rootDir = os.getcwd()
         self.libDir = os.path.join(self.rootDir, "Library")
 
         self.screen_width = screen_width
         self.screen_height = screen_height
+        self.parent = parent
 
         self.save_images = False
         self.save_images_name = None
@@ -672,14 +673,14 @@ class MainObjectWidget(StandardObjectWidget):
 
     def verifyComponentsAreWorking(self):
         print('Testing whether all components are connected')
-        if self.manager.isRobotConnected():
+        if self.parent.manager.isRobotConnected():
             self.robot_status_text.setText("Connected")
             self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: green")
         else:
             self.robot_status_text.setText("Not connected")
             self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
 
-        if self.manager.isTopCameraConnected() and self.manager.isDetailCameraConnected():
+        if self.parent.manager.isTopCameraConnected() and self.parent.manager.isDetailCameraConnected():
             self.camera_status_text.setText("Connected")
             self.camera_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: green")
         else:
@@ -690,10 +691,10 @@ class MainObjectWidget(StandardObjectWidget):
 class MainWindow(StandardMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__('JLI Vision Robot GUI')
-        self.frame = np.zeros((800, 1024), dtype=np.uint8)
+        init_frame = np.zeros((800, 1024), dtype=np.uint8)
         self.img_src_display = QLabel(self)
-        frame_height, frame_width = self.frame.shape
-        image = QImage(self.frame.data, frame_width, frame_height, self.frame.strides[0], QImage.Format_Grayscale8)
+        frame_height, frame_width = init_frame.shape
+        image = QImage(init_frame.data, frame_width, frame_height, init_frame.strides[0], QImage.Format_Grayscale8)
         self.img_src_display.setPixmap(QPixmap.fromImage(image))
 
         self.properties = MainObjectWidget(self.screen_width, self.screen_height, self)
@@ -713,6 +714,16 @@ class MainWindow(StandardMainWindow):
         # self.keyPressEvent = self.MainKeyPressEvent
         # self.keyReleaseEvent = self.MainKeyReleaseEvent
         # self.mousePressEvent = self.MainMousePressEvent
+
+        self.manageContinuousImagesFromTopcam()
+
+    def manageContinuousImagesFromTopcam(self):
+        self.manager.getContinuousImages(self.updateTopcamView)
+
+    def updateTopcamView(self, new_image):
+        image = QImage(new_image.data, new_image.shape[1], new_image.shape[0], new_image.strides[0], QImage.Format_RGB888)
+        self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(self.img_width, 10000, QtCore.Qt.KeepAspectRatio))
+        self.img_src_display.update()
 
     def startRobot(self):
         print("Starting robot")
