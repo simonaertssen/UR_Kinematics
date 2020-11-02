@@ -22,6 +22,8 @@ class Robot:
         self.ToolPositionTestCollision = [0.08838, -0.76649, 0.24701, -0.3335, 3.11, 0.0202]
 
         self.initialise()
+        # self.openGripper()
+        # self.closeGripper()
 
     def shutdownSafely(self):
         self.initialise()
@@ -102,7 +104,6 @@ class Robot:
         return detectCollision(self.getJointPositions())
 
     def moveTo(self, target_position, move, wait=True, check_collisions=True, p=True):
-        print('Start moving')
         """
         DESCRIPTION: Moves the robot to the target
         :param move: movej (find best move) or movel (move in a line)
@@ -118,7 +119,6 @@ class Robot:
 
         command = str.encode("{}({}{}) \n".format(move, "p" if p is True else "", target_position))
         self.send(command)
-        print(command)
 
         start_position = current_position()
         if wait:
@@ -149,7 +149,6 @@ class Robot:
         while sum(difference) >= totalDifferenceTolerance:
             difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
             if check_collisions and self.detectCollision():
-                print('Bumping in to stuff!')
                 raise RuntimeError('Bumping in to stuff!')
 
     @staticmethod
@@ -191,6 +190,12 @@ class Robot:
         self.closeGripper()
         self.openGripper()
 
+    def testCollision(self):
+        self.moveToolTo(robot.ToolPositionCollisionStart, "movel", wait=True, check_collisions=False)
+        self.moveToolTo(robot.ToolPositionTestCollision, "movel", wait=True)
+        time.sleep(1)
+        self.moveToolTo(robot.ToolPositionCollisionStart, "movel", wait=True)
+
     @staticmethod
     def beep():
         winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
@@ -198,11 +203,6 @@ class Robot:
 
 if __name__ == '__main__':
     robot = Robot()
-    robot.moveToolTo(robot.ToolPositionCollisionStart, "movel", wait=True, check_collisions=False)
-    robot.moveToolTo(robot.ToolPositionTestCollision, "movel", wait=True)
-    time.sleep(1)
-    robot.moveToolTo(robot.ToolPositionCollisionStart, "movel", wait=True)
     robot.beep()
     # time.sleep(200)
-    # winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
 

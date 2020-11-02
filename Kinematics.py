@@ -53,14 +53,13 @@ def detectCollision(positions):
     # print(-0.713 + e, Y)
     # print((-0.713 + e < Y))
     if not (((-0.832 + e < X) & (X < 0.490 - e)).all() and ((-0.713 + e < Y) & (Y < 0.265 - e)).all() and (-0.0021 + e < Z).all()):
-        print('Outside')
         return True
     # Are we bumping into the camera and the light?
-    # if ((-0.568 + e < X) & (X < -0.364 - e)).any() and ((-0.266 + e < Y) & (Y < 0.031 - e)).any() and (0.765 + e < Z).any():
-    #     return True
-    # # Are we bumping into the box?
-    # if (X < -0.182 + e).any() and (Y < -0.520 + e).any() and (Z < 0.375 + e).any():
-    #     return True
+    if ((-0.568 + e < X) & (X < -0.364 - e)).any() and ((-0.266 + e < Y) & (Y < 0.031 - e)).any() and (0.765 + e < Z).any():
+        return True
+    # Are we bumping into the box?
+    if (X < -0.182 + e).any() and (Y < -0.520 + e).any() and (Z < 0.375 + e).any():
+        return True
     return False
 
 
