@@ -51,7 +51,7 @@ cdef void dot(double *A, double *B):
     A = result
     free(result)
 
-cdef forwardkinematics(joint_angles, tool_position=None):
+cdef forwardkinematics_c(joint_angles, tool_position=None):
     cdef double pihalf = 1.57079632679
 
     cdef double a, b, c, d, e, f, x, y, z
@@ -132,6 +132,6 @@ cdef forwardkinematics(joint_angles, tool_position=None):
     return X, Y, Z
 
 cpdef ForwardKinematics(joint_angles, tool_position=None):
-    return forwardkinematics(joint_angles, tool_position=tool_position)
+    return forwardkinematics_c(joint_angles, tool_position=tool_position)
 
 
