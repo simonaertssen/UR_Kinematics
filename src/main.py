@@ -5,7 +5,7 @@ from lib.Kinematics import ForwardKinematics
 
 def SpeedOfCurrentKinematics():
     start = time.time()
-    n = 100000
+    n = 1000000
     for _ in range(n):
         toolTip = None
         pos = ForwardKinematics((0.0, -np.pi/2, 0.0, -np.pi/2, 0.0, 0.0))

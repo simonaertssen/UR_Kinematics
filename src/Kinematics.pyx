@@ -1,8 +1,8 @@
 from libc.math cimport sin, cos
 from libc.stdlib cimport calloc, free
 
-# cdef extern from "forwardkinematics.h":
-#     double forwardkinematics(double, double, double, double, double, double, double[::1])
+cdef extern from "forwardkinematics.h":
+    double *makeT(double, double, double, double)
 
 # cpdef ForwardKinematics(joint_angles, tool_position=None):
 #     cdef double a, b, c, d, e, f
@@ -16,6 +16,7 @@ from libc.stdlib cimport calloc, free
 #     # else:
 #     #     x, y, z = np.nan, np.nan, np.nan
 #     return test
+
 cdef double *T(double theta, double d, double r, double alpha):
     cos_t = cos(theta)
     sin_t = sin(theta)
