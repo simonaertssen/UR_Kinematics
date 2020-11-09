@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 
+
 double *makeT(double theta, double d, double r, double alpha){
     double cos_t = cos(theta);
     double sin_t = sin(theta);
