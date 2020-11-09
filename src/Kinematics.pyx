@@ -3,19 +3,7 @@ from libc.stdlib cimport calloc, free
 
 cdef extern from "forwardkinematics.h":
     double *makeT(double, double, double, double)
-
-# cpdef ForwardKinematics(joint_angles, tool_position=None):
-#     cdef double a, b, c, d, e, f
-#     a, b, c, d, e, f = joint_angles
-#
-#     cdef double[::1] X, Y, Z
-#     cdef double test = forwardkinematics(a,b,c,d,e,f,X)
-#
-#     # if tool_position is not None:
-#     #     x, y, z = tool_position
-#     # else:
-#     #     x, y, z = np.nan, np.nan, np.nan
-#     return test
+    void matmul(double*, double*)
 
 cdef double *T(double theta, double d, double r, double alpha):
     cos_t = cos(theta)
@@ -55,7 +43,7 @@ cdef void dot(double *A, double *B):
     free(result)
 
 cdef forwardkinematics(joint_angles, tool_position=None):
-    cdef double pi = 3.14159265359, pihalf = 1.57079632679
+    cdef double pihalf = 1.57079632679
 
     cdef double a, b, c, d, e, f, x, y, z
     a, b, c, d, e, f = joint_angles
@@ -68,21 +56,15 @@ cdef forwardkinematics(joint_angles, tool_position=None):
     cdef double *wrist2   = T(theta=e, d=0.09475,  r=0,        alpha=-pihalf)
     cdef double *wrist3   = T(theta=f, d=0.0815,   r=0,        alpha=0)
 
-    # cdef double *test = <double*> calloc(16, sizeof(double))
-    # for i in range(16):
-    #     test[i] = 1
-    # test = dot(test, test)
-
     base[3], base[7] = -base[7], base[3]
-    dot(shoulder, base)
-    dot(elbow, shoulder)
-    dot(elbowend, elbow)
-    dot(wrist1, elbowend)
-    dot(wrist2, wrist1)
-    dot(wrist3, wrist2)
+    matmul(shoulder, base)
+    matmul(elbow, shoulder)
+    matmul(elbowend, elbow)
+    matmul(wrist1, elbowend)
+    matmul(wrist2, wrist1)
+    matmul(wrist3, wrist2)
 
     cdef list X, Y, Z
-
     X = [0, 0, base[3], shoulder[3], elbow[3], elbowend[3], wrist1[3], wrist2[3], wrist3[3]]
     Y = [0, 0, base[7], shoulder[7], elbow[7], elbowend[7], wrist1[7], wrist2[7], wrist3[7]]
     Z = [0, base[11], base[11], shoulder[11], elbow[11], elbowend[11], wrist1[11], wrist2[11], wrist3[11]]
@@ -104,6 +86,6 @@ cdef forwardkinematics(joint_angles, tool_position=None):
     return X, Y, Z
 
 cpdef ForwardKinematics(joint_angles, tool_position=None):
-    return forwardkinematics(joint_angles, tool_position=None)
+    return forwardkinematics(joint_angles, tool_position=tool_position)
 
 

@@ -17,3 +17,4 @@ if __name__ == '__main__':
     SpeedOfCurrentKinematics()
     #  14195 iterations per second by using just a function (benchmark)
     # 480658 iterations per second by using cython
+    # 547236 iterations per second by using smaller buffers in matmul
