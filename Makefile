@@ -6,7 +6,6 @@ all: make
 
 make:
 	python setup.py build_ext --build-lib lib
-	python main.py
 
 clean:
 	@rm *.so
