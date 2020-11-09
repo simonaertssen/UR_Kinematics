@@ -835,12 +835,12 @@ static const char *__pyx_f[] = {
 struct __pyx_opt_args_10Kinematics_forwardkinematics;
 struct __pyx_opt_args_10Kinematics_ForwardKinematics;
 
-/* "Kinematics.pyx":99
+/* "Kinematics.pyx":55
  * 
  * 
  * cdef forwardkinematics(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
- *     cdef double a, b, c, d, e, f, x, y, z
- *     a, b, c, d, e, f = joint_angles
+ *     cdef double pihalf = 1.57079632679
+ * 
  */
 struct __pyx_opt_args_10Kinematics_forwardkinematics {
   int __pyx_n;
@@ -848,7 +848,7 @@ struct __pyx_opt_args_10Kinematics_forwardkinematics {
 };
 
 /* "Kinematics.pyx":118
- *     return [], [], []
+ * #     return X, Y, Z
  * 
  * cpdef ForwardKinematics(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
  *     return forwardkinematics(joint_angles, tool_position=tool_position)
@@ -934,6 +934,23 @@ static CYTHON_INLINE int __Pyx_IterFinish(void);
 
 /* UnpackItemEndCheck.proto */
 static int __Pyx_IternextUnpackEndCheck(PyObject *retval, Py_ssize_t expected);
+
+/* ListAppend.proto */
+#if CYTHON_USE_PYLIST_INTERNALS && CYTHON_ASSUME_SAFE_MACROS
+static CYTHON_INLINE int __Pyx_PyList_Append(PyObject* list, PyObject* x) {
+    PyListObject* L = (PyListObject*) list;
+    Py_ssize_t len = Py_SIZE(list);
+    if (likely(L->allocated > len) & likely(len > (L->allocated >> 1))) {
+        Py_INCREF(x);
+        PyList_SET_ITEM(list, len, x);
+        Py_SIZE(list) = len+1;
+        return 0;
+    }
+    return PyList_Append(list, x);
+}
+#else
+#define __Pyx_PyList_Append(L,x) PyList_Append(L,x)
+#endif
 
 /* RaiseDoubleKeywords.proto */
 static void __Pyx_RaiseDoubleKeywordsError(const char* func_name, PyObject* kw_name);
@@ -1098,6 +1115,7 @@ static PyObject *__pyx_n_s_name;
 static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_n_s_tool_position;
 static PyObject *__pyx_pf_10Kinematics_ForwardKinematics(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_joint_angles, PyObject *__pyx_v_tool_position); /* proto */
+static PyObject *__pyx_int_0;
 /* Late includes */
 
 /* "Kinematics.pyx":16
@@ -1442,16 +1460,17 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
   __Pyx_RefNannyFinishContext();
 }
 
-/* "Kinematics.pyx":99
+/* "Kinematics.pyx":55
  * 
  * 
  * cdef forwardkinematics(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
- *     cdef double a, b, c, d, e, f, x, y, z
- *     a, b, c, d, e, f = joint_angles
+ *     cdef double pihalf = 1.57079632679
+ * 
  */
 
 static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_angles, struct __pyx_opt_args_10Kinematics_forwardkinematics *__pyx_optional_args) {
   PyObject *__pyx_v_tool_position = ((PyObject *)Py_None);
+  double __pyx_v_pihalf;
   double __pyx_v_a;
   double __pyx_v_b;
   double __pyx_v_c;
@@ -1461,8 +1480,16 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
   double __pyx_v_x;
   double __pyx_v_y;
   double __pyx_v_z;
-  short __pyx_v_i;
-  CYTHON_UNUSED double *__pyx_v_results;
+  double *__pyx_v_base;
+  double *__pyx_v_shoulder;
+  double *__pyx_v_elbow;
+  double *__pyx_v_elbowend;
+  double *__pyx_v_wrist1;
+  double *__pyx_v_wrist2;
+  double *__pyx_v_wrist3;
+  PyObject *__pyx_v_X = 0;
+  PyObject *__pyx_v_Y = 0;
+  PyObject *__pyx_v_Z = 0;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -1479,8 +1506,11 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
   double __pyx_t_12;
   double __pyx_t_13;
   double __pyx_t_14;
-  int __pyx_t_15;
-  int __pyx_t_16;
+  PyObject *__pyx_t_15 = NULL;
+  PyObject *__pyx_t_16 = NULL;
+  int __pyx_t_17;
+  int __pyx_t_18;
+  int __pyx_t_19;
   __Pyx_RefNannySetupContext("forwardkinematics", 0);
   if (__pyx_optional_args) {
     if (__pyx_optional_args->__pyx_n > 0) {
@@ -1488,12 +1518,21 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
     }
   }
 
-  /* "Kinematics.pyx":101
+  /* "Kinematics.pyx":56
+ * 
  * cdef forwardkinematics(joint_angles, tool_position=None):
+ *     cdef double pihalf = 1.57079632679             # <<<<<<<<<<<<<<
+ * 
+ *     cdef double a, b, c, d, e, f, x, y, z
+ */
+  __pyx_v_pihalf = 1.57079632679;
+
+  /* "Kinematics.pyx":59
+ * 
  *     cdef double a, b, c, d, e, f, x, y, z
  *     a, b, c, d, e, f = joint_angles             # <<<<<<<<<<<<<<
- *     cdef short i = 8
- *     if tool_position is not None:
+ * 
+ *     cdef double *base     = <double*> makeT(a, 0.089159, -0.134,   pihalf)
  */
   if ((likely(PyTuple_CheckExact(__pyx_v_joint_angles))) || (PyList_CheckExact(__pyx_v_joint_angles))) {
     PyObject* sequence = __pyx_v_joint_angles;
@@ -1501,7 +1540,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
     if (unlikely(size != 6)) {
       if (size > 6) __Pyx_RaiseTooManyValuesError(6);
       else if (size >= 0) __Pyx_RaiseNeedMoreValuesError(size);
-      __PYX_ERR(0, 101, __pyx_L1_error)
+      __PYX_ERR(0, 59, __pyx_L1_error)
     }
     #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
     if (likely(PyTuple_CheckExact(sequence))) {
@@ -1530,7 +1569,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
       Py_ssize_t i;
       PyObject** temps[6] = {&__pyx_t_1,&__pyx_t_2,&__pyx_t_3,&__pyx_t_4,&__pyx_t_5,&__pyx_t_6};
       for (i=0; i < 6; i++) {
-        PyObject* item = PySequence_ITEM(sequence, i); if (unlikely(!item)) __PYX_ERR(0, 101, __pyx_L1_error)
+        PyObject* item = PySequence_ITEM(sequence, i); if (unlikely(!item)) __PYX_ERR(0, 59, __pyx_L1_error)
         __Pyx_GOTREF(item);
         *(temps[i]) = item;
       }
@@ -1539,7 +1578,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
   } else {
     Py_ssize_t index = -1;
     PyObject** temps[6] = {&__pyx_t_1,&__pyx_t_2,&__pyx_t_3,&__pyx_t_4,&__pyx_t_5,&__pyx_t_6};
-    __pyx_t_7 = PyObject_GetIter(__pyx_v_joint_angles); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 101, __pyx_L1_error)
+    __pyx_t_7 = PyObject_GetIter(__pyx_v_joint_angles); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 59, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
     __pyx_t_8 = Py_TYPE(__pyx_t_7)->tp_iternext;
     for (index=0; index < 6; index++) {
@@ -1547,7 +1586,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
       __Pyx_GOTREF(item);
       *(temps[index]) = item;
     }
-    if (__Pyx_IternextUnpackEndCheck(__pyx_t_8(__pyx_t_7), 6) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
+    if (__Pyx_IternextUnpackEndCheck(__pyx_t_8(__pyx_t_7), 6) < 0) __PYX_ERR(0, 59, __pyx_L1_error)
     __pyx_t_8 = NULL;
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     goto __pyx_L4_unpacking_done;
@@ -1555,20 +1594,20 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     __pyx_t_8 = NULL;
     if (__Pyx_IterFinish() == 0) __Pyx_RaiseNeedMoreValuesError(index);
-    __PYX_ERR(0, 101, __pyx_L1_error)
+    __PYX_ERR(0, 59, __pyx_L1_error)
     __pyx_L4_unpacking_done:;
   }
-  __pyx_t_9 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_9 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_t_9 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_9 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 59, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_10 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_10 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_t_10 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_10 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 59, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_11 = __pyx_PyFloat_AsDouble(__pyx_t_3); if (unlikely((__pyx_t_11 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_t_11 = __pyx_PyFloat_AsDouble(__pyx_t_3); if (unlikely((__pyx_t_11 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 59, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_12 = __pyx_PyFloat_AsDouble(__pyx_t_4); if (unlikely((__pyx_t_12 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_t_12 = __pyx_PyFloat_AsDouble(__pyx_t_4); if (unlikely((__pyx_t_12 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 59, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_13 = __pyx_PyFloat_AsDouble(__pyx_t_5); if (unlikely((__pyx_t_13 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_t_13 = __pyx_PyFloat_AsDouble(__pyx_t_5); if (unlikely((__pyx_t_13 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 59, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_14 = __pyx_PyFloat_AsDouble(__pyx_t_6); if (unlikely((__pyx_t_14 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_t_14 = __pyx_PyFloat_AsDouble(__pyx_t_6); if (unlikely((__pyx_t_14 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 59, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   __pyx_v_a = __pyx_t_9;
   __pyx_v_b = __pyx_t_10;
@@ -1577,41 +1616,376 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
   __pyx_v_e = __pyx_t_13;
   __pyx_v_f = __pyx_t_14;
 
-  /* "Kinematics.pyx":102
- *     cdef double a, b, c, d, e, f, x, y, z
+  /* "Kinematics.pyx":61
  *     a, b, c, d, e, f = joint_angles
- *     cdef short i = 8             # <<<<<<<<<<<<<<
- *     if tool_position is not None:
- *         i += 1
+ * 
+ *     cdef double *base     = <double*> makeT(a, 0.089159, -0.134,   pihalf)             # <<<<<<<<<<<<<<
+ *     cdef double *shoulder = <double*> makeT(b, 0,        -0.425,   0)
+ *     cdef double *elbow    = <double*> makeT(c, -0.119,   0,        0)
  */
-  __pyx_v_i = 8;
+  __pyx_v_base = ((double *)makeT(__pyx_v_a, 0.089159, -0.134, __pyx_v_pihalf));
 
-  /* "Kinematics.pyx":103
- *     a, b, c, d, e, f = joint_angles
- *     cdef short i = 8
+  /* "Kinematics.pyx":62
+ * 
+ *     cdef double *base     = <double*> makeT(a, 0.089159, -0.134,   pihalf)
+ *     cdef double *shoulder = <double*> makeT(b, 0,        -0.425,   0)             # <<<<<<<<<<<<<<
+ *     cdef double *elbow    = <double*> makeT(c, -0.119,   0,        0)
+ *     cdef double *elbowend = <double*> makeT(0, 0,        -0.39225, 0)
+ */
+  __pyx_v_shoulder = ((double *)makeT(__pyx_v_b, 0.0, -0.425, 0.0));
+
+  /* "Kinematics.pyx":63
+ *     cdef double *base     = <double*> makeT(a, 0.089159, -0.134,   pihalf)
+ *     cdef double *shoulder = <double*> makeT(b, 0,        -0.425,   0)
+ *     cdef double *elbow    = <double*> makeT(c, -0.119,   0,        0)             # <<<<<<<<<<<<<<
+ *     cdef double *elbowend = <double*> makeT(0, 0,        -0.39225, 0)
+ *     cdef double *wrist1   = <double*> makeT(d, 0.09475,  0,        pihalf)
+ */
+  __pyx_v_elbow = ((double *)makeT(__pyx_v_c, -0.119, 0.0, 0.0));
+
+  /* "Kinematics.pyx":64
+ *     cdef double *shoulder = <double*> makeT(b, 0,        -0.425,   0)
+ *     cdef double *elbow    = <double*> makeT(c, -0.119,   0,        0)
+ *     cdef double *elbowend = <double*> makeT(0, 0,        -0.39225, 0)             # <<<<<<<<<<<<<<
+ *     cdef double *wrist1   = <double*> makeT(d, 0.09475,  0,        pihalf)
+ *     cdef double *wrist2   = <double*> makeT(e, 0.09475,  0,        -pihalf)
+ */
+  __pyx_v_elbowend = ((double *)makeT(0.0, 0.0, -0.39225, 0.0));
+
+  /* "Kinematics.pyx":65
+ *     cdef double *elbow    = <double*> makeT(c, -0.119,   0,        0)
+ *     cdef double *elbowend = <double*> makeT(0, 0,        -0.39225, 0)
+ *     cdef double *wrist1   = <double*> makeT(d, 0.09475,  0,        pihalf)             # <<<<<<<<<<<<<<
+ *     cdef double *wrist2   = <double*> makeT(e, 0.09475,  0,        -pihalf)
+ *     cdef double *wrist3   = <double*> makeT(f,0.0815,0,0)
+ */
+  __pyx_v_wrist1 = ((double *)makeT(__pyx_v_d, 0.09475, 0.0, __pyx_v_pihalf));
+
+  /* "Kinematics.pyx":66
+ *     cdef double *elbowend = <double*> makeT(0, 0,        -0.39225, 0)
+ *     cdef double *wrist1   = <double*> makeT(d, 0.09475,  0,        pihalf)
+ *     cdef double *wrist2   = <double*> makeT(e, 0.09475,  0,        -pihalf)             # <<<<<<<<<<<<<<
+ *     cdef double *wrist3   = <double*> makeT(f,0.0815,0,0)
+ * 
+ */
+  __pyx_v_wrist2 = ((double *)makeT(__pyx_v_e, 0.09475, 0.0, (-__pyx_v_pihalf)));
+
+  /* "Kinematics.pyx":67
+ *     cdef double *wrist1   = <double*> makeT(d, 0.09475,  0,        pihalf)
+ *     cdef double *wrist2   = <double*> makeT(e, 0.09475,  0,        -pihalf)
+ *     cdef double *wrist3   = <double*> makeT(f,0.0815,0,0)             # <<<<<<<<<<<<<<
+ * 
+ *     base[3], base[7] = -base[7], base[3]
+ */
+  __pyx_v_wrist3 = ((double *)makeT(__pyx_v_f, 0.0815, 0.0, 0.0));
+
+  /* "Kinematics.pyx":69
+ *     cdef double *wrist3   = <double*> makeT(f,0.0815,0,0)
+ * 
+ *     base[3], base[7] = -base[7], base[3]             # <<<<<<<<<<<<<<
+ *     matmul(shoulder, base)
+ *     matmul(elbow, shoulder)
+ */
+  __pyx_t_14 = (-(__pyx_v_base[7]));
+  __pyx_t_13 = (__pyx_v_base[3]);
+  (__pyx_v_base[3]) = __pyx_t_14;
+  (__pyx_v_base[7]) = __pyx_t_13;
+
+  /* "Kinematics.pyx":70
+ * 
+ *     base[3], base[7] = -base[7], base[3]
+ *     matmul(shoulder, base)             # <<<<<<<<<<<<<<
+ *     matmul(elbow, shoulder)
+ *     matmul(elbowend, elbow)
+ */
+  matmul(__pyx_v_shoulder, __pyx_v_base);
+
+  /* "Kinematics.pyx":71
+ *     base[3], base[7] = -base[7], base[3]
+ *     matmul(shoulder, base)
+ *     matmul(elbow, shoulder)             # <<<<<<<<<<<<<<
+ *     matmul(elbowend, elbow)
+ *     matmul(wrist1, elbowend)
+ */
+  matmul(__pyx_v_elbow, __pyx_v_shoulder);
+
+  /* "Kinematics.pyx":72
+ *     matmul(shoulder, base)
+ *     matmul(elbow, shoulder)
+ *     matmul(elbowend, elbow)             # <<<<<<<<<<<<<<
+ *     matmul(wrist1, elbowend)
+ *     matmul(wrist2, wrist1)
+ */
+  matmul(__pyx_v_elbowend, __pyx_v_elbow);
+
+  /* "Kinematics.pyx":73
+ *     matmul(elbow, shoulder)
+ *     matmul(elbowend, elbow)
+ *     matmul(wrist1, elbowend)             # <<<<<<<<<<<<<<
+ *     matmul(wrist2, wrist1)
+ *     matmul(wrist3, wrist2)
+ */
+  matmul(__pyx_v_wrist1, __pyx_v_elbowend);
+
+  /* "Kinematics.pyx":74
+ *     matmul(elbowend, elbow)
+ *     matmul(wrist1, elbowend)
+ *     matmul(wrist2, wrist1)             # <<<<<<<<<<<<<<
+ *     matmul(wrist3, wrist2)
+ * 
+ */
+  matmul(__pyx_v_wrist2, __pyx_v_wrist1);
+
+  /* "Kinematics.pyx":75
+ *     matmul(wrist1, elbowend)
+ *     matmul(wrist2, wrist1)
+ *     matmul(wrist3, wrist2)             # <<<<<<<<<<<<<<
+ * 
+ *     cdef list X, Y, Z
+ */
+  matmul(__pyx_v_wrist3, __pyx_v_wrist2);
+
+  /* "Kinematics.pyx":78
+ * 
+ *     cdef list X, Y, Z
+ *     X = [0, 0, base[3], shoulder[3], elbow[3], elbowend[3], wrist1[3], wrist2[3], wrist3[3]]             # <<<<<<<<<<<<<<
+ *     Y = [0, 0, base[7], shoulder[7], elbow[7], elbowend[7], wrist1[7], wrist2[7], wrist3[7]]
+ *     Z = [0, base[11], base[11], shoulder[11], elbow[11], elbowend[11], wrist1[11], wrist2[11], wrist3[11]]
+ */
+  __pyx_t_6 = PyFloat_FromDouble((__pyx_v_base[3])); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 78, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __pyx_t_5 = PyFloat_FromDouble((__pyx_v_shoulder[3])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 78, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
+  __pyx_t_4 = PyFloat_FromDouble((__pyx_v_elbow[3])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 78, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_3 = PyFloat_FromDouble((__pyx_v_elbowend[3])); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 78, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_2 = PyFloat_FromDouble((__pyx_v_wrist1[3])); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 78, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_1 = PyFloat_FromDouble((__pyx_v_wrist2[3])); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 78, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_7 = PyFloat_FromDouble((__pyx_v_wrist3[3])); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 78, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_t_15 = PyList_New(9); if (unlikely(!__pyx_t_15)) __PYX_ERR(0, 78, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_15);
+  __Pyx_INCREF(__pyx_int_0);
+  __Pyx_GIVEREF(__pyx_int_0);
+  PyList_SET_ITEM(__pyx_t_15, 0, __pyx_int_0);
+  __Pyx_INCREF(__pyx_int_0);
+  __Pyx_GIVEREF(__pyx_int_0);
+  PyList_SET_ITEM(__pyx_t_15, 1, __pyx_int_0);
+  __Pyx_GIVEREF(__pyx_t_6);
+  PyList_SET_ITEM(__pyx_t_15, 2, __pyx_t_6);
+  __Pyx_GIVEREF(__pyx_t_5);
+  PyList_SET_ITEM(__pyx_t_15, 3, __pyx_t_5);
+  __Pyx_GIVEREF(__pyx_t_4);
+  PyList_SET_ITEM(__pyx_t_15, 4, __pyx_t_4);
+  __Pyx_GIVEREF(__pyx_t_3);
+  PyList_SET_ITEM(__pyx_t_15, 5, __pyx_t_3);
+  __Pyx_GIVEREF(__pyx_t_2);
+  PyList_SET_ITEM(__pyx_t_15, 6, __pyx_t_2);
+  __Pyx_GIVEREF(__pyx_t_1);
+  PyList_SET_ITEM(__pyx_t_15, 7, __pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_7);
+  PyList_SET_ITEM(__pyx_t_15, 8, __pyx_t_7);
+  __pyx_t_6 = 0;
+  __pyx_t_5 = 0;
+  __pyx_t_4 = 0;
+  __pyx_t_3 = 0;
+  __pyx_t_2 = 0;
+  __pyx_t_1 = 0;
+  __pyx_t_7 = 0;
+  __pyx_v_X = ((PyObject*)__pyx_t_15);
+  __pyx_t_15 = 0;
+
+  /* "Kinematics.pyx":79
+ *     cdef list X, Y, Z
+ *     X = [0, 0, base[3], shoulder[3], elbow[3], elbowend[3], wrist1[3], wrist2[3], wrist3[3]]
+ *     Y = [0, 0, base[7], shoulder[7], elbow[7], elbowend[7], wrist1[7], wrist2[7], wrist3[7]]             # <<<<<<<<<<<<<<
+ *     Z = [0, base[11], base[11], shoulder[11], elbow[11], elbowend[11], wrist1[11], wrist2[11], wrist3[11]]
+ * 
+ */
+  __pyx_t_15 = PyFloat_FromDouble((__pyx_v_base[7])); if (unlikely(!__pyx_t_15)) __PYX_ERR(0, 79, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_15);
+  __pyx_t_7 = PyFloat_FromDouble((__pyx_v_shoulder[7])); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 79, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_t_1 = PyFloat_FromDouble((__pyx_v_elbow[7])); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 79, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = PyFloat_FromDouble((__pyx_v_elbowend[7])); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 79, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = PyFloat_FromDouble((__pyx_v_wrist1[7])); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 79, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_4 = PyFloat_FromDouble((__pyx_v_wrist2[7])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 79, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_5 = PyFloat_FromDouble((__pyx_v_wrist3[7])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 79, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
+  __pyx_t_6 = PyList_New(9); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 79, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __Pyx_INCREF(__pyx_int_0);
+  __Pyx_GIVEREF(__pyx_int_0);
+  PyList_SET_ITEM(__pyx_t_6, 0, __pyx_int_0);
+  __Pyx_INCREF(__pyx_int_0);
+  __Pyx_GIVEREF(__pyx_int_0);
+  PyList_SET_ITEM(__pyx_t_6, 1, __pyx_int_0);
+  __Pyx_GIVEREF(__pyx_t_15);
+  PyList_SET_ITEM(__pyx_t_6, 2, __pyx_t_15);
+  __Pyx_GIVEREF(__pyx_t_7);
+  PyList_SET_ITEM(__pyx_t_6, 3, __pyx_t_7);
+  __Pyx_GIVEREF(__pyx_t_1);
+  PyList_SET_ITEM(__pyx_t_6, 4, __pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_2);
+  PyList_SET_ITEM(__pyx_t_6, 5, __pyx_t_2);
+  __Pyx_GIVEREF(__pyx_t_3);
+  PyList_SET_ITEM(__pyx_t_6, 6, __pyx_t_3);
+  __Pyx_GIVEREF(__pyx_t_4);
+  PyList_SET_ITEM(__pyx_t_6, 7, __pyx_t_4);
+  __Pyx_GIVEREF(__pyx_t_5);
+  PyList_SET_ITEM(__pyx_t_6, 8, __pyx_t_5);
+  __pyx_t_15 = 0;
+  __pyx_t_7 = 0;
+  __pyx_t_1 = 0;
+  __pyx_t_2 = 0;
+  __pyx_t_3 = 0;
+  __pyx_t_4 = 0;
+  __pyx_t_5 = 0;
+  __pyx_v_Y = ((PyObject*)__pyx_t_6);
+  __pyx_t_6 = 0;
+
+  /* "Kinematics.pyx":80
+ *     X = [0, 0, base[3], shoulder[3], elbow[3], elbowend[3], wrist1[3], wrist2[3], wrist3[3]]
+ *     Y = [0, 0, base[7], shoulder[7], elbow[7], elbowend[7], wrist1[7], wrist2[7], wrist3[7]]
+ *     Z = [0, base[11], base[11], shoulder[11], elbow[11], elbowend[11], wrist1[11], wrist2[11], wrist3[11]]             # <<<<<<<<<<<<<<
+ * 
+ *     free(base)
+ */
+  __pyx_t_6 = PyFloat_FromDouble((__pyx_v_base[11])); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 80, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __pyx_t_5 = PyFloat_FromDouble((__pyx_v_base[11])); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 80, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
+  __pyx_t_4 = PyFloat_FromDouble((__pyx_v_shoulder[11])); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 80, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_3 = PyFloat_FromDouble((__pyx_v_elbow[11])); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 80, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_2 = PyFloat_FromDouble((__pyx_v_elbowend[11])); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 80, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_1 = PyFloat_FromDouble((__pyx_v_wrist1[11])); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 80, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_7 = PyFloat_FromDouble((__pyx_v_wrist2[11])); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 80, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_t_15 = PyFloat_FromDouble((__pyx_v_wrist3[11])); if (unlikely(!__pyx_t_15)) __PYX_ERR(0, 80, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_15);
+  __pyx_t_16 = PyList_New(9); if (unlikely(!__pyx_t_16)) __PYX_ERR(0, 80, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_16);
+  __Pyx_INCREF(__pyx_int_0);
+  __Pyx_GIVEREF(__pyx_int_0);
+  PyList_SET_ITEM(__pyx_t_16, 0, __pyx_int_0);
+  __Pyx_GIVEREF(__pyx_t_6);
+  PyList_SET_ITEM(__pyx_t_16, 1, __pyx_t_6);
+  __Pyx_GIVEREF(__pyx_t_5);
+  PyList_SET_ITEM(__pyx_t_16, 2, __pyx_t_5);
+  __Pyx_GIVEREF(__pyx_t_4);
+  PyList_SET_ITEM(__pyx_t_16, 3, __pyx_t_4);
+  __Pyx_GIVEREF(__pyx_t_3);
+  PyList_SET_ITEM(__pyx_t_16, 4, __pyx_t_3);
+  __Pyx_GIVEREF(__pyx_t_2);
+  PyList_SET_ITEM(__pyx_t_16, 5, __pyx_t_2);
+  __Pyx_GIVEREF(__pyx_t_1);
+  PyList_SET_ITEM(__pyx_t_16, 6, __pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_7);
+  PyList_SET_ITEM(__pyx_t_16, 7, __pyx_t_7);
+  __Pyx_GIVEREF(__pyx_t_15);
+  PyList_SET_ITEM(__pyx_t_16, 8, __pyx_t_15);
+  __pyx_t_6 = 0;
+  __pyx_t_5 = 0;
+  __pyx_t_4 = 0;
+  __pyx_t_3 = 0;
+  __pyx_t_2 = 0;
+  __pyx_t_1 = 0;
+  __pyx_t_7 = 0;
+  __pyx_t_15 = 0;
+  __pyx_v_Z = ((PyObject*)__pyx_t_16);
+  __pyx_t_16 = 0;
+
+  /* "Kinematics.pyx":82
+ *     Z = [0, base[11], base[11], shoulder[11], elbow[11], elbowend[11], wrist1[11], wrist2[11], wrist3[11]]
+ * 
+ *     free(base)             # <<<<<<<<<<<<<<
+ *     free(shoulder)
+ *     free(elbow)
+ */
+  free(__pyx_v_base);
+
+  /* "Kinematics.pyx":83
+ * 
+ *     free(base)
+ *     free(shoulder)             # <<<<<<<<<<<<<<
+ *     free(elbow)
+ *     free(elbowend)
+ */
+  free(__pyx_v_shoulder);
+
+  /* "Kinematics.pyx":84
+ *     free(base)
+ *     free(shoulder)
+ *     free(elbow)             # <<<<<<<<<<<<<<
+ *     free(elbowend)
+ *     free(wrist1)
+ */
+  free(__pyx_v_elbow);
+
+  /* "Kinematics.pyx":85
+ *     free(shoulder)
+ *     free(elbow)
+ *     free(elbowend)             # <<<<<<<<<<<<<<
+ *     free(wrist1)
+ *     free(wrist2)
+ */
+  free(__pyx_v_elbowend);
+
+  /* "Kinematics.pyx":86
+ *     free(elbow)
+ *     free(elbowend)
+ *     free(wrist1)             # <<<<<<<<<<<<<<
+ *     free(wrist2)
+ *     free(wrist3)
+ */
+  free(__pyx_v_wrist1);
+
+  /* "Kinematics.pyx":87
+ *     free(elbowend)
+ *     free(wrist1)
+ *     free(wrist2)             # <<<<<<<<<<<<<<
+ *     free(wrist3)
+ * 
+ */
+  free(__pyx_v_wrist2);
+
+  /* "Kinematics.pyx":88
+ *     free(wrist1)
+ *     free(wrist2)
+ *     free(wrist3)             # <<<<<<<<<<<<<<
+ * 
+ *     if tool_position is not None:
+ */
+  free(__pyx_v_wrist3);
+
+  /* "Kinematics.pyx":90
+ *     free(wrist3)
+ * 
  *     if tool_position is not None:             # <<<<<<<<<<<<<<
- *         i += 1
  *         x, y, z = tool_position
+ *         X.append(x)
  */
-  __pyx_t_15 = (__pyx_v_tool_position != Py_None);
-  __pyx_t_16 = (__pyx_t_15 != 0);
-  if (__pyx_t_16) {
+  __pyx_t_17 = (__pyx_v_tool_position != Py_None);
+  __pyx_t_18 = (__pyx_t_17 != 0);
+  if (__pyx_t_18) {
 
-    /* "Kinematics.pyx":104
- *     cdef short i = 8
+    /* "Kinematics.pyx":91
+ * 
  *     if tool_position is not None:
- *         i += 1             # <<<<<<<<<<<<<<
- *         x, y, z = tool_position
- *     else:
- */
-    __pyx_v_i = (__pyx_v_i + 1);
-
-    /* "Kinematics.pyx":105
- *     if tool_position is not None:
- *         i += 1
  *         x, y, z = tool_position             # <<<<<<<<<<<<<<
- *     else:
- *         x = -1000
+ *         X.append(x)
+ *         Y.append(y)
  */
     if ((likely(PyTuple_CheckExact(__pyx_v_tool_position))) || (PyList_CheckExact(__pyx_v_tool_position))) {
       PyObject* sequence = __pyx_v_tool_position;
@@ -1619,145 +1993,135 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
       if (unlikely(size != 3)) {
         if (size > 3) __Pyx_RaiseTooManyValuesError(3);
         else if (size >= 0) __Pyx_RaiseNeedMoreValuesError(size);
-        __PYX_ERR(0, 105, __pyx_L1_error)
+        __PYX_ERR(0, 91, __pyx_L1_error)
       }
       #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
       if (likely(PyTuple_CheckExact(sequence))) {
-        __pyx_t_6 = PyTuple_GET_ITEM(sequence, 0); 
-        __pyx_t_5 = PyTuple_GET_ITEM(sequence, 1); 
-        __pyx_t_4 = PyTuple_GET_ITEM(sequence, 2); 
+        __pyx_t_16 = PyTuple_GET_ITEM(sequence, 0); 
+        __pyx_t_15 = PyTuple_GET_ITEM(sequence, 1); 
+        __pyx_t_7 = PyTuple_GET_ITEM(sequence, 2); 
       } else {
-        __pyx_t_6 = PyList_GET_ITEM(sequence, 0); 
-        __pyx_t_5 = PyList_GET_ITEM(sequence, 1); 
-        __pyx_t_4 = PyList_GET_ITEM(sequence, 2); 
+        __pyx_t_16 = PyList_GET_ITEM(sequence, 0); 
+        __pyx_t_15 = PyList_GET_ITEM(sequence, 1); 
+        __pyx_t_7 = PyList_GET_ITEM(sequence, 2); 
       }
-      __Pyx_INCREF(__pyx_t_6);
-      __Pyx_INCREF(__pyx_t_5);
-      __Pyx_INCREF(__pyx_t_4);
+      __Pyx_INCREF(__pyx_t_16);
+      __Pyx_INCREF(__pyx_t_15);
+      __Pyx_INCREF(__pyx_t_7);
       #else
-      __pyx_t_6 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 105, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_6);
-      __pyx_t_5 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 105, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_5);
-      __pyx_t_4 = PySequence_ITEM(sequence, 2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 105, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_4);
+      __pyx_t_16 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_16)) __PYX_ERR(0, 91, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_16);
+      __pyx_t_15 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_15)) __PYX_ERR(0, 91, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_15);
+      __pyx_t_7 = PySequence_ITEM(sequence, 2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 91, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_7);
       #endif
     } else {
       Py_ssize_t index = -1;
-      __pyx_t_3 = PyObject_GetIter(__pyx_v_tool_position); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 105, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_8 = Py_TYPE(__pyx_t_3)->tp_iternext;
-      index = 0; __pyx_t_6 = __pyx_t_8(__pyx_t_3); if (unlikely(!__pyx_t_6)) goto __pyx_L6_unpacking_failed;
-      __Pyx_GOTREF(__pyx_t_6);
-      index = 1; __pyx_t_5 = __pyx_t_8(__pyx_t_3); if (unlikely(!__pyx_t_5)) goto __pyx_L6_unpacking_failed;
-      __Pyx_GOTREF(__pyx_t_5);
-      index = 2; __pyx_t_4 = __pyx_t_8(__pyx_t_3); if (unlikely(!__pyx_t_4)) goto __pyx_L6_unpacking_failed;
-      __Pyx_GOTREF(__pyx_t_4);
-      if (__Pyx_IternextUnpackEndCheck(__pyx_t_8(__pyx_t_3), 3) < 0) __PYX_ERR(0, 105, __pyx_L1_error)
+      __pyx_t_1 = PyObject_GetIter(__pyx_v_tool_position); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 91, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_1);
+      __pyx_t_8 = Py_TYPE(__pyx_t_1)->tp_iternext;
+      index = 0; __pyx_t_16 = __pyx_t_8(__pyx_t_1); if (unlikely(!__pyx_t_16)) goto __pyx_L6_unpacking_failed;
+      __Pyx_GOTREF(__pyx_t_16);
+      index = 1; __pyx_t_15 = __pyx_t_8(__pyx_t_1); if (unlikely(!__pyx_t_15)) goto __pyx_L6_unpacking_failed;
+      __Pyx_GOTREF(__pyx_t_15);
+      index = 2; __pyx_t_7 = __pyx_t_8(__pyx_t_1); if (unlikely(!__pyx_t_7)) goto __pyx_L6_unpacking_failed;
+      __Pyx_GOTREF(__pyx_t_7);
+      if (__Pyx_IternextUnpackEndCheck(__pyx_t_8(__pyx_t_1), 3) < 0) __PYX_ERR(0, 91, __pyx_L1_error)
       __pyx_t_8 = NULL;
-      __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
       goto __pyx_L7_unpacking_done;
       __pyx_L6_unpacking_failed:;
-      __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
       __pyx_t_8 = NULL;
       if (__Pyx_IterFinish() == 0) __Pyx_RaiseNeedMoreValuesError(index);
-      __PYX_ERR(0, 105, __pyx_L1_error)
+      __PYX_ERR(0, 91, __pyx_L1_error)
       __pyx_L7_unpacking_done:;
     }
-    __pyx_t_14 = __pyx_PyFloat_AsDouble(__pyx_t_6); if (unlikely((__pyx_t_14 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 105, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __pyx_t_13 = __pyx_PyFloat_AsDouble(__pyx_t_5); if (unlikely((__pyx_t_13 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 105, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __pyx_t_12 = __pyx_PyFloat_AsDouble(__pyx_t_4); if (unlikely((__pyx_t_12 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 105, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __pyx_v_x = __pyx_t_14;
-    __pyx_v_y = __pyx_t_13;
+    __pyx_t_13 = __pyx_PyFloat_AsDouble(__pyx_t_16); if (unlikely((__pyx_t_13 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 91, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_16); __pyx_t_16 = 0;
+    __pyx_t_14 = __pyx_PyFloat_AsDouble(__pyx_t_15); if (unlikely((__pyx_t_14 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 91, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_15); __pyx_t_15 = 0;
+    __pyx_t_12 = __pyx_PyFloat_AsDouble(__pyx_t_7); if (unlikely((__pyx_t_12 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 91, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __pyx_v_x = __pyx_t_13;
+    __pyx_v_y = __pyx_t_14;
     __pyx_v_z = __pyx_t_12;
 
-    /* "Kinematics.pyx":103
- *     a, b, c, d, e, f = joint_angles
- *     cdef short i = 8
+    /* "Kinematics.pyx":92
+ *     if tool_position is not None:
+ *         x, y, z = tool_position
+ *         X.append(x)             # <<<<<<<<<<<<<<
+ *         Y.append(y)
+ *         Z.append(z)
+ */
+    __pyx_t_7 = PyFloat_FromDouble(__pyx_v_x); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 92, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_7);
+    __pyx_t_19 = __Pyx_PyList_Append(__pyx_v_X, __pyx_t_7); if (unlikely(__pyx_t_19 == ((int)-1))) __PYX_ERR(0, 92, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+
+    /* "Kinematics.pyx":93
+ *         x, y, z = tool_position
+ *         X.append(x)
+ *         Y.append(y)             # <<<<<<<<<<<<<<
+ *         Z.append(z)
+ * 
+ */
+    __pyx_t_7 = PyFloat_FromDouble(__pyx_v_y); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_7);
+    __pyx_t_19 = __Pyx_PyList_Append(__pyx_v_Y, __pyx_t_7); if (unlikely(__pyx_t_19 == ((int)-1))) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+
+    /* "Kinematics.pyx":94
+ *         X.append(x)
+ *         Y.append(y)
+ *         Z.append(z)             # <<<<<<<<<<<<<<
+ * 
+ *     return X, Y, Z
+ */
+    __pyx_t_7 = PyFloat_FromDouble(__pyx_v_z); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 94, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_7);
+    __pyx_t_19 = __Pyx_PyList_Append(__pyx_v_Z, __pyx_t_7); if (unlikely(__pyx_t_19 == ((int)-1))) __PYX_ERR(0, 94, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+
+    /* "Kinematics.pyx":90
+ *     free(wrist3)
+ * 
  *     if tool_position is not None:             # <<<<<<<<<<<<<<
- *         i += 1
  *         x, y, z = tool_position
+ *         X.append(x)
  */
-    goto __pyx_L5;
   }
 
-  /* "Kinematics.pyx":107
- *         x, y, z = tool_position
- *     else:
- *         x = -1000             # <<<<<<<<<<<<<<
- *         y = -1000
- *         z = -1000
- */
-  /*else*/ {
-    __pyx_v_x = -1000.0;
-
-    /* "Kinematics.pyx":108
- *     else:
- *         x = -1000
- *         y = -1000             # <<<<<<<<<<<<<<
- *         z = -1000
+  /* "Kinematics.pyx":96
+ *         Z.append(z)
  * 
- */
-    __pyx_v_y = -1000.0;
-
-    /* "Kinematics.pyx":109
- *         x = -1000
- *         y = -1000
- *         z = -1000             # <<<<<<<<<<<<<<
+ *     return X, Y, Z             # <<<<<<<<<<<<<<
  * 
- *     cdef double* results = <double*>forwardkinematics_c(a, b, c, d, e, f, i, x, y, z)
- */
-    __pyx_v_z = -1000.0;
-  }
-  __pyx_L5:;
-
-  /* "Kinematics.pyx":111
- *         z = -1000
  * 
- *     cdef double* results = <double*>forwardkinematics_c(a, b, c, d, e, f, i, x, y, z)             # <<<<<<<<<<<<<<
- *     # cdef list X, Y, Z
- *     # X = [float(results[i]) for i in range(0,9)]
- */
-  __pyx_v_results = ((double *)forwardkinematics_c(__pyx_v_a, __pyx_v_b, __pyx_v_c, __pyx_v_d, __pyx_v_e, __pyx_v_f, __pyx_v_i, __pyx_v_x, __pyx_v_y, __pyx_v_z));
-
-  /* "Kinematics.pyx":116
- *     # Y = [float(results[i]) for i in range(10,18)]
- *     # Z = [float(results[i]) for i in range(19,27)]
- *     return [], [], []             # <<<<<<<<<<<<<<
- * 
- * cpdef ForwardKinematics(joint_angles, tool_position=None):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_4 = PyList_New(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 116, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = PyList_New(0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 116, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_6 = PyList_New(0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 116, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_3 = PyTuple_New(3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 116, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_GIVEREF(__pyx_t_4);
-  PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_4);
-  __Pyx_GIVEREF(__pyx_t_5);
-  PyTuple_SET_ITEM(__pyx_t_3, 1, __pyx_t_5);
-  __Pyx_GIVEREF(__pyx_t_6);
-  PyTuple_SET_ITEM(__pyx_t_3, 2, __pyx_t_6);
-  __pyx_t_4 = 0;
-  __pyx_t_5 = 0;
-  __pyx_t_6 = 0;
-  __pyx_r = __pyx_t_3;
-  __pyx_t_3 = 0;
+  __pyx_t_7 = PyTuple_New(3); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_INCREF(__pyx_v_X);
+  __Pyx_GIVEREF(__pyx_v_X);
+  PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_v_X);
+  __Pyx_INCREF(__pyx_v_Y);
+  __Pyx_GIVEREF(__pyx_v_Y);
+  PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_v_Y);
+  __Pyx_INCREF(__pyx_v_Z);
+  __Pyx_GIVEREF(__pyx_v_Z);
+  PyTuple_SET_ITEM(__pyx_t_7, 2, __pyx_v_Z);
+  __pyx_r = __pyx_t_7;
+  __pyx_t_7 = 0;
   goto __pyx_L0;
 
-  /* "Kinematics.pyx":99
+  /* "Kinematics.pyx":55
  * 
  * 
  * cdef forwardkinematics(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
- *     cdef double a, b, c, d, e, f, x, y, z
- *     a, b, c, d, e, f = joint_angles
+ *     cdef double pihalf = 1.57079632679
+ * 
  */
 
   /* function exit code */
@@ -1769,16 +2133,21 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_15);
+  __Pyx_XDECREF(__pyx_t_16);
   __Pyx_AddTraceback("Kinematics.forwardkinematics", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_X);
+  __Pyx_XDECREF(__pyx_v_Y);
+  __Pyx_XDECREF(__pyx_v_Z);
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
 /* "Kinematics.pyx":118
- *     return [], [], []
+ * #     return X, Y, Z
  * 
  * cpdef ForwardKinematics(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
  *     return forwardkinematics(joint_angles, tool_position=tool_position)
@@ -1816,7 +2185,7 @@ static PyObject *__pyx_f_10Kinematics_ForwardKinematics(PyObject *__pyx_v_joint_
   goto __pyx_L0;
 
   /* "Kinematics.pyx":118
- *     return [], [], []
+ * #     return X, Y, Z
  * 
  * cpdef ForwardKinematics(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
  *     return forwardkinematics(joint_angles, tool_position=tool_position)
@@ -1993,6 +2362,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
 
 static CYTHON_SMALL_CODE int __Pyx_InitGlobals(void) {
   if (__Pyx_InitStrings(__pyx_string_tab) < 0) __PYX_ERR(0, 1, __pyx_L1_error);
+  __pyx_int_0 = PyInt_FromLong(0); if (unlikely(!__pyx_int_0)) __PYX_ERR(0, 1, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
   return -1;

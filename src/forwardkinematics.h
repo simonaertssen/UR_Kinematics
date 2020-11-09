@@ -54,70 +54,64 @@ void matmul(double *A, double *B){
 
     free(result);
 }
-
-double *forwardkinematics_c(double a, double b, double c, double d, double e, double f, short i, double x, double y, double z){
-    short idx = 0;
-    double pi2 = 1.57079632679;
-    double *base     = makeT(a,  0.089159, -0.134,   pi2);
-    double *shoulder = makeT(b,  0,        -0.425,   0);
-    double *elbow    = makeT(c, -0.119,    0,        0);
-    double *elbowend = makeT(0,  0,        -0.39225, 0);
-    double *wrist1   = makeT(d,  0.09475,   0,       pi2);
-    double *wrist2   = makeT(e,  0.09475,   0,      -pi2);
-    double *wrist3   = makeT(f,  0.0815,    0,       0);
-
+//
+//double *forwardkinematics_c(double a, double b, double c, double d, double e, double f, short i, double x, double y, double z){
+//    short idx = 0;
+//    double pi2 = 1.57079632679;
+//    double *base     = makeT(a,  0.089159, -0.134,   pi2);
+//    double *shoulder = makeT(b,  0,        -0.425,   0);
+//    double *elbow    = makeT(c, -0.119,    0,        0);
+//    double *elbowend = makeT(0,  0,        -0.39225, 0);
+//    double *wrist1   = makeT(d,  0.09475,   0,       pi2);
+//    double *wrist2   = makeT(e,  0.09475,   0,      -pi2);
+//    double *wrist3   = makeT(f,  0.0815,    0,       0);
+//
 //    double tmp = base[3]; base[3] = -base[7]; base[7] = base[3];
-    matmul(shoulder, base);
-    matmul(elbow, shoulder);
-    matmul(elbowend, elbow);
-    matmul(wrist1, elbowend);
-    matmul(wrist2, wrist1);
-    matmul(wrist3, wrist2);
-
-    double *result = (double*) calloc((int) i*3, sizeof(double));
-    printf("i = %d\n", i);
-    if (i == 10){
-        idx = 1;
-        result[9] = x;
-        result[19] = y;
-        result[29] = z;
-    }
-
-    result[0] = 0;
-    result[1] = 0;
-    result[2] = base[3];
-    result[3] = shoulder[3];
-    result[4] = elbow[3];
-    result[5] = elbowend[3];
-    result[6] = wrist1[3];
-    result[7] = wrist2[3];
-    result[8] = wrist3[3];
-    result[9 + idx] = 0;
-    result[10 + idx] = 0;
-    result[11 + idx] = base[7];
-    result[12 + idx] = shoulder[7];
-    result[13 + idx] = elbow[7];
-    result[14 + idx] = elbowend[7];
-    result[15 + idx] = wrist1[7];
-    result[16 + idx] = wrist2[7];
-    result[17 + idx] = wrist3[7];
-    result[18 + 2*idx] = 0;
-    result[19 + 2*idx] = base[11];
-    result[20 + 2*idx] = base[11];
-    result[21 + 2*idx] = shoulder[11];
-    result[22 + 2*idx] = elbow[11];
-    result[23 + 2*idx] = elbowend[11];
-    result[24 + 2*idx] = wrist1[11];
-    result[25 + 2*idx] = wrist2[11];
-    result[26 + 2*idx] = wrist3[11];
-
-    free(base);
-    free(shoulder);
-    free(elbow);
-    free(elbowend);
-    free(wrist1);
-    free(wrist2);
-    free(wrist3);
-
-    return result;
- }
+//    matmul(shoulder, base);
+//    matmul(elbow, shoulder);
+//    matmul(elbowend, elbow);
+//    matmul(wrist1, elbowend);
+//    matmul(wrist2, wrist1);
+//    matmul(wrist3, wrist2);
+//
+//    double *result = (double*) calloc((int) i*3, sizeof(double));
+//    if (i == 10){
+//        idx = 1;
+//        result[9] = x;
+//        result[19] = y;
+//        result[29] = z;
+//    }
+//
+//    result[2] = base[3];
+//    result[3] = shoulder[3];
+//    result[4] = elbow[3];
+//    result[5] = elbowend[3];
+//    result[6] = wrist1[3];
+//    result[7] = wrist2[3];
+//    result[8] = wrist3[3];
+//    result[11 + idx] = base[7];
+//    result[12 + idx] = shoulder[7];
+//    result[13 + idx] = elbow[7];
+//    result[14 + idx] = elbowend[7];
+//    result[15 + idx] = wrist1[7];
+//    result[16 + idx] = wrist2[7];
+//    result[17 + idx] = wrist3[7];
+//    result[19 + 2*idx] = base[11];
+//    result[20 + 2*idx] = base[11];
+//    result[21 + 2*idx] = shoulder[11];
+//    result[22 + 2*idx] = elbow[11];
+//    result[23 + 2*idx] = elbowend[11];
+//    result[24 + 2*idx] = wrist1[11];
+//    result[25 + 2*idx] = wrist2[11];
+//    result[26 + 2*idx] = wrist3[11];
+//
+//    free(base);
+//    free(shoulder);
+//    free(elbow);
+//    free(elbowend);
+//    free(wrist1);
+//    free(wrist2);
+//    free(wrist3);
+//
+//    return result;
+// }
