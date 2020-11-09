@@ -9,11 +9,11 @@ def SpeedOfCurrentKinematics():
     for _ in range(n):
         toolTip = None
         pos = ForwardKinematics((0.0, -np.pi/2, 0.0, -np.pi/2, 0.0, 0.0))
-        print(pos)
     interval = time.time() - start
     print(n/interval, "iterations per second")
 
 
 if __name__ == '__main__':
     SpeedOfCurrentKinematics()
-    # 17945 iterations per second without 'slots'
+    #  14195 iterations per second by using just a function (benchmark)
+    # 480658 iterations per second by using cython

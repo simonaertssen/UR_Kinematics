@@ -8,7 +8,7 @@ def compile_cython():
             "Kinematics",
             sources=["src/Kinematics.pyx"],
             extra_compile_args=["-march=native", "-ffast-math", "-O3"])],
-            compiler_directives={'language_level':"3"})
+            compiler_directives={'language_level': "3"})
 
     setup(
         ext_modules=extensions,
