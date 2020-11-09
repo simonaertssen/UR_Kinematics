@@ -5,6 +5,15 @@ cdef extern from "forwardkinematics.h":
     double *makeT(double, double, double, double)
     void matmul(double*, double*)
 
+from cpython cimport *
+cdef extern from "Python.h":
+    # This isn't included in the cpython definitions
+    # using PyObject* rather than object lets us control refcounting
+    PyObject* Py_BuildValue(const char*,...) except NULL
+    list PyList_New(Py_ssize_t len)
+    void PyList_SET_ITEM(object list, Py_ssize_t i, object o)
+
+
 cdef double *T(double theta, double d, double r, double alpha):
     cos_t = cos(theta)
     sin_t = sin(theta)
@@ -64,10 +73,53 @@ cdef forwardkinematics(joint_angles, tool_position=None):
     matmul(wrist2, wrist1)
     matmul(wrist3, wrist2)
 
-    cdef list X, Y, Z
-    X = [0, 0, base[3], shoulder[3], elbow[3], elbowend[3], wrist1[3], wrist2[3], wrist3[3]]
-    Y = [0, 0, base[7], shoulder[7], elbow[7], elbowend[7], wrist1[7], wrist2[7], wrist3[7]]
-    Z = [0, base[11], base[11], shoulder[11], elbow[11], elbowend[11], wrist1[11], wrist2[11], wrist3[11]]
+    # cdef list X, Y, Z
+    # X = [0, 0, base[3], shoulder[3], elbow[3], elbowend[3], wrist1[3], wrist2[3], wrist3[3]]
+    # Y = [0, 0, base[7], shoulder[7], elbow[7], elbowend[7], wrist1[7], wrist2[7], wrist3[7]]
+    # Z = [0, base[11], base[11], shoulder[11], elbow[11], elbowend[11], wrist1[11], wrist2[11], wrist3[11]]
+
+    cdef Py_ssize_t l = 9
+    if tool_position is not None:
+        l += 1
+    X = PyList_New(l)
+    Y = PyList_New(l)
+    Z = PyList_New(l)
+
+    PyList_SET_ITEM(X,0,<object> 0)
+    PyList_SET_ITEM(X,1,<object> 0)
+    PyList_SET_ITEM(X,2,<object> base[3])
+    PyList_SET_ITEM(X,3,<object> shoulder[3])
+    PyList_SET_ITEM(X,4,<object> elbow[3])
+    PyList_SET_ITEM(X,5,<object> elbowend[3])
+    PyList_SET_ITEM(X,6,<object> wrist1[3])
+    PyList_SET_ITEM(X,7,<object> wrist2[3])
+    PyList_SET_ITEM(X,8,<object> wrist3[3])
+
+    PyList_SET_ITEM(Y,0,<object> 0)
+    PyList_SET_ITEM(Y,1,<object> 0)
+    PyList_SET_ITEM(Y,2,<object> base[7])
+    PyList_SET_ITEM(Y,3,<object> shoulder[7])
+    PyList_SET_ITEM(Y,4,<object> elbow[7])
+    PyList_SET_ITEM(Y,5,<object> elbowend[7])
+    PyList_SET_ITEM(Y,6,<object> wrist1[7])
+    PyList_SET_ITEM(Y,7,<object> wrist2[7])
+    PyList_SET_ITEM(Y,8,<object> wrist3[7])
+
+    PyList_SET_ITEM(Z,0,<object> 0)
+    PyList_SET_ITEM(Z,1,<object> base[11])
+    PyList_SET_ITEM(Z,2,<object> base[11])
+    PyList_SET_ITEM(Z,3,<object> shoulder[11])
+    PyList_SET_ITEM(Z,4,<object> elbow[11])
+    PyList_SET_ITEM(Z,5,<object> elbowend[11])
+    PyList_SET_ITEM(Z,6,<object> wrist1[11])
+    PyList_SET_ITEM(Z,7,<object> wrist2[11])
+    PyList_SET_ITEM(Z,8,<object> wrist3[11])
+
+    if tool_position is not None:
+        x, y, z = tool_position
+        PyList_SET_ITEM(X, 9, <object> x)
+        PyList_SET_ITEM(Y, 9, <object> y)
+        PyList_SET_ITEM(Z, 9, <object> z)
 
     free(base)
     free(shoulder)
@@ -76,12 +128,6 @@ cdef forwardkinematics(joint_angles, tool_position=None):
     free(wrist1)
     free(wrist2)
     free(wrist3)
-
-    if tool_position is not None:
-        x, y, z = tool_position
-        X.append(x)
-        Y.append(y)
-        Z.append(z)
 
     return X, Y, Z
 
