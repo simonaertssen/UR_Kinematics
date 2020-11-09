@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+# remove cython extensions:
+lib
+build
+
 # Distribution / packaging
 .Python
 build/

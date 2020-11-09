@@ -1,12 +1,11 @@
 # Run me with make
-
 # For cleaning up after yourself:
 # all: make clean
 
 all: make
 
 make:
-	python setup.py build_ext --inplace
+	python setup.py build_ext --build-lib lib
 	python main.py
 
 clean:
