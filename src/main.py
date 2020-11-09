@@ -5,7 +5,7 @@ from lib.Kinematics import ForwardKinematics
 
 def SpeedOfCurrentKinematics():
     start = time.time()
-    n = 1000000
+    n = 10000
     for _ in range(n):
         toolTip = None
         pos = ForwardKinematics((0.0, -np.pi/2, 0.0, -np.pi/2, 0.0, 0.0))
@@ -18,3 +18,4 @@ if __name__ == '__main__':
     #  14195 iterations per second by using just a function (benchmark)
     # 480658 iterations per second by using cython
     # 547236 iterations per second by using smaller buffers in matmul
+    # 258536
