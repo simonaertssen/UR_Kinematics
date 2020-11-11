@@ -6,7 +6,7 @@ from struct import *
 import numpy as np
 import math
 import cv2
-import Image_module as Im
+import ImageModule as Im
 from matplotlib import pyplot as plt
 import os
 

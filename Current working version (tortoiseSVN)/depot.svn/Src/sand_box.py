@@ -5,7 +5,7 @@ import Robot_module as Rm
 import math
 import cv2
 import numpy as np
-import Image_module as Im
+import ImageModule as Im
 while True:
     img = Im.get_image(F"21565643")
 

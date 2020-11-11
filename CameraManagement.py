@@ -4,7 +4,7 @@ from queue import Queue
 import cv2 as cv
 import numpy as np
 from pypylon import pylon, genicam
-from Image_module import findObjectsToPickUp
+from ImageModule import findObjectsToPickUp
 
 import tracemalloc
 

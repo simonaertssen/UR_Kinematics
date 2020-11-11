@@ -6,7 +6,7 @@ import math
 import os
 from tkinter import *
 
-import Image_module as Im
+import ImageModule as Im
 import Robot_module as Rm
 
 # Gui to select the type of objects we want to find

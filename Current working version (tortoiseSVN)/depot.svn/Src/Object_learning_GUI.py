@@ -5,7 +5,7 @@ import sys
 import math
 import shutil
 import numpy as np
-import Image_module as Im
+import ImageModule as Im
 from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel,
                              QSpinBox, QComboBox, QGridLayout, QVBoxLayout,

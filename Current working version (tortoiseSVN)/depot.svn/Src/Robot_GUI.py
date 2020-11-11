@@ -2,7 +2,7 @@ import os
 import cv2
 import sys
 from PyQt5 import QtCore, QtWidgets
-import Image_module as Im
+import ImageModule as Im
 from PyQt5.QtGui import QIcon, QPixmap, QImage,  QIntValidator, QPixmap, QPainter, QPen, QImage, QBrush, QKeySequence
 from PyQt5.QtCore import pyqtSignal, Qt, QThreadPool, QRunnable, pyqtSlot, QThread, QRect, QObject
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel,
