@@ -4,8 +4,8 @@ import numpy as np
 import time
 
 from RobotClass import Robot
-from Kinematics import ForwardKinematics
-# from lib.Kinematics import ForwardKinematics
+# from Kinematics import ForwardKinematics
+from lib.Kinematics import ForwardKinematics
 
 from PyQt5 import QtCore, QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
@@ -51,10 +51,8 @@ class RobotJointReader(QtCore.QThread):
 
     def run(self):
         while self.running:
+            # print(np.round(self.readJoints(), 4))
             self.updatePlot(self.readJoints())
-            # if callable(self.printMe):
-                # print(self.printMe())
-                # print([value*180/np.pi for value in self.printMe()])
 
 
 class Viewer(QtWidgets.QMainWindow):
@@ -89,11 +87,12 @@ class RobotRotationEmulator:
     def __init__(self):
         super(RobotRotationEmulator, self).__init__()
         # Initial angles of the robot:
-        # self.angles = [0, -np.pi/2, 0, -np.pi/2, 0, 0]
-        self.angles = [item * np.pi / 180 for item in [61.42, -93.0, 94.65, -91.59, -90.0, 0.0]]
+        self.angles = [0, -np.pi/2, 0, -np.pi/2, 0, 0]
+        # self.angles = [item * np.pi / 180 for item in [61.42, -93.0, 94.65, -91.59, -90.0, 0.0]]
 
     def step(self):
-        self.angles[0] += 0.0005
+        time.sleep(0.001)
+        self.angles[0] += 0.005
 
     def getJointPositions(self):
         self.step()
