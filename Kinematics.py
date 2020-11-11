@@ -18,11 +18,6 @@ def T(theta, d, r, alpha):
 
 def ForwardKinematics(joint_angles, tool_position=None):
     a, b, c, d, e, f = np.float64(joint_angles)
-    if tool_position is not None:
-        x, y, z = tool_position
-    else:
-        x, y, z = np.nan, np.nan, np.nan
-
     # The joint parameters a, d and alpha can be found here: https://www.universal-robots.com/articles/ur-articles/parameters-for-calculations-of-kinematics-and-dynamics/
     base     = T(theta=a, d=0.089159, r=-0.134,    alpha=np.pi / 2)
     shoulder = T(theta=b, d=0,        r=-0.425,   alpha=0)
@@ -39,10 +34,17 @@ def ForwardKinematics(joint_angles, tool_position=None):
     wrist1 = elbowend.dot(wrist1)
     wrist2 = wrist1.dot(wrist2)
     wrist3 = wrist2.dot(wrist3)
-    X = np.array([0, 0, base[0, 3], shoulder[0, 3], elbow[0, 3], elbowend[0, 3], wrist1[0, 3], wrist2[0, 3], wrist3[0, 3], x])
-    Y = np.array([0, 0, base[1, 3], shoulder[1, 3], elbow[1, 3], elbowend[1, 3], wrist1[1, 3], wrist2[1, 3], wrist3[1, 3], y])
-    Z = np.array([0, base[2, 3], base[2, 3], shoulder[2, 3], elbow[2, 3], elbowend[2, 3], wrist1[2, 3], wrist2[2, 3], wrist3[2, 3], z])
-    return X, Y, Z
+    X = [0, 0, base[0, 3], shoulder[0, 3], elbow[0, 3], elbowend[0, 3], wrist1[0, 3], wrist2[0, 3], wrist3[0, 3]]
+    Y = [0, 0, base[1, 3], shoulder[1, 3], elbow[1, 3], elbowend[1, 3], wrist1[1, 3], wrist2[1, 3], wrist3[1, 3]]
+    Z = [0, base[2, 3], base[2, 3], shoulder[2, 3], elbow[2, 3], elbowend[2, 3], wrist1[2, 3], wrist2[2, 3], wrist3[2, 3]]
+
+    if tool_position is not None:
+        x, y, z = tool_position
+        X.append(x)
+        Y.append(y)
+        Z.append(z)
+
+    return np.array(X), np.array(Y), np.array(Z)
 
 
 def detectCollision(positions):
