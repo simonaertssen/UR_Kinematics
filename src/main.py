@@ -1,6 +1,6 @@
 import time
 import numpy as np
-from lib.Kinematics import ForwardKinematics
+from lib.KinematicsModule import ForwardKinematics
 
 
 def SpeedOfCurrentKinematics():
@@ -14,7 +14,6 @@ def SpeedOfCurrentKinematics():
 
 
 if __name__ == '__main__':
-    # print(np.round(ForwardKinematics((0.0, -np.pi / 2, 0.0, -np.pi / 2, 0.0, 0.0)), 4))
     SpeedOfCurrentKinematics()
     #  14195 iterations per second by using just a function (benchmark)
     # 400227 iterations per second by using cython

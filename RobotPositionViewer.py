@@ -4,8 +4,8 @@ import numpy as np
 import time
 
 from RobotClass import Robot
-# from Kinematics import ForwardKinematics
-from lib.Kinematics import ForwardKinematics
+# from KinematicsModule import ForwardKinematics
+from lib.KinematicsModule import ForwardKinematics
 
 from PyQt5 import QtCore, QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg

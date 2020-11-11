@@ -14,12 +14,12 @@
         "include_dirs": [
             "src"
         ],
-        "name": "Kinematics",
+        "name": "KinematicsModule",
         "sources": [
             "src/Kinematics.pyx"
         ]
     },
-    "module_name": "Kinematics"
+    "module_name": "KinematicsModule"
 }
 END: Cython Metadata */
 
@@ -613,8 +613,8 @@ static CYTHON_INLINE float __PYX_NAN() {
   #endif
 #endif
 
-#define __PYX_HAVE__Kinematics
-#define __PYX_HAVE_API__Kinematics
+#define __PYX_HAVE__KinematicsModule
+#define __PYX_HAVE_API__KinematicsModule
 /* Early includes */
 #include <math.h>
 #include <string.h>
@@ -833,42 +833,42 @@ static const char *__pyx_f[] = {
 };
 
 /*--- Type declarations ---*/
-struct __pyx_opt_args_10Kinematics_forwardkinematics;
-struct __pyx_opt_args_10Kinematics_forwardkinematics_fromc;
-struct __pyx_opt_args_10Kinematics_ForwardKinematics;
+struct __pyx_opt_args_16KinematicsModule_forwardkinematics;
+struct __pyx_opt_args_16KinematicsModule_forwardkinematics_fromc;
+struct __pyx_opt_args_16KinematicsModule_ForwardKinematics;
 
-/* "Kinematics.pyx":96
+/* "src/Kinematics.pyx":96
  * 
  * 
  * cdef forwardkinematics(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
  *     cdef double pihalf = 1.57079632679
  *     cdef double a, b, c, d, e, f, x, y, z
  */
-struct __pyx_opt_args_10Kinematics_forwardkinematics {
+struct __pyx_opt_args_16KinematicsModule_forwardkinematics {
   int __pyx_n;
   PyObject *tool_position;
 };
 
-/* "Kinematics.pyx":139
+/* "src/Kinematics.pyx":139
  * 
  * 
  * cdef forwardkinematics_fromc(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
  *     cdef double pihalf = 1.57079632679
  * 
  */
-struct __pyx_opt_args_10Kinematics_forwardkinematics_fromc {
+struct __pyx_opt_args_16KinematicsModule_forwardkinematics_fromc {
   int __pyx_n;
   PyObject *tool_position;
 };
 
-/* "Kinematics.pyx":202
- * #     return X, Y, Z
+/* "src/Kinematics.pyx":183
+ * 
  * 
  * cpdef ForwardKinematics(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
  *     return forwardkinematics_fromc(joint_angles, tool_position=tool_position)
  * 
  */
-struct __pyx_opt_args_10Kinematics_ForwardKinematics {
+struct __pyx_opt_args_16KinematicsModule_ForwardKinematics {
   int __pyx_n;
   PyObject *tool_position;
 };
@@ -1118,17 +1118,17 @@ static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 
 /* Module declarations from 'libc.stdlib' */
 
-/* Module declarations from 'Kinematics' */
-static double *__pyx_f_10Kinematics_T(double, double, double, double); /*proto*/
-static void __pyx_f_10Kinematics_dot(double *, double *); /*proto*/
-static void __pyx_f_10Kinematics_printarray(double *); /*proto*/
-static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *, struct __pyx_opt_args_10Kinematics_forwardkinematics_fromc *__pyx_optional_args); /*proto*/
-static PyObject *__pyx_f_10Kinematics_ForwardKinematics(PyObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_10Kinematics_ForwardKinematics *__pyx_optional_args); /*proto*/
-#define __Pyx_MODULE_NAME "Kinematics"
-extern int __pyx_module_is_main_Kinematics;
-int __pyx_module_is_main_Kinematics = 0;
+/* Module declarations from 'KinematicsModule' */
+static double *__pyx_f_16KinematicsModule_T(double, double, double, double); /*proto*/
+static void __pyx_f_16KinematicsModule_dot(double *, double *); /*proto*/
+static void __pyx_f_16KinematicsModule_printarray(double *); /*proto*/
+static PyObject *__pyx_f_16KinematicsModule_forwardkinematics_fromc(PyObject *, struct __pyx_opt_args_16KinematicsModule_forwardkinematics_fromc *__pyx_optional_args); /*proto*/
+static PyObject *__pyx_f_16KinematicsModule_ForwardKinematics(PyObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_16KinematicsModule_ForwardKinematics *__pyx_optional_args); /*proto*/
+#define __Pyx_MODULE_NAME "KinematicsModule"
+extern int __pyx_module_is_main_KinematicsModule;
+int __pyx_module_is_main_KinematicsModule = 0;
 
-/* Implementation of 'Kinematics' */
+/* Implementation of 'KinematicsModule' */
 static PyObject *__pyx_builtin_range;
 static const char __pyx_k_main[] = "__main__";
 static const char __pyx_k_name[] = "__name__";
@@ -1144,12 +1144,12 @@ static PyObject *__pyx_n_s_name;
 static PyObject *__pyx_n_s_range;
 static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_n_s_tool_position;
-static PyObject *__pyx_pf_10Kinematics_ForwardKinematics(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_joint_angles, PyObject *__pyx_v_tool_position); /* proto */
+static PyObject *__pyx_pf_16KinematicsModule_ForwardKinematics(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_joint_angles, PyObject *__pyx_v_tool_position); /* proto */
 static PyObject *__pyx_int_0;
 static PyObject *__pyx_int_3;
 /* Late includes */
 
-/* "Kinematics.pyx":11
+/* "src/Kinematics.pyx":11
  * 
  * 
  * cdef double *T(double theta, double d, double r, double alpha):             # <<<<<<<<<<<<<<
@@ -1157,7 +1157,7 @@ static PyObject *__pyx_int_3;
  *     cdef double sin_t = sin(theta)
  */
 
-static double *__pyx_f_10Kinematics_T(double __pyx_v_theta, double __pyx_v_d, double __pyx_v_r, double __pyx_v_alpha) {
+static double *__pyx_f_16KinematicsModule_T(double __pyx_v_theta, double __pyx_v_d, double __pyx_v_r, double __pyx_v_alpha) {
   double __pyx_v_cos_t;
   double __pyx_v_sin_t;
   double __pyx_v_cos_a;
@@ -1171,7 +1171,7 @@ static double *__pyx_f_10Kinematics_T(double __pyx_v_theta, double __pyx_v_d, do
   double __pyx_t_4;
   __Pyx_RefNannySetupContext("T", 0);
 
-  /* "Kinematics.pyx":12
+  /* "src/Kinematics.pyx":12
  * 
  * cdef double *T(double theta, double d, double r, double alpha):
  *     cdef double cos_t = cos(theta)             # <<<<<<<<<<<<<<
@@ -1180,7 +1180,7 @@ static double *__pyx_f_10Kinematics_T(double __pyx_v_theta, double __pyx_v_d, do
  */
   __pyx_v_cos_t = cos(__pyx_v_theta);
 
-  /* "Kinematics.pyx":13
+  /* "src/Kinematics.pyx":13
  * cdef double *T(double theta, double d, double r, double alpha):
  *     cdef double cos_t = cos(theta)
  *     cdef double sin_t = sin(theta)             # <<<<<<<<<<<<<<
@@ -1189,7 +1189,7 @@ static double *__pyx_f_10Kinematics_T(double __pyx_v_theta, double __pyx_v_d, do
  */
   __pyx_v_sin_t = sin(__pyx_v_theta);
 
-  /* "Kinematics.pyx":14
+  /* "src/Kinematics.pyx":14
  *     cdef double cos_t = cos(theta)
  *     cdef double sin_t = sin(theta)
  *     cdef double cos_a = cos(alpha)             # <<<<<<<<<<<<<<
@@ -1198,7 +1198,7 @@ static double *__pyx_f_10Kinematics_T(double __pyx_v_theta, double __pyx_v_d, do
  */
   __pyx_v_cos_a = cos(__pyx_v_alpha);
 
-  /* "Kinematics.pyx":15
+  /* "src/Kinematics.pyx":15
  *     cdef double sin_t = sin(theta)
  *     cdef double cos_a = cos(alpha)
  *     cdef double sin_a = sin(alpha)             # <<<<<<<<<<<<<<
@@ -1207,7 +1207,7 @@ static double *__pyx_f_10Kinematics_T(double __pyx_v_theta, double __pyx_v_d, do
  */
   __pyx_v_sin_a = sin(__pyx_v_alpha);
 
-  /* "Kinematics.pyx":16
+  /* "src/Kinematics.pyx":16
  *     cdef double cos_a = cos(alpha)
  *     cdef double sin_a = sin(alpha)
  *     cdef double *result = <double*> calloc(16, sizeof(double))             # <<<<<<<<<<<<<<
@@ -1216,7 +1216,7 @@ static double *__pyx_f_10Kinematics_T(double __pyx_v_theta, double __pyx_v_d, do
  */
   __pyx_v_result = ((double *)calloc(16, (sizeof(double))));
 
-  /* "Kinematics.pyx":18
+  /* "src/Kinematics.pyx":18
  *     cdef double *result = <double*> calloc(16, sizeof(double))
  * 
  *     result[0], result[1], result[2], result[3] = cos_t, -sin_t*cos_a,  sin_t*sin_a, r*cos_t             # <<<<<<<<<<<<<<
@@ -1232,7 +1232,7 @@ static double *__pyx_f_10Kinematics_T(double __pyx_v_theta, double __pyx_v_d, do
   (__pyx_v_result[2]) = __pyx_t_3;
   (__pyx_v_result[3]) = __pyx_t_4;
 
-  /* "Kinematics.pyx":19
+  /* "src/Kinematics.pyx":19
  * 
  *     result[0], result[1], result[2], result[3] = cos_t, -sin_t*cos_a,  sin_t*sin_a, r*cos_t
  *     result[4], result[5], result[6], result[7] = sin_t,  cos_t*cos_a, -cos_t*sin_a, r*sin_t             # <<<<<<<<<<<<<<
@@ -1248,7 +1248,7 @@ static double *__pyx_f_10Kinematics_T(double __pyx_v_theta, double __pyx_v_d, do
   (__pyx_v_result[6]) = __pyx_t_2;
   (__pyx_v_result[7]) = __pyx_t_1;
 
-  /* "Kinematics.pyx":20
+  /* "src/Kinematics.pyx":20
  *     result[0], result[1], result[2], result[3] = cos_t, -sin_t*cos_a,  sin_t*sin_a, r*cos_t
  *     result[4], result[5], result[6], result[7] = sin_t,  cos_t*cos_a, -cos_t*sin_a, r*sin_t
  *     result[9], result[10], result[11] = sin_a, cos_a, d             # <<<<<<<<<<<<<<
@@ -1262,7 +1262,7 @@ static double *__pyx_f_10Kinematics_T(double __pyx_v_theta, double __pyx_v_d, do
   (__pyx_v_result[10]) = __pyx_t_2;
   (__pyx_v_result[11]) = __pyx_t_3;
 
-  /* "Kinematics.pyx":21
+  /* "src/Kinematics.pyx":21
  *     result[4], result[5], result[6], result[7] = sin_t,  cos_t*cos_a, -cos_t*sin_a, r*sin_t
  *     result[9], result[10], result[11] = sin_a, cos_a, d
  *     result[15] = 1             # <<<<<<<<<<<<<<
@@ -1271,7 +1271,7 @@ static double *__pyx_f_10Kinematics_T(double __pyx_v_theta, double __pyx_v_d, do
  */
   (__pyx_v_result[15]) = 1.0;
 
-  /* "Kinematics.pyx":22
+  /* "src/Kinematics.pyx":22
  *     result[9], result[10], result[11] = sin_a, cos_a, d
  *     result[15] = 1
  *     return result             # <<<<<<<<<<<<<<
@@ -1281,7 +1281,7 @@ static double *__pyx_f_10Kinematics_T(double __pyx_v_theta, double __pyx_v_d, do
   __pyx_r = __pyx_v_result;
   goto __pyx_L0;
 
-  /* "Kinematics.pyx":11
+  /* "src/Kinematics.pyx":11
  * 
  * 
  * cdef double *T(double theta, double d, double r, double alpha):             # <<<<<<<<<<<<<<
@@ -1295,7 +1295,7 @@ static double *__pyx_f_10Kinematics_T(double __pyx_v_theta, double __pyx_v_d, do
   return __pyx_r;
 }
 
-/* "Kinematics.pyx":25
+/* "src/Kinematics.pyx":25
  * 
  * 
  * cdef void dot(double *A, double *B):             # <<<<<<<<<<<<<<
@@ -1303,14 +1303,14 @@ static double *__pyx_f_10Kinematics_T(double __pyx_v_theta, double __pyx_v_d, do
  *     cdef double *result = <double*> calloc(16, sizeof(double))
  */
 
-static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
+static void __pyx_f_16KinematicsModule_dot(double *__pyx_v_A, double *__pyx_v_B) {
   double *__pyx_v_result;
   int __pyx_v_i;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
   __Pyx_RefNannySetupContext("dot", 0);
 
-  /* "Kinematics.pyx":27
+  /* "src/Kinematics.pyx":27
  * cdef void dot(double *A, double *B):
  *     # Multipliy matrices A and B in 1D format and store result in B.
  *     cdef double *result = <double*> calloc(16, sizeof(double))             # <<<<<<<<<<<<<<
@@ -1319,7 +1319,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   __pyx_v_result = ((double *)calloc(16, (sizeof(double))));
 
-  /* "Kinematics.pyx":28
+  /* "src/Kinematics.pyx":28
  *     # Multipliy matrices A and B in 1D format and store result in B.
  *     cdef double *result = <double*> calloc(16, sizeof(double))
  *     result[0]  = A[0]*B[0] + A[1]*B[4] + A[2]*B[8] + A[3]*B[12]             # <<<<<<<<<<<<<<
@@ -1328,7 +1328,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[0]) = (((((__pyx_v_A[0]) * (__pyx_v_B[0])) + ((__pyx_v_A[1]) * (__pyx_v_B[4]))) + ((__pyx_v_A[2]) * (__pyx_v_B[8]))) + ((__pyx_v_A[3]) * (__pyx_v_B[12])));
 
-  /* "Kinematics.pyx":29
+  /* "src/Kinematics.pyx":29
  *     cdef double *result = <double*> calloc(16, sizeof(double))
  *     result[0]  = A[0]*B[0] + A[1]*B[4] + A[2]*B[8] + A[3]*B[12]
  *     result[1]  = A[0]*B[1] + A[1]*B[5] + A[2]*B[9] + A[3]*B[13]             # <<<<<<<<<<<<<<
@@ -1337,7 +1337,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[1]) = (((((__pyx_v_A[0]) * (__pyx_v_B[1])) + ((__pyx_v_A[1]) * (__pyx_v_B[5]))) + ((__pyx_v_A[2]) * (__pyx_v_B[9]))) + ((__pyx_v_A[3]) * (__pyx_v_B[13])));
 
-  /* "Kinematics.pyx":30
+  /* "src/Kinematics.pyx":30
  *     result[0]  = A[0]*B[0] + A[1]*B[4] + A[2]*B[8] + A[3]*B[12]
  *     result[1]  = A[0]*B[1] + A[1]*B[5] + A[2]*B[9] + A[3]*B[13]
  *     result[2]  = A[0]*B[2] + A[1]*B[6] + A[2]*B[10] + A[3]*B[14]             # <<<<<<<<<<<<<<
@@ -1346,7 +1346,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[2]) = (((((__pyx_v_A[0]) * (__pyx_v_B[2])) + ((__pyx_v_A[1]) * (__pyx_v_B[6]))) + ((__pyx_v_A[2]) * (__pyx_v_B[10]))) + ((__pyx_v_A[3]) * (__pyx_v_B[14])));
 
-  /* "Kinematics.pyx":31
+  /* "src/Kinematics.pyx":31
  *     result[1]  = A[0]*B[1] + A[1]*B[5] + A[2]*B[9] + A[3]*B[13]
  *     result[2]  = A[0]*B[2] + A[1]*B[6] + A[2]*B[10] + A[3]*B[14]
  *     result[3]  = A[0]*B[3] + A[1]*B[7] + A[2]*B[11] + A[3]*B[15]             # <<<<<<<<<<<<<<
@@ -1355,7 +1355,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[3]) = (((((__pyx_v_A[0]) * (__pyx_v_B[3])) + ((__pyx_v_A[1]) * (__pyx_v_B[7]))) + ((__pyx_v_A[2]) * (__pyx_v_B[11]))) + ((__pyx_v_A[3]) * (__pyx_v_B[15])));
 
-  /* "Kinematics.pyx":33
+  /* "src/Kinematics.pyx":33
  *     result[3]  = A[0]*B[3] + A[1]*B[7] + A[2]*B[11] + A[3]*B[15]
  * 
  *     result[4]  = A[4]*B[0] + A[5]*B[4] + A[6]*B[8] + A[7]*B[12]             # <<<<<<<<<<<<<<
@@ -1364,7 +1364,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[4]) = (((((__pyx_v_A[4]) * (__pyx_v_B[0])) + ((__pyx_v_A[5]) * (__pyx_v_B[4]))) + ((__pyx_v_A[6]) * (__pyx_v_B[8]))) + ((__pyx_v_A[7]) * (__pyx_v_B[12])));
 
-  /* "Kinematics.pyx":34
+  /* "src/Kinematics.pyx":34
  * 
  *     result[4]  = A[4]*B[0] + A[5]*B[4] + A[6]*B[8] + A[7]*B[12]
  *     result[5]  = A[4]*B[1] + A[5]*B[5] + A[6]*B[9] + A[7]*B[13]             # <<<<<<<<<<<<<<
@@ -1373,7 +1373,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[5]) = (((((__pyx_v_A[4]) * (__pyx_v_B[1])) + ((__pyx_v_A[5]) * (__pyx_v_B[5]))) + ((__pyx_v_A[6]) * (__pyx_v_B[9]))) + ((__pyx_v_A[7]) * (__pyx_v_B[13])));
 
-  /* "Kinematics.pyx":35
+  /* "src/Kinematics.pyx":35
  *     result[4]  = A[4]*B[0] + A[5]*B[4] + A[6]*B[8] + A[7]*B[12]
  *     result[5]  = A[4]*B[1] + A[5]*B[5] + A[6]*B[9] + A[7]*B[13]
  *     result[6]  = A[4]*B[2] + A[5]*B[6] + A[6]*B[10] + A[7]*B[14]             # <<<<<<<<<<<<<<
@@ -1382,7 +1382,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[6]) = (((((__pyx_v_A[4]) * (__pyx_v_B[2])) + ((__pyx_v_A[5]) * (__pyx_v_B[6]))) + ((__pyx_v_A[6]) * (__pyx_v_B[10]))) + ((__pyx_v_A[7]) * (__pyx_v_B[14])));
 
-  /* "Kinematics.pyx":36
+  /* "src/Kinematics.pyx":36
  *     result[5]  = A[4]*B[1] + A[5]*B[5] + A[6]*B[9] + A[7]*B[13]
  *     result[6]  = A[4]*B[2] + A[5]*B[6] + A[6]*B[10] + A[7]*B[14]
  *     result[7]  = A[4]*B[3] + A[5]*B[7] + A[6]*B[11] + A[7]*B[15]             # <<<<<<<<<<<<<<
@@ -1391,7 +1391,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[7]) = (((((__pyx_v_A[4]) * (__pyx_v_B[3])) + ((__pyx_v_A[5]) * (__pyx_v_B[7]))) + ((__pyx_v_A[6]) * (__pyx_v_B[11]))) + ((__pyx_v_A[7]) * (__pyx_v_B[15])));
 
-  /* "Kinematics.pyx":38
+  /* "src/Kinematics.pyx":38
  *     result[7]  = A[4]*B[3] + A[5]*B[7] + A[6]*B[11] + A[7]*B[15]
  * 
  *     result[8]  = A[8]*B[0] + A[9]*B[4] + A[10]*B[8] + A[11]*B[12]             # <<<<<<<<<<<<<<
@@ -1400,7 +1400,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[8]) = (((((__pyx_v_A[8]) * (__pyx_v_B[0])) + ((__pyx_v_A[9]) * (__pyx_v_B[4]))) + ((__pyx_v_A[10]) * (__pyx_v_B[8]))) + ((__pyx_v_A[11]) * (__pyx_v_B[12])));
 
-  /* "Kinematics.pyx":39
+  /* "src/Kinematics.pyx":39
  * 
  *     result[8]  = A[8]*B[0] + A[9]*B[4] + A[10]*B[8] + A[11]*B[12]
  *     result[9]  = A[8]*B[1] + A[9]*B[5] + A[10]*B[9] + A[11]*B[13]             # <<<<<<<<<<<<<<
@@ -1409,7 +1409,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[9]) = (((((__pyx_v_A[8]) * (__pyx_v_B[1])) + ((__pyx_v_A[9]) * (__pyx_v_B[5]))) + ((__pyx_v_A[10]) * (__pyx_v_B[9]))) + ((__pyx_v_A[11]) * (__pyx_v_B[13])));
 
-  /* "Kinematics.pyx":40
+  /* "src/Kinematics.pyx":40
  *     result[8]  = A[8]*B[0] + A[9]*B[4] + A[10]*B[8] + A[11]*B[12]
  *     result[9]  = A[8]*B[1] + A[9]*B[5] + A[10]*B[9] + A[11]*B[13]
  *     result[10] = A[8]*B[2] + A[9]*B[6] + A[10]*B[10] + A[11]*B[14]             # <<<<<<<<<<<<<<
@@ -1418,7 +1418,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[10]) = (((((__pyx_v_A[8]) * (__pyx_v_B[2])) + ((__pyx_v_A[9]) * (__pyx_v_B[6]))) + ((__pyx_v_A[10]) * (__pyx_v_B[10]))) + ((__pyx_v_A[11]) * (__pyx_v_B[14])));
 
-  /* "Kinematics.pyx":41
+  /* "src/Kinematics.pyx":41
  *     result[9]  = A[8]*B[1] + A[9]*B[5] + A[10]*B[9] + A[11]*B[13]
  *     result[10] = A[8]*B[2] + A[9]*B[6] + A[10]*B[10] + A[11]*B[14]
  *     result[11] = A[8]*B[3] + A[9]*B[7] + A[10]*B[11] + A[11]*B[15]             # <<<<<<<<<<<<<<
@@ -1427,7 +1427,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[11]) = (((((__pyx_v_A[8]) * (__pyx_v_B[3])) + ((__pyx_v_A[9]) * (__pyx_v_B[7]))) + ((__pyx_v_A[10]) * (__pyx_v_B[11]))) + ((__pyx_v_A[11]) * (__pyx_v_B[15])));
 
-  /* "Kinematics.pyx":43
+  /* "src/Kinematics.pyx":43
  *     result[11] = A[8]*B[3] + A[9]*B[7] + A[10]*B[11] + A[11]*B[15]
  * 
  *     result[12] = A[12]*B[0] + A[13]*B[4] + A[14]*B[8] + A[15]*B[12]             # <<<<<<<<<<<<<<
@@ -1436,7 +1436,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[12]) = (((((__pyx_v_A[12]) * (__pyx_v_B[0])) + ((__pyx_v_A[13]) * (__pyx_v_B[4]))) + ((__pyx_v_A[14]) * (__pyx_v_B[8]))) + ((__pyx_v_A[15]) * (__pyx_v_B[12])));
 
-  /* "Kinematics.pyx":44
+  /* "src/Kinematics.pyx":44
  * 
  *     result[12] = A[12]*B[0] + A[13]*B[4] + A[14]*B[8] + A[15]*B[12]
  *     result[13] = A[12]*B[1] + A[13]*B[5] + A[14]*B[9] + A[15]*B[13]             # <<<<<<<<<<<<<<
@@ -1445,7 +1445,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[13]) = (((((__pyx_v_A[12]) * (__pyx_v_B[1])) + ((__pyx_v_A[13]) * (__pyx_v_B[5]))) + ((__pyx_v_A[14]) * (__pyx_v_B[9]))) + ((__pyx_v_A[15]) * (__pyx_v_B[13])));
 
-  /* "Kinematics.pyx":45
+  /* "src/Kinematics.pyx":45
  *     result[12] = A[12]*B[0] + A[13]*B[4] + A[14]*B[8] + A[15]*B[12]
  *     result[13] = A[12]*B[1] + A[13]*B[5] + A[14]*B[9] + A[15]*B[13]
  *     result[14] = A[12]*B[2] + A[13]*B[6] + A[14]*B[10] + A[15]*B[14]             # <<<<<<<<<<<<<<
@@ -1454,7 +1454,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[14]) = (((((__pyx_v_A[12]) * (__pyx_v_B[2])) + ((__pyx_v_A[13]) * (__pyx_v_B[6]))) + ((__pyx_v_A[14]) * (__pyx_v_B[10]))) + ((__pyx_v_A[15]) * (__pyx_v_B[14])));
 
-  /* "Kinematics.pyx":46
+  /* "src/Kinematics.pyx":46
  *     result[13] = A[12]*B[1] + A[13]*B[5] + A[14]*B[9] + A[15]*B[13]
  *     result[14] = A[12]*B[2] + A[13]*B[6] + A[14]*B[10] + A[15]*B[14]
  *     result[15] = A[12]*B[3] + A[13]*B[7] + A[14]*B[11] + A[15]*B[15]             # <<<<<<<<<<<<<<
@@ -1463,7 +1463,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   (__pyx_v_result[15]) = (((((__pyx_v_A[12]) * (__pyx_v_B[3])) + ((__pyx_v_A[13]) * (__pyx_v_B[7]))) + ((__pyx_v_A[14]) * (__pyx_v_B[11]))) + ((__pyx_v_A[15]) * (__pyx_v_B[15])));
 
-  /* "Kinematics.pyx":49
+  /* "src/Kinematics.pyx":49
  * 
  *     cdef int i
  *     for i in range(16):             # <<<<<<<<<<<<<<
@@ -1473,7 +1473,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
   for (__pyx_t_1 = 0; __pyx_t_1 < 16; __pyx_t_1+=1) {
     __pyx_v_i = __pyx_t_1;
 
-    /* "Kinematics.pyx":50
+    /* "src/Kinematics.pyx":50
  *     cdef int i
  *     for i in range(16):
  *         B[i] = result[i]             # <<<<<<<<<<<<<<
@@ -1483,7 +1483,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
     (__pyx_v_B[__pyx_v_i]) = (__pyx_v_result[__pyx_v_i]);
   }
 
-  /* "Kinematics.pyx":51
+  /* "src/Kinematics.pyx":51
  *     for i in range(16):
  *         B[i] = result[i]
  *     free(result)             # <<<<<<<<<<<<<<
@@ -1492,7 +1492,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  */
   free(__pyx_v_result);
 
-  /* "Kinematics.pyx":25
+  /* "src/Kinematics.pyx":25
  * 
  * 
  * cdef void dot(double *A, double *B):             # <<<<<<<<<<<<<<
@@ -1504,7 +1504,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
   __Pyx_RefNannyFinishContext();
 }
 
-/* "Kinematics.pyx":54
+/* "src/Kinematics.pyx":54
  * 
  * 
  * cdef void printarray(double* array):             # <<<<<<<<<<<<<<
@@ -1512,7 +1512,7 @@ static void __pyx_f_10Kinematics_dot(double *__pyx_v_A, double *__pyx_v_B) {
  *     cdef int i
  */
 
-static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
+static void __pyx_f_16KinematicsModule_printarray(double *__pyx_v_array) {
   int __pyx_v_i;
   PyObject *__pyx_v_j = NULL;
   __Pyx_RefNannyDeclarations
@@ -1524,7 +1524,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
   Py_ssize_t __pyx_t_6;
   __Pyx_RefNannySetupContext("printarray", 0);
 
-  /* "Kinematics.pyx":57
+  /* "src/Kinematics.pyx":57
  *     # Print a 4 x 4 array
  *     cdef int i
  *     printf("Array = \n[")             # <<<<<<<<<<<<<<
@@ -1533,7 +1533,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
  */
   (void)(printf(((char const *)"Array = \n[")));
 
-  /* "Kinematics.pyx":58
+  /* "src/Kinematics.pyx":58
  *     cdef int i
  *     printf("Array = \n[")
  *     for i in range(4):             # <<<<<<<<<<<<<<
@@ -1543,7 +1543,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
   for (__pyx_t_1 = 0; __pyx_t_1 < 4; __pyx_t_1+=1) {
     __pyx_v_i = __pyx_t_1;
 
-    /* "Kinematics.pyx":59
+    /* "src/Kinematics.pyx":59
  *     printf("Array = \n[")
  *     for i in range(4):
  *         if i != 0:             # <<<<<<<<<<<<<<
@@ -1553,7 +1553,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
     __pyx_t_2 = ((__pyx_v_i != 0) != 0);
     if (__pyx_t_2) {
 
-      /* "Kinematics.pyx":60
+      /* "src/Kinematics.pyx":60
  *     for i in range(4):
  *         if i != 0:
  *             printf(" ")             # <<<<<<<<<<<<<<
@@ -1562,7 +1562,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
  */
       (void)(printf(((char const *)" ")));
 
-      /* "Kinematics.pyx":59
+      /* "src/Kinematics.pyx":59
  *     printf("Array = \n[")
  *     for i in range(4):
  *         if i != 0:             # <<<<<<<<<<<<<<
@@ -1571,7 +1571,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
  */
     }
 
-    /* "Kinematics.pyx":61
+    /* "src/Kinematics.pyx":61
  *         if i != 0:
  *             printf(" ")
  *         printf("[")             # <<<<<<<<<<<<<<
@@ -1580,7 +1580,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
  */
     (void)(printf(((char const *)"[")));
 
-    /* "Kinematics.pyx":63
+    /* "src/Kinematics.pyx":63
  *         printf("[")
  * 
  *         for j in range(4):             # <<<<<<<<<<<<<<
@@ -1593,7 +1593,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
       __Pyx_XDECREF_SET(__pyx_v_j, __pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "Kinematics.pyx":64
+      /* "src/Kinematics.pyx":64
  * 
  *         for j in range(4):
  *             printf("%10.3lf", array[i*4 + j])             # <<<<<<<<<<<<<<
@@ -1609,7 +1609,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
       (void)(printf(((char const *)"%10.3lf"), (__pyx_v_array[__pyx_t_6])));
 
-      /* "Kinematics.pyx":65
+      /* "src/Kinematics.pyx":65
  *         for j in range(4):
  *             printf("%10.3lf", array[i*4 + j])
  *             if j < 3:             # <<<<<<<<<<<<<<
@@ -1621,7 +1621,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
       if (__pyx_t_2) {
 
-        /* "Kinematics.pyx":66
+        /* "src/Kinematics.pyx":66
  *             printf("%10.3lf", array[i*4 + j])
  *             if j < 3:
  *                 printf(" ")             # <<<<<<<<<<<<<<
@@ -1630,7 +1630,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
  */
         (void)(printf(((char const *)" ")));
 
-        /* "Kinematics.pyx":65
+        /* "src/Kinematics.pyx":65
  *         for j in range(4):
  *             printf("%10.3lf", array[i*4 + j])
  *             if j < 3:             # <<<<<<<<<<<<<<
@@ -1640,7 +1640,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
       }
     }
 
-    /* "Kinematics.pyx":68
+    /* "src/Kinematics.pyx":68
  *                 printf(" ")
  * 
  *         printf("]")             # <<<<<<<<<<<<<<
@@ -1649,7 +1649,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
  */
     (void)(printf(((char const *)"]")));
 
-    /* "Kinematics.pyx":69
+    /* "src/Kinematics.pyx":69
  * 
  *         printf("]")
  *         if i != 3:             # <<<<<<<<<<<<<<
@@ -1659,7 +1659,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
     __pyx_t_2 = ((__pyx_v_i != 3) != 0);
     if (__pyx_t_2) {
 
-      /* "Kinematics.pyx":70
+      /* "src/Kinematics.pyx":70
  *         printf("]")
  *         if i != 3:
  *             printf("\n")             # <<<<<<<<<<<<<<
@@ -1668,7 +1668,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
  */
       (void)(printf(((char const *)"\n")));
 
-      /* "Kinematics.pyx":69
+      /* "src/Kinematics.pyx":69
  * 
  *         printf("]")
  *         if i != 3:             # <<<<<<<<<<<<<<
@@ -1678,7 +1678,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
     }
   }
 
-  /* "Kinematics.pyx":71
+  /* "src/Kinematics.pyx":71
  *         if i != 3:
  *             printf("\n")
  *     printf("]\n")             # <<<<<<<<<<<<<<
@@ -1687,7 +1687,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
  */
   (void)(printf(((char const *)"]\n")));
 
-  /* "Kinematics.pyx":54
+  /* "src/Kinematics.pyx":54
  * 
  * 
  * cdef void printarray(double* array):             # <<<<<<<<<<<<<<
@@ -1700,13 +1700,13 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_WriteUnraisable("Kinematics.printarray", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __Pyx_WriteUnraisable("KinematicsModule.printarray", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_j);
   __Pyx_RefNannyFinishContext();
 }
 
-/* "Kinematics.pyx":73
+/* "src/Kinematics.pyx":73
  *     printf("]\n")
  * 
  * cdef void test():             # <<<<<<<<<<<<<<
@@ -1714,7 +1714,7 @@ static void __pyx_f_10Kinematics_printarray(double *__pyx_v_array) {
  *     cdef double * test1 = < double * > calloc(16, sizeof(double))
  */
 
-static void __pyx_f_10Kinematics_test(void) {
+static void __pyx_f_16KinematicsModule_test(void) {
   double *__pyx_v_test1;
   double *__pyx_v_test2;
   int __pyx_v_i;
@@ -1722,7 +1722,7 @@ static void __pyx_f_10Kinematics_test(void) {
   int __pyx_t_1;
   __Pyx_RefNannySetupContext("test", 0);
 
-  /* "Kinematics.pyx":75
+  /* "src/Kinematics.pyx":75
  * cdef void test():
  *     # Matrix multiplication is correct.
  *     cdef double * test1 = < double * > calloc(16, sizeof(double))             # <<<<<<<<<<<<<<
@@ -1731,7 +1731,7 @@ static void __pyx_f_10Kinematics_test(void) {
  */
   __pyx_v_test1 = ((double *)calloc(16, (sizeof(double))));
 
-  /* "Kinematics.pyx":76
+  /* "src/Kinematics.pyx":76
  *     # Matrix multiplication is correct.
  *     cdef double * test1 = < double * > calloc(16, sizeof(double))
  *     test1[0] = -2.1             # <<<<<<<<<<<<<<
@@ -1740,7 +1740,7 @@ static void __pyx_f_10Kinematics_test(void) {
  */
   (__pyx_v_test1[0]) = -2.1;
 
-  /* "Kinematics.pyx":77
+  /* "src/Kinematics.pyx":77
  *     cdef double * test1 = < double * > calloc(16, sizeof(double))
  *     test1[0] = -2.1
  *     test1[5] = -2.1             # <<<<<<<<<<<<<<
@@ -1749,7 +1749,7 @@ static void __pyx_f_10Kinematics_test(void) {
  */
   (__pyx_v_test1[5]) = -2.1;
 
-  /* "Kinematics.pyx":78
+  /* "src/Kinematics.pyx":78
  *     test1[0] = -2.1
  *     test1[5] = -2.1
  *     test1[10] = -2.1             # <<<<<<<<<<<<<<
@@ -1758,7 +1758,7 @@ static void __pyx_f_10Kinematics_test(void) {
  */
   (__pyx_v_test1[10]) = -2.1;
 
-  /* "Kinematics.pyx":79
+  /* "src/Kinematics.pyx":79
  *     test1[5] = -2.1
  *     test1[10] = -2.1
  *     test1[15] = -2.1             # <<<<<<<<<<<<<<
@@ -1767,7 +1767,7 @@ static void __pyx_f_10Kinematics_test(void) {
  */
   (__pyx_v_test1[15]) = -2.1;
 
-  /* "Kinematics.pyx":81
+  /* "src/Kinematics.pyx":81
  *     test1[15] = -2.1
  * 
  *     cdef double *test2 = <double*> calloc(16, sizeof(double))             # <<<<<<<<<<<<<<
@@ -1776,7 +1776,7 @@ static void __pyx_f_10Kinematics_test(void) {
  */
   __pyx_v_test2 = ((double *)calloc(16, (sizeof(double))));
 
-  /* "Kinematics.pyx":83
+  /* "src/Kinematics.pyx":83
  *     cdef double *test2 = <double*> calloc(16, sizeof(double))
  *     cdef int i
  *     for i in range(16):             # <<<<<<<<<<<<<<
@@ -1786,7 +1786,7 @@ static void __pyx_f_10Kinematics_test(void) {
   for (__pyx_t_1 = 0; __pyx_t_1 < 16; __pyx_t_1+=1) {
     __pyx_v_i = __pyx_t_1;
 
-    /* "Kinematics.pyx":84
+    /* "src/Kinematics.pyx":84
  *     cdef int i
  *     for i in range(16):
  *         test2[i] = i+1             # <<<<<<<<<<<<<<
@@ -1796,34 +1796,34 @@ static void __pyx_f_10Kinematics_test(void) {
     (__pyx_v_test2[__pyx_v_i]) = (__pyx_v_i + 1);
   }
 
-  /* "Kinematics.pyx":86
+  /* "src/Kinematics.pyx":86
  *         test2[i] = i+1
  * 
  *     printarray(test2)             # <<<<<<<<<<<<<<
  *     dot(test1, test2)
  *     printarray(test2)
  */
-  __pyx_f_10Kinematics_printarray(__pyx_v_test2);
+  __pyx_f_16KinematicsModule_printarray(__pyx_v_test2);
 
-  /* "Kinematics.pyx":87
+  /* "src/Kinematics.pyx":87
  * 
  *     printarray(test2)
  *     dot(test1, test2)             # <<<<<<<<<<<<<<
  *     printarray(test2)
  *     # Result should be:
  */
-  __pyx_f_10Kinematics_dot(__pyx_v_test1, __pyx_v_test2);
+  __pyx_f_16KinematicsModule_dot(__pyx_v_test1, __pyx_v_test2);
 
-  /* "Kinematics.pyx":88
+  /* "src/Kinematics.pyx":88
  *     printarray(test2)
  *     dot(test1, test2)
  *     printarray(test2)             # <<<<<<<<<<<<<<
  *     # Result should be:
  *     # array([[ -2.1,  -4.2,  -6.3,  -8.4],
  */
-  __pyx_f_10Kinematics_printarray(__pyx_v_test2);
+  __pyx_f_16KinematicsModule_printarray(__pyx_v_test2);
 
-  /* "Kinematics.pyx":73
+  /* "src/Kinematics.pyx":73
  *     printf("]\n")
  * 
  * cdef void test():             # <<<<<<<<<<<<<<
@@ -1835,7 +1835,7 @@ static void __pyx_f_10Kinematics_test(void) {
   __Pyx_RefNannyFinishContext();
 }
 
-/* "Kinematics.pyx":96
+/* "src/Kinematics.pyx":96
  * 
  * 
  * cdef forwardkinematics(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
@@ -1843,7 +1843,7 @@ static void __pyx_f_10Kinematics_test(void) {
  *     cdef double a, b, c, d, e, f, x, y, z
  */
 
-static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_angles, struct __pyx_opt_args_10Kinematics_forwardkinematics *__pyx_optional_args) {
+static PyObject *__pyx_f_16KinematicsModule_forwardkinematics(PyObject *__pyx_v_joint_angles, struct __pyx_opt_args_16KinematicsModule_forwardkinematics *__pyx_optional_args) {
   PyObject *__pyx_v_tool_position = ((PyObject *)Py_None);
   double __pyx_v_pihalf;
   double __pyx_v_a;
@@ -1893,7 +1893,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
     }
   }
 
-  /* "Kinematics.pyx":97
+  /* "src/Kinematics.pyx":97
  * 
  * cdef forwardkinematics(joint_angles, tool_position=None):
  *     cdef double pihalf = 1.57079632679             # <<<<<<<<<<<<<<
@@ -1902,7 +1902,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
  */
   __pyx_v_pihalf = 1.57079632679;
 
-  /* "Kinematics.pyx":99
+  /* "src/Kinematics.pyx":99
  *     cdef double pihalf = 1.57079632679
  *     cdef double a, b, c, d, e, f, x, y, z
  *     a, b, c, d, e, f = joint_angles             # <<<<<<<<<<<<<<
@@ -1991,70 +1991,70 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
   __pyx_v_e = __pyx_t_13;
   __pyx_v_f = __pyx_t_14;
 
-  /* "Kinematics.pyx":101
+  /* "src/Kinematics.pyx":101
  *     a, b, c, d, e, f = joint_angles
  * 
  *     cdef double *base     = T(a,  0.089159, -0.134,    pihalf)             # <<<<<<<<<<<<<<
  *     cdef double *shoulder = T(b,  0,        -0.425,    0)
  *     cdef double *elbow    = T(c, -0.119,     0,        0)
  */
-  __pyx_v_base = __pyx_f_10Kinematics_T(__pyx_v_a, 0.089159, -0.134, __pyx_v_pihalf);
+  __pyx_v_base = __pyx_f_16KinematicsModule_T(__pyx_v_a, 0.089159, -0.134, __pyx_v_pihalf);
 
-  /* "Kinematics.pyx":102
+  /* "src/Kinematics.pyx":102
  * 
  *     cdef double *base     = T(a,  0.089159, -0.134,    pihalf)
  *     cdef double *shoulder = T(b,  0,        -0.425,    0)             # <<<<<<<<<<<<<<
  *     cdef double *elbow    = T(c, -0.119,     0,        0)
  *     cdef double *elbowend = T(0,  0,        -0.39225,  0)
  */
-  __pyx_v_shoulder = __pyx_f_10Kinematics_T(__pyx_v_b, 0.0, -0.425, 0.0);
+  __pyx_v_shoulder = __pyx_f_16KinematicsModule_T(__pyx_v_b, 0.0, -0.425, 0.0);
 
-  /* "Kinematics.pyx":103
+  /* "src/Kinematics.pyx":103
  *     cdef double *base     = T(a,  0.089159, -0.134,    pihalf)
  *     cdef double *shoulder = T(b,  0,        -0.425,    0)
  *     cdef double *elbow    = T(c, -0.119,     0,        0)             # <<<<<<<<<<<<<<
  *     cdef double *elbowend = T(0,  0,        -0.39225,  0)
  *     cdef double *wrist1   = T(d,  0.09475,   0,        pihalf)
  */
-  __pyx_v_elbow = __pyx_f_10Kinematics_T(__pyx_v_c, -0.119, 0.0, 0.0);
+  __pyx_v_elbow = __pyx_f_16KinematicsModule_T(__pyx_v_c, -0.119, 0.0, 0.0);
 
-  /* "Kinematics.pyx":104
+  /* "src/Kinematics.pyx":104
  *     cdef double *shoulder = T(b,  0,        -0.425,    0)
  *     cdef double *elbow    = T(c, -0.119,     0,        0)
  *     cdef double *elbowend = T(0,  0,        -0.39225,  0)             # <<<<<<<<<<<<<<
  *     cdef double *wrist1   = T(d,  0.09475,   0,        pihalf)
  *     cdef double *wrist2   = T(e,  0.09475,   0,       -pihalf)
  */
-  __pyx_v_elbowend = __pyx_f_10Kinematics_T(0.0, 0.0, -0.39225, 0.0);
+  __pyx_v_elbowend = __pyx_f_16KinematicsModule_T(0.0, 0.0, -0.39225, 0.0);
 
-  /* "Kinematics.pyx":105
+  /* "src/Kinematics.pyx":105
  *     cdef double *elbow    = T(c, -0.119,     0,        0)
  *     cdef double *elbowend = T(0,  0,        -0.39225,  0)
  *     cdef double *wrist1   = T(d,  0.09475,   0,        pihalf)             # <<<<<<<<<<<<<<
  *     cdef double *wrist2   = T(e,  0.09475,   0,       -pihalf)
  *     cdef double *wrist3   = T(f,  0.0815,    0,        0)
  */
-  __pyx_v_wrist1 = __pyx_f_10Kinematics_T(__pyx_v_d, 0.09475, 0.0, __pyx_v_pihalf);
+  __pyx_v_wrist1 = __pyx_f_16KinematicsModule_T(__pyx_v_d, 0.09475, 0.0, __pyx_v_pihalf);
 
-  /* "Kinematics.pyx":106
+  /* "src/Kinematics.pyx":106
  *     cdef double *elbowend = T(0,  0,        -0.39225,  0)
  *     cdef double *wrist1   = T(d,  0.09475,   0,        pihalf)
  *     cdef double *wrist2   = T(e,  0.09475,   0,       -pihalf)             # <<<<<<<<<<<<<<
  *     cdef double *wrist3   = T(f,  0.0815,    0,        0)
  * 
  */
-  __pyx_v_wrist2 = __pyx_f_10Kinematics_T(__pyx_v_e, 0.09475, 0.0, (-__pyx_v_pihalf));
+  __pyx_v_wrist2 = __pyx_f_16KinematicsModule_T(__pyx_v_e, 0.09475, 0.0, (-__pyx_v_pihalf));
 
-  /* "Kinematics.pyx":107
+  /* "src/Kinematics.pyx":107
  *     cdef double *wrist1   = T(d,  0.09475,   0,        pihalf)
  *     cdef double *wrist2   = T(e,  0.09475,   0,       -pihalf)
  *     cdef double *wrist3   = T(f,  0.0815,    0,        0)             # <<<<<<<<<<<<<<
  * 
  *     base[3], base[7] = -base[7], base[3]
  */
-  __pyx_v_wrist3 = __pyx_f_10Kinematics_T(__pyx_v_f, 0.0815, 0.0, 0.0);
+  __pyx_v_wrist3 = __pyx_f_16KinematicsModule_T(__pyx_v_f, 0.0815, 0.0, 0.0);
 
-  /* "Kinematics.pyx":109
+  /* "src/Kinematics.pyx":109
  *     cdef double *wrist3   = T(f,  0.0815,    0,        0)
  * 
  *     base[3], base[7] = -base[7], base[3]             # <<<<<<<<<<<<<<
@@ -2066,61 +2066,61 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
   (__pyx_v_base[3]) = __pyx_t_14;
   (__pyx_v_base[7]) = __pyx_t_13;
 
-  /* "Kinematics.pyx":110
+  /* "src/Kinematics.pyx":110
  * 
  *     base[3], base[7] = -base[7], base[3]
  *     dot(base, shoulder)             # <<<<<<<<<<<<<<
  *     dot(shoulder, elbow)
  *     dot(elbow, elbowend)
  */
-  __pyx_f_10Kinematics_dot(__pyx_v_base, __pyx_v_shoulder);
+  __pyx_f_16KinematicsModule_dot(__pyx_v_base, __pyx_v_shoulder);
 
-  /* "Kinematics.pyx":111
+  /* "src/Kinematics.pyx":111
  *     base[3], base[7] = -base[7], base[3]
  *     dot(base, shoulder)
  *     dot(shoulder, elbow)             # <<<<<<<<<<<<<<
  *     dot(elbow, elbowend)
  *     dot(elbowend, wrist1)
  */
-  __pyx_f_10Kinematics_dot(__pyx_v_shoulder, __pyx_v_elbow);
+  __pyx_f_16KinematicsModule_dot(__pyx_v_shoulder, __pyx_v_elbow);
 
-  /* "Kinematics.pyx":112
+  /* "src/Kinematics.pyx":112
  *     dot(base, shoulder)
  *     dot(shoulder, elbow)
  *     dot(elbow, elbowend)             # <<<<<<<<<<<<<<
  *     dot(elbowend, wrist1)
  *     dot(wrist1, wrist2)
  */
-  __pyx_f_10Kinematics_dot(__pyx_v_elbow, __pyx_v_elbowend);
+  __pyx_f_16KinematicsModule_dot(__pyx_v_elbow, __pyx_v_elbowend);
 
-  /* "Kinematics.pyx":113
+  /* "src/Kinematics.pyx":113
  *     dot(shoulder, elbow)
  *     dot(elbow, elbowend)
  *     dot(elbowend, wrist1)             # <<<<<<<<<<<<<<
  *     dot(wrist1, wrist2)
  *     dot(wrist2, wrist3)
  */
-  __pyx_f_10Kinematics_dot(__pyx_v_elbowend, __pyx_v_wrist1);
+  __pyx_f_16KinematicsModule_dot(__pyx_v_elbowend, __pyx_v_wrist1);
 
-  /* "Kinematics.pyx":114
+  /* "src/Kinematics.pyx":114
  *     dot(elbow, elbowend)
  *     dot(elbowend, wrist1)
  *     dot(wrist1, wrist2)             # <<<<<<<<<<<<<<
  *     dot(wrist2, wrist3)
  * 
  */
-  __pyx_f_10Kinematics_dot(__pyx_v_wrist1, __pyx_v_wrist2);
+  __pyx_f_16KinematicsModule_dot(__pyx_v_wrist1, __pyx_v_wrist2);
 
-  /* "Kinematics.pyx":115
+  /* "src/Kinematics.pyx":115
  *     dot(elbowend, wrist1)
  *     dot(wrist1, wrist2)
  *     dot(wrist2, wrist3)             # <<<<<<<<<<<<<<
  * 
  *     cdef list X, Y, Z
  */
-  __pyx_f_10Kinematics_dot(__pyx_v_wrist2, __pyx_v_wrist3);
+  __pyx_f_16KinematicsModule_dot(__pyx_v_wrist2, __pyx_v_wrist3);
 
-  /* "Kinematics.pyx":118
+  /* "src/Kinematics.pyx":118
  * 
  *     cdef list X, Y, Z
  *     X = [0, 0, base[3], shoulder[3], elbow[3], elbowend[3], wrist1[3], wrist2[3], wrist3[3]]             # <<<<<<<<<<<<<<
@@ -2173,7 +2173,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
   __pyx_v_X = ((PyObject*)__pyx_t_15);
   __pyx_t_15 = 0;
 
-  /* "Kinematics.pyx":119
+  /* "src/Kinematics.pyx":119
  *     cdef list X, Y, Z
  *     X = [0, 0, base[3], shoulder[3], elbow[3], elbowend[3], wrist1[3], wrist2[3], wrist3[3]]
  *     Y = [0, 0, base[7], shoulder[7], elbow[7], elbowend[7], wrist1[7], wrist2[7], wrist3[7]]             # <<<<<<<<<<<<<<
@@ -2226,7 +2226,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
   __pyx_v_Y = ((PyObject*)__pyx_t_6);
   __pyx_t_6 = 0;
 
-  /* "Kinematics.pyx":120
+  /* "src/Kinematics.pyx":120
  *     X = [0, 0, base[3], shoulder[3], elbow[3], elbowend[3], wrist1[3], wrist2[3], wrist3[3]]
  *     Y = [0, 0, base[7], shoulder[7], elbow[7], elbowend[7], wrist1[7], wrist2[7], wrist3[7]]
  *     Z = [0, base[11], base[11], shoulder[11], elbow[11], elbowend[11], wrist1[11], wrist2[11], wrist3[11]]             # <<<<<<<<<<<<<<
@@ -2281,7 +2281,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
   __pyx_v_Z = ((PyObject*)__pyx_t_16);
   __pyx_t_16 = 0;
 
-  /* "Kinematics.pyx":122
+  /* "src/Kinematics.pyx":122
  *     Z = [0, base[11], base[11], shoulder[11], elbow[11], elbowend[11], wrist1[11], wrist2[11], wrist3[11]]
  * 
  *     free(base)             # <<<<<<<<<<<<<<
@@ -2290,7 +2290,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
  */
   free(__pyx_v_base);
 
-  /* "Kinematics.pyx":123
+  /* "src/Kinematics.pyx":123
  * 
  *     free(base)
  *     free(shoulder)             # <<<<<<<<<<<<<<
@@ -2299,7 +2299,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
  */
   free(__pyx_v_shoulder);
 
-  /* "Kinematics.pyx":124
+  /* "src/Kinematics.pyx":124
  *     free(base)
  *     free(shoulder)
  *     free(elbow)             # <<<<<<<<<<<<<<
@@ -2308,7 +2308,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
  */
   free(__pyx_v_elbow);
 
-  /* "Kinematics.pyx":125
+  /* "src/Kinematics.pyx":125
  *     free(shoulder)
  *     free(elbow)
  *     free(elbowend)             # <<<<<<<<<<<<<<
@@ -2317,7 +2317,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
  */
   free(__pyx_v_elbowend);
 
-  /* "Kinematics.pyx":126
+  /* "src/Kinematics.pyx":126
  *     free(elbow)
  *     free(elbowend)
  *     free(wrist1)             # <<<<<<<<<<<<<<
@@ -2326,7 +2326,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
  */
   free(__pyx_v_wrist1);
 
-  /* "Kinematics.pyx":127
+  /* "src/Kinematics.pyx":127
  *     free(elbowend)
  *     free(wrist1)
  *     free(wrist2)             # <<<<<<<<<<<<<<
@@ -2335,7 +2335,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
  */
   free(__pyx_v_wrist2);
 
-  /* "Kinematics.pyx":128
+  /* "src/Kinematics.pyx":128
  *     free(wrist1)
  *     free(wrist2)
  *     free(wrist3)             # <<<<<<<<<<<<<<
@@ -2344,7 +2344,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
  */
   free(__pyx_v_wrist3);
 
-  /* "Kinematics.pyx":130
+  /* "src/Kinematics.pyx":130
  *     free(wrist3)
  * 
  *     if tool_position is not None:             # <<<<<<<<<<<<<<
@@ -2355,7 +2355,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
   __pyx_t_18 = (__pyx_t_17 != 0);
   if (__pyx_t_18) {
 
-    /* "Kinematics.pyx":131
+    /* "src/Kinematics.pyx":131
  * 
  *     if tool_position is not None:
  *         x, y, z = tool_position             # <<<<<<<<<<<<<<
@@ -2423,7 +2423,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
     __pyx_v_y = __pyx_t_14;
     __pyx_v_z = __pyx_t_12;
 
-    /* "Kinematics.pyx":132
+    /* "src/Kinematics.pyx":132
  *     if tool_position is not None:
  *         x, y, z = tool_position
  *         X.append(x)             # <<<<<<<<<<<<<<
@@ -2435,7 +2435,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
     __pyx_t_19 = __Pyx_PyList_Append(__pyx_v_X, __pyx_t_7); if (unlikely(__pyx_t_19 == ((int)-1))) __PYX_ERR(0, 132, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
-    /* "Kinematics.pyx":133
+    /* "src/Kinematics.pyx":133
  *         x, y, z = tool_position
  *         X.append(x)
  *         Y.append(y)             # <<<<<<<<<<<<<<
@@ -2447,7 +2447,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
     __pyx_t_19 = __Pyx_PyList_Append(__pyx_v_Y, __pyx_t_7); if (unlikely(__pyx_t_19 == ((int)-1))) __PYX_ERR(0, 133, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
-    /* "Kinematics.pyx":134
+    /* "src/Kinematics.pyx":134
  *         X.append(x)
  *         Y.append(y)
  *         Z.append(z)             # <<<<<<<<<<<<<<
@@ -2459,7 +2459,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
     __pyx_t_19 = __Pyx_PyList_Append(__pyx_v_Z, __pyx_t_7); if (unlikely(__pyx_t_19 == ((int)-1))) __PYX_ERR(0, 134, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
-    /* "Kinematics.pyx":130
+    /* "src/Kinematics.pyx":130
  *     free(wrist3)
  * 
  *     if tool_position is not None:             # <<<<<<<<<<<<<<
@@ -2468,7 +2468,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
  */
   }
 
-  /* "Kinematics.pyx":136
+  /* "src/Kinematics.pyx":136
  *         Z.append(z)
  * 
  *     return X, Y, Z             # <<<<<<<<<<<<<<
@@ -2491,7 +2491,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
   __pyx_t_7 = 0;
   goto __pyx_L0;
 
-  /* "Kinematics.pyx":96
+  /* "src/Kinematics.pyx":96
  * 
  * 
  * cdef forwardkinematics(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
@@ -2510,7 +2510,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
   __Pyx_XDECREF(__pyx_t_7);
   __Pyx_XDECREF(__pyx_t_15);
   __Pyx_XDECREF(__pyx_t_16);
-  __Pyx_AddTraceback("Kinematics.forwardkinematics", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("KinematicsModule.forwardkinematics", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_X);
@@ -2521,7 +2521,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
   return __pyx_r;
 }
 
-/* "Kinematics.pyx":139
+/* "src/Kinematics.pyx":139
  * 
  * 
  * cdef forwardkinematics_fromc(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
@@ -2529,7 +2529,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics(PyObject *__pyx_v_joint_
  * 
  */
 
-static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_joint_angles, struct __pyx_opt_args_10Kinematics_forwardkinematics_fromc *__pyx_optional_args) {
+static PyObject *__pyx_f_16KinematicsModule_forwardkinematics_fromc(PyObject *__pyx_v_joint_angles, struct __pyx_opt_args_16KinematicsModule_forwardkinematics_fromc *__pyx_optional_args) {
   PyObject *__pyx_v_tool_position = ((PyObject *)Py_None);
   double __pyx_v_pihalf;
   double __pyx_v_a;
@@ -2579,7 +2579,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
     }
   }
 
-  /* "Kinematics.pyx":140
+  /* "src/Kinematics.pyx":140
  * 
  * cdef forwardkinematics_fromc(joint_angles, tool_position=None):
  *     cdef double pihalf = 1.57079632679             # <<<<<<<<<<<<<<
@@ -2588,7 +2588,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   __pyx_v_pihalf = 1.57079632679;
 
-  /* "Kinematics.pyx":143
+  /* "src/Kinematics.pyx":143
  * 
  *     cdef double a, b, c, d, e, f, x, y, z
  *     a, b, c, d, e, f = joint_angles             # <<<<<<<<<<<<<<
@@ -2677,7 +2677,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
   __pyx_v_e = __pyx_t_13;
   __pyx_v_f = __pyx_t_14;
 
-  /* "Kinematics.pyx":145
+  /* "src/Kinematics.pyx":145
  *     a, b, c, d, e, f = joint_angles
  * 
  *     cdef double *base     = <double*> T_c(a,  0.089159, -0.134,    pihalf)             # <<<<<<<<<<<<<<
@@ -2686,7 +2686,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   __pyx_v_base = ((double *)T_c(__pyx_v_a, 0.089159, -0.134, __pyx_v_pihalf));
 
-  /* "Kinematics.pyx":146
+  /* "src/Kinematics.pyx":146
  * 
  *     cdef double *base     = <double*> T_c(a,  0.089159, -0.134,    pihalf)
  *     cdef double *shoulder = <double*> T_c(b,  0,        -0.425,    0)             # <<<<<<<<<<<<<<
@@ -2695,7 +2695,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   __pyx_v_shoulder = ((double *)T_c(__pyx_v_b, 0.0, -0.425, 0.0));
 
-  /* "Kinematics.pyx":147
+  /* "src/Kinematics.pyx":147
  *     cdef double *base     = <double*> T_c(a,  0.089159, -0.134,    pihalf)
  *     cdef double *shoulder = <double*> T_c(b,  0,        -0.425,    0)
  *     cdef double *elbow    = <double*> T_c(c, -0.119,     0,        0)             # <<<<<<<<<<<<<<
@@ -2704,7 +2704,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   __pyx_v_elbow = ((double *)T_c(__pyx_v_c, -0.119, 0.0, 0.0));
 
-  /* "Kinematics.pyx":148
+  /* "src/Kinematics.pyx":148
  *     cdef double *shoulder = <double*> T_c(b,  0,        -0.425,    0)
  *     cdef double *elbow    = <double*> T_c(c, -0.119,     0,        0)
  *     cdef double *elbowend = <double*> T_c(0,  0,        -0.39225,  0)             # <<<<<<<<<<<<<<
@@ -2713,7 +2713,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   __pyx_v_elbowend = ((double *)T_c(0.0, 0.0, -0.39225, 0.0));
 
-  /* "Kinematics.pyx":149
+  /* "src/Kinematics.pyx":149
  *     cdef double *elbow    = <double*> T_c(c, -0.119,     0,        0)
  *     cdef double *elbowend = <double*> T_c(0,  0,        -0.39225,  0)
  *     cdef double *wrist1   = <double*> T_c(d,  0.09475,   0,        pihalf)             # <<<<<<<<<<<<<<
@@ -2722,7 +2722,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   __pyx_v_wrist1 = ((double *)T_c(__pyx_v_d, 0.09475, 0.0, __pyx_v_pihalf));
 
-  /* "Kinematics.pyx":150
+  /* "src/Kinematics.pyx":150
  *     cdef double *elbowend = <double*> T_c(0,  0,        -0.39225,  0)
  *     cdef double *wrist1   = <double*> T_c(d,  0.09475,   0,        pihalf)
  *     cdef double *wrist2   = <double*> T_c(e,  0.09475,   0,       -pihalf)             # <<<<<<<<<<<<<<
@@ -2731,7 +2731,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   __pyx_v_wrist2 = ((double *)T_c(__pyx_v_e, 0.09475, 0.0, (-__pyx_v_pihalf)));
 
-  /* "Kinematics.pyx":151
+  /* "src/Kinematics.pyx":151
  *     cdef double *wrist1   = <double*> T_c(d,  0.09475,   0,        pihalf)
  *     cdef double *wrist2   = <double*> T_c(e,  0.09475,   0,       -pihalf)
  *     cdef double *wrist3   = <double*> T_c(f,  0.0815,    0,        0)             # <<<<<<<<<<<<<<
@@ -2740,7 +2740,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   __pyx_v_wrist3 = ((double *)T_c(__pyx_v_f, 0.0815, 0.0, 0.0));
 
-  /* "Kinematics.pyx":153
+  /* "src/Kinematics.pyx":153
  *     cdef double *wrist3   = <double*> T_c(f,  0.0815,    0,        0)
  * 
  *     base[3], base[7] = -base[7], base[3]             # <<<<<<<<<<<<<<
@@ -2752,7 +2752,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
   (__pyx_v_base[3]) = __pyx_t_14;
   (__pyx_v_base[7]) = __pyx_t_13;
 
-  /* "Kinematics.pyx":154
+  /* "src/Kinematics.pyx":154
  * 
  *     base[3], base[7] = -base[7], base[3]
  *     dot_c(base, shoulder)             # <<<<<<<<<<<<<<
@@ -2761,7 +2761,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   dot_c(__pyx_v_base, __pyx_v_shoulder);
 
-  /* "Kinematics.pyx":155
+  /* "src/Kinematics.pyx":155
  *     base[3], base[7] = -base[7], base[3]
  *     dot_c(base, shoulder)
  *     dot_c(shoulder, elbow)             # <<<<<<<<<<<<<<
@@ -2770,7 +2770,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   dot_c(__pyx_v_shoulder, __pyx_v_elbow);
 
-  /* "Kinematics.pyx":156
+  /* "src/Kinematics.pyx":156
  *     dot_c(base, shoulder)
  *     dot_c(shoulder, elbow)
  *     dot_c(elbow, elbowend)             # <<<<<<<<<<<<<<
@@ -2779,7 +2779,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   dot_c(__pyx_v_elbow, __pyx_v_elbowend);
 
-  /* "Kinematics.pyx":157
+  /* "src/Kinematics.pyx":157
  *     dot_c(shoulder, elbow)
  *     dot_c(elbow, elbowend)
  *     dot_c(elbowend, wrist1)             # <<<<<<<<<<<<<<
@@ -2788,7 +2788,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   dot_c(__pyx_v_elbowend, __pyx_v_wrist1);
 
-  /* "Kinematics.pyx":158
+  /* "src/Kinematics.pyx":158
  *     dot_c(elbow, elbowend)
  *     dot_c(elbowend, wrist1)
  *     dot_c(wrist1, wrist2)             # <<<<<<<<<<<<<<
@@ -2797,7 +2797,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   dot_c(__pyx_v_wrist1, __pyx_v_wrist2);
 
-  /* "Kinematics.pyx":159
+  /* "src/Kinematics.pyx":159
  *     dot_c(elbowend, wrist1)
  *     dot_c(wrist1, wrist2)
  *     dot_c(wrist2, wrist3)             # <<<<<<<<<<<<<<
@@ -2806,7 +2806,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   dot_c(__pyx_v_wrist2, __pyx_v_wrist3);
 
-  /* "Kinematics.pyx":162
+  /* "src/Kinematics.pyx":162
  * 
  *     cdef list X, Y, Z
  *     X = [0, 0, base[3], shoulder[3], elbow[3], elbowend[3], wrist1[3], wrist2[3], wrist3[3]]             # <<<<<<<<<<<<<<
@@ -2859,7 +2859,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
   __pyx_v_X = ((PyObject*)__pyx_t_15);
   __pyx_t_15 = 0;
 
-  /* "Kinematics.pyx":163
+  /* "src/Kinematics.pyx":163
  *     cdef list X, Y, Z
  *     X = [0, 0, base[3], shoulder[3], elbow[3], elbowend[3], wrist1[3], wrist2[3], wrist3[3]]
  *     Y = [0, 0, base[7], shoulder[7], elbow[7], elbowend[7], wrist1[7], wrist2[7], wrist3[7]]             # <<<<<<<<<<<<<<
@@ -2912,7 +2912,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
   __pyx_v_Y = ((PyObject*)__pyx_t_6);
   __pyx_t_6 = 0;
 
-  /* "Kinematics.pyx":164
+  /* "src/Kinematics.pyx":164
  *     X = [0, 0, base[3], shoulder[3], elbow[3], elbowend[3], wrist1[3], wrist2[3], wrist3[3]]
  *     Y = [0, 0, base[7], shoulder[7], elbow[7], elbowend[7], wrist1[7], wrist2[7], wrist3[7]]
  *     Z = [0, base[11], base[11], shoulder[11], elbow[11], elbowend[11], wrist1[11], wrist2[11], wrist3[11]]             # <<<<<<<<<<<<<<
@@ -2967,7 +2967,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
   __pyx_v_Z = ((PyObject*)__pyx_t_16);
   __pyx_t_16 = 0;
 
-  /* "Kinematics.pyx":166
+  /* "src/Kinematics.pyx":166
  *     Z = [0, base[11], base[11], shoulder[11], elbow[11], elbowend[11], wrist1[11], wrist2[11], wrist3[11]]
  * 
  *     free(base)             # <<<<<<<<<<<<<<
@@ -2976,7 +2976,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   free(__pyx_v_base);
 
-  /* "Kinematics.pyx":167
+  /* "src/Kinematics.pyx":167
  * 
  *     free(base)
  *     free(shoulder)             # <<<<<<<<<<<<<<
@@ -2985,7 +2985,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   free(__pyx_v_shoulder);
 
-  /* "Kinematics.pyx":168
+  /* "src/Kinematics.pyx":168
  *     free(base)
  *     free(shoulder)
  *     free(elbow)             # <<<<<<<<<<<<<<
@@ -2994,7 +2994,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   free(__pyx_v_elbow);
 
-  /* "Kinematics.pyx":169
+  /* "src/Kinematics.pyx":169
  *     free(shoulder)
  *     free(elbow)
  *     free(elbowend)             # <<<<<<<<<<<<<<
@@ -3003,7 +3003,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   free(__pyx_v_elbowend);
 
-  /* "Kinematics.pyx":170
+  /* "src/Kinematics.pyx":170
  *     free(elbow)
  *     free(elbowend)
  *     free(wrist1)             # <<<<<<<<<<<<<<
@@ -3012,7 +3012,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   free(__pyx_v_wrist1);
 
-  /* "Kinematics.pyx":171
+  /* "src/Kinematics.pyx":171
  *     free(elbowend)
  *     free(wrist1)
  *     free(wrist2)             # <<<<<<<<<<<<<<
@@ -3021,7 +3021,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   free(__pyx_v_wrist2);
 
-  /* "Kinematics.pyx":172
+  /* "src/Kinematics.pyx":172
  *     free(wrist1)
  *     free(wrist2)
  *     free(wrist3)             # <<<<<<<<<<<<<<
@@ -3030,7 +3030,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   free(__pyx_v_wrist3);
 
-  /* "Kinematics.pyx":174
+  /* "src/Kinematics.pyx":174
  *     free(wrist3)
  * 
  *     if tool_position is not None:             # <<<<<<<<<<<<<<
@@ -3041,7 +3041,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
   __pyx_t_18 = (__pyx_t_17 != 0);
   if (__pyx_t_18) {
 
-    /* "Kinematics.pyx":175
+    /* "src/Kinematics.pyx":175
  * 
  *     if tool_position is not None:
  *         x, y, z = tool_position             # <<<<<<<<<<<<<<
@@ -3109,7 +3109,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
     __pyx_v_y = __pyx_t_14;
     __pyx_v_z = __pyx_t_12;
 
-    /* "Kinematics.pyx":176
+    /* "src/Kinematics.pyx":176
  *     if tool_position is not None:
  *         x, y, z = tool_position
  *         X.append(x)             # <<<<<<<<<<<<<<
@@ -3121,7 +3121,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
     __pyx_t_19 = __Pyx_PyList_Append(__pyx_v_X, __pyx_t_7); if (unlikely(__pyx_t_19 == ((int)-1))) __PYX_ERR(0, 176, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
-    /* "Kinematics.pyx":177
+    /* "src/Kinematics.pyx":177
  *         x, y, z = tool_position
  *         X.append(x)
  *         Y.append(y)             # <<<<<<<<<<<<<<
@@ -3133,7 +3133,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
     __pyx_t_19 = __Pyx_PyList_Append(__pyx_v_Y, __pyx_t_7); if (unlikely(__pyx_t_19 == ((int)-1))) __PYX_ERR(0, 177, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
-    /* "Kinematics.pyx":178
+    /* "src/Kinematics.pyx":178
  *         X.append(x)
  *         Y.append(y)
  *         Z.append(z)             # <<<<<<<<<<<<<<
@@ -3145,7 +3145,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
     __pyx_t_19 = __Pyx_PyList_Append(__pyx_v_Z, __pyx_t_7); if (unlikely(__pyx_t_19 == ((int)-1))) __PYX_ERR(0, 178, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
-    /* "Kinematics.pyx":174
+    /* "src/Kinematics.pyx":174
  *     free(wrist3)
  * 
  *     if tool_position is not None:             # <<<<<<<<<<<<<<
@@ -3154,7 +3154,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
  */
   }
 
-  /* "Kinematics.pyx":180
+  /* "src/Kinematics.pyx":180
  *         Z.append(z)
  * 
  *     return X, Y, Z             # <<<<<<<<<<<<<<
@@ -3177,7 +3177,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
   __pyx_t_7 = 0;
   goto __pyx_L0;
 
-  /* "Kinematics.pyx":139
+  /* "src/Kinematics.pyx":139
  * 
  * 
  * cdef forwardkinematics_fromc(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
@@ -3196,7 +3196,7 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
   __Pyx_XDECREF(__pyx_t_7);
   __Pyx_XDECREF(__pyx_t_15);
   __Pyx_XDECREF(__pyx_t_16);
-  __Pyx_AddTraceback("Kinematics.forwardkinematics_fromc", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("KinematicsModule.forwardkinematics_fromc", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_X);
@@ -3207,21 +3207,21 @@ static PyObject *__pyx_f_10Kinematics_forwardkinematics_fromc(PyObject *__pyx_v_
   return __pyx_r;
 }
 
-/* "Kinematics.pyx":202
- * #     return X, Y, Z
+/* "src/Kinematics.pyx":183
+ * 
  * 
  * cpdef ForwardKinematics(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
  *     return forwardkinematics_fromc(joint_angles, tool_position=tool_position)
  * 
  */
 
-static PyObject *__pyx_pw_10Kinematics_1ForwardKinematics(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_f_10Kinematics_ForwardKinematics(PyObject *__pyx_v_joint_angles, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_10Kinematics_ForwardKinematics *__pyx_optional_args) {
+static PyObject *__pyx_pw_16KinematicsModule_1ForwardKinematics(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_16KinematicsModule_ForwardKinematics(PyObject *__pyx_v_joint_angles, CYTHON_UNUSED int __pyx_skip_dispatch, struct __pyx_opt_args_16KinematicsModule_ForwardKinematics *__pyx_optional_args) {
   PyObject *__pyx_v_tool_position = ((PyObject *)Py_None);
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  struct __pyx_opt_args_10Kinematics_forwardkinematics_fromc __pyx_t_2;
+  struct __pyx_opt_args_16KinematicsModule_forwardkinematics_fromc __pyx_t_2;
   __Pyx_RefNannySetupContext("ForwardKinematics", 0);
   if (__pyx_optional_args) {
     if (__pyx_optional_args->__pyx_n > 0) {
@@ -3229,7 +3229,7 @@ static PyObject *__pyx_f_10Kinematics_ForwardKinematics(PyObject *__pyx_v_joint_
     }
   }
 
-  /* "Kinematics.pyx":203
+  /* "src/Kinematics.pyx":184
  * 
  * cpdef ForwardKinematics(joint_angles, tool_position=None):
  *     return forwardkinematics_fromc(joint_angles, tool_position=tool_position)             # <<<<<<<<<<<<<<
@@ -3239,14 +3239,14 @@ static PyObject *__pyx_f_10Kinematics_ForwardKinematics(PyObject *__pyx_v_joint_
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_2.__pyx_n = 1;
   __pyx_t_2.tool_position = __pyx_v_tool_position;
-  __pyx_t_1 = __pyx_f_10Kinematics_forwardkinematics_fromc(__pyx_v_joint_angles, &__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 203, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_16KinematicsModule_forwardkinematics_fromc(__pyx_v_joint_angles, &__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 184, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "Kinematics.pyx":202
- * #     return X, Y, Z
+  /* "src/Kinematics.pyx":183
+ * 
  * 
  * cpdef ForwardKinematics(joint_angles, tool_position=None):             # <<<<<<<<<<<<<<
  *     return forwardkinematics_fromc(joint_angles, tool_position=tool_position)
@@ -3256,7 +3256,7 @@ static PyObject *__pyx_f_10Kinematics_ForwardKinematics(PyObject *__pyx_v_joint_
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("Kinematics.ForwardKinematics", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("KinematicsModule.ForwardKinematics", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -3265,8 +3265,8 @@ static PyObject *__pyx_f_10Kinematics_ForwardKinematics(PyObject *__pyx_v_joint_
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_10Kinematics_1ForwardKinematics(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_10Kinematics_1ForwardKinematics(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_16KinematicsModule_1ForwardKinematics(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_16KinematicsModule_1ForwardKinematics(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_joint_angles = 0;
   PyObject *__pyx_v_tool_position = 0;
   PyObject *__pyx_r = 0;
@@ -3300,7 +3300,7 @@ static PyObject *__pyx_pw_10Kinematics_1ForwardKinematics(PyObject *__pyx_self, 
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "ForwardKinematics") < 0)) __PYX_ERR(0, 202, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "ForwardKinematics") < 0)) __PYX_ERR(0, 183, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -3316,29 +3316,29 @@ static PyObject *__pyx_pw_10Kinematics_1ForwardKinematics(PyObject *__pyx_self, 
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("ForwardKinematics", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 202, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("ForwardKinematics", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 183, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("Kinematics.ForwardKinematics", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("KinematicsModule.ForwardKinematics", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_10Kinematics_ForwardKinematics(__pyx_self, __pyx_v_joint_angles, __pyx_v_tool_position);
+  __pyx_r = __pyx_pf_16KinematicsModule_ForwardKinematics(__pyx_self, __pyx_v_joint_angles, __pyx_v_tool_position);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10Kinematics_ForwardKinematics(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_joint_angles, PyObject *__pyx_v_tool_position) {
+static PyObject *__pyx_pf_16KinematicsModule_ForwardKinematics(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_joint_angles, PyObject *__pyx_v_tool_position) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  struct __pyx_opt_args_10Kinematics_ForwardKinematics __pyx_t_2;
+  struct __pyx_opt_args_16KinematicsModule_ForwardKinematics __pyx_t_2;
   __Pyx_RefNannySetupContext("ForwardKinematics", 0);
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_2.__pyx_n = 1;
   __pyx_t_2.tool_position = __pyx_v_tool_position;
-  __pyx_t_1 = __pyx_f_10Kinematics_ForwardKinematics(__pyx_v_joint_angles, 0, &__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 202, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_16KinematicsModule_ForwardKinematics(__pyx_v_joint_angles, 0, &__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 183, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3347,7 +3347,7 @@ static PyObject *__pyx_pf_10Kinematics_ForwardKinematics(CYTHON_UNUSED PyObject 
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("Kinematics.ForwardKinematics", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("KinematicsModule.ForwardKinematics", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -3356,24 +3356,24 @@ static PyObject *__pyx_pf_10Kinematics_ForwardKinematics(CYTHON_UNUSED PyObject 
 }
 
 static PyMethodDef __pyx_methods[] = {
-  {"ForwardKinematics", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_10Kinematics_1ForwardKinematics, METH_VARARGS|METH_KEYWORDS, 0},
+  {"ForwardKinematics", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_16KinematicsModule_1ForwardKinematics, METH_VARARGS|METH_KEYWORDS, 0},
   {0, 0, 0, 0}
 };
 
 #if PY_MAJOR_VERSION >= 3
 #if CYTHON_PEP489_MULTI_PHASE_INIT
 static PyObject* __pyx_pymod_create(PyObject *spec, PyModuleDef *def); /*proto*/
-static int __pyx_pymod_exec_Kinematics(PyObject* module); /*proto*/
+static int __pyx_pymod_exec_KinematicsModule(PyObject* module); /*proto*/
 static PyModuleDef_Slot __pyx_moduledef_slots[] = {
   {Py_mod_create, (void*)__pyx_pymod_create},
-  {Py_mod_exec, (void*)__pyx_pymod_exec_Kinematics},
+  {Py_mod_exec, (void*)__pyx_pymod_exec_KinematicsModule},
   {0, NULL}
 };
 #endif
 
 static struct PyModuleDef __pyx_moduledef = {
     PyModuleDef_HEAD_INIT,
-    "Kinematics",
+    "KinematicsModule",
     0, /* m_doc */
   #if CYTHON_PEP489_MULTI_PHASE_INIT
     0, /* m_size */
@@ -3515,11 +3515,11 @@ static int __Pyx_modinit_function_import_code(void) {
 
 
 #if PY_MAJOR_VERSION < 3
-__Pyx_PyMODINIT_FUNC initKinematics(void) CYTHON_SMALL_CODE; /*proto*/
-__Pyx_PyMODINIT_FUNC initKinematics(void)
+__Pyx_PyMODINIT_FUNC initKinematicsModule(void) CYTHON_SMALL_CODE; /*proto*/
+__Pyx_PyMODINIT_FUNC initKinematicsModule(void)
 #else
-__Pyx_PyMODINIT_FUNC PyInit_Kinematics(void) CYTHON_SMALL_CODE; /*proto*/
-__Pyx_PyMODINIT_FUNC PyInit_Kinematics(void)
+__Pyx_PyMODINIT_FUNC PyInit_KinematicsModule(void) CYTHON_SMALL_CODE; /*proto*/
+__Pyx_PyMODINIT_FUNC PyInit_KinematicsModule(void)
 #if CYTHON_PEP489_MULTI_PHASE_INIT
 {
   return PyModuleDef_Init(&__pyx_moduledef);
@@ -3586,7 +3586,7 @@ bad:
 }
 
 
-static CYTHON_SMALL_CODE int __pyx_pymod_exec_Kinematics(PyObject *__pyx_pyinit_module)
+static CYTHON_SMALL_CODE int __pyx_pymod_exec_KinematicsModule(PyObject *__pyx_pyinit_module)
 #endif
 #endif
 {
@@ -3595,7 +3595,7 @@ static CYTHON_SMALL_CODE int __pyx_pymod_exec_Kinematics(PyObject *__pyx_pyinit_
   #if CYTHON_PEP489_MULTI_PHASE_INIT
   if (__pyx_m) {
     if (__pyx_m == __pyx_pyinit_module) return 0;
-    PyErr_SetString(PyExc_RuntimeError, "Module 'Kinematics' has already been imported. Re-initialisation is not supported.");
+    PyErr_SetString(PyExc_RuntimeError, "Module 'KinematicsModule' has already been imported. Re-initialisation is not supported.");
     return -1;
   }
   #elif PY_MAJOR_VERSION >= 3
@@ -3610,7 +3610,7 @@ if (!__Pyx_RefNanny) {
       Py_FatalError("failed to import 'refnanny' module");
 }
 #endif
-  __Pyx_RefNannySetupContext("__Pyx_PyMODINIT_FUNC PyInit_Kinematics(void)", 0);
+  __Pyx_RefNannySetupContext("__Pyx_PyMODINIT_FUNC PyInit_KinematicsModule(void)", 0);
   if (__Pyx_check_binary_version() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #ifdef __Pxy_PyFrame_Initialize_Offsets
   __Pxy_PyFrame_Initialize_Offsets();
@@ -3649,7 +3649,7 @@ if (!__Pyx_RefNanny) {
   Py_INCREF(__pyx_m);
   #else
   #if PY_MAJOR_VERSION < 3
-  __pyx_m = Py_InitModule4("Kinematics", __pyx_methods, 0, 0, PYTHON_API_VERSION); Py_XINCREF(__pyx_m);
+  __pyx_m = Py_InitModule4("KinematicsModule", __pyx_methods, 0, 0, PYTHON_API_VERSION); Py_XINCREF(__pyx_m);
   #else
   __pyx_m = PyModule_Create(&__pyx_moduledef);
   #endif
@@ -3667,14 +3667,14 @@ if (!__Pyx_RefNanny) {
   #if PY_MAJOR_VERSION < 3 && (__PYX_DEFAULT_STRING_ENCODING_IS_ASCII || __PYX_DEFAULT_STRING_ENCODING_IS_DEFAULT)
   if (__Pyx_init_sys_getdefaultencoding_params() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
-  if (__pyx_module_is_main_Kinematics) {
+  if (__pyx_module_is_main_KinematicsModule) {
     if (PyObject_SetAttr(__pyx_m, __pyx_n_s_name, __pyx_n_s_main) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   }
   #if PY_MAJOR_VERSION >= 3
   {
     PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) __PYX_ERR(0, 1, __pyx_L1_error)
-    if (!PyDict_GetItemString(modules, "Kinematics")) {
-      if (unlikely(PyDict_SetItemString(modules, "Kinematics", __pyx_m) < 0)) __PYX_ERR(0, 1, __pyx_L1_error)
+    if (!PyDict_GetItemString(modules, "KinematicsModule")) {
+      if (unlikely(PyDict_SetItemString(modules, "KinematicsModule", __pyx_m) < 0)) __PYX_ERR(0, 1, __pyx_L1_error)
     }
   }
   #endif
@@ -3695,7 +3695,7 @@ if (!__Pyx_RefNanny) {
   if (__Pyx_patch_abc() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
 
-  /* "Kinematics.pyx":1
+  /* "src/Kinematics.pyx":1
  * from libc.math cimport sin, cos             # <<<<<<<<<<<<<<
  * from libc.stdio cimport printf
  * from libc.stdlib cimport calloc, free
@@ -3712,11 +3712,11 @@ if (!__Pyx_RefNanny) {
   __Pyx_XDECREF(__pyx_t_1);
   if (__pyx_m) {
     if (__pyx_d) {
-      __Pyx_AddTraceback("init Kinematics", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      __Pyx_AddTraceback("init KinematicsModule", __pyx_clineno, __pyx_lineno, __pyx_filename);
     }
     Py_CLEAR(__pyx_m);
   } else if (!PyErr_Occurred()) {
-    PyErr_SetString(PyExc_ImportError, "init Kinematics");
+    PyErr_SetString(PyExc_ImportError, "init KinematicsModule");
   }
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
