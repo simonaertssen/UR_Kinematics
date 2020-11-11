@@ -21,7 +21,7 @@ double *makeT(double theta, double d, double r, double alpha){
     result[9] = sin_a;
     result[10] = cos_a;
     result[11] = d;
-    result[16] = 1;
+    result[15] = 1;
     return result;
 }
 

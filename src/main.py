@@ -14,8 +14,8 @@ def SpeedOfCurrentKinematics():
 
 
 if __name__ == '__main__':
+    # print(np.round(ForwardKinematics((0.0, -np.pi / 2, 0.0, -np.pi / 2, 0.0, 0.0)), 4))
     SpeedOfCurrentKinematics()
     #  14195 iterations per second by using just a function (benchmark)
     # 480658 iterations per second by using cython
     # 547236 iterations per second by using smaller buffers in matmul
-    # 148651 iterations per second by using all c functionality...
