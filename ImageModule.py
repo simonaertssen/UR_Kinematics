@@ -18,6 +18,8 @@ def findObjectsToPickUp(image_to_extract):
         area = cv.contourArea(contour)
         if area/image_to_extract.size*100 < 0.1:  # Do not proceed if less than 0.1 percent of the image
             continue
+        if area / image_to_extract.size * 100 > 10:  # Do not proceed if more than 10 percent of the image
+            continue
         M = cv.moments(contour)
         if M['m00'] == 0:
             break
