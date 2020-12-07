@@ -53,9 +53,8 @@ def detectCollision(positions):
     Y = np.array(Y[2:])
     Z = np.array(Z[2:])
 
-    e = 0.05
-
     # Are we inside of the box?
+    e = 0.05
     BOX_X_MIN = -0.832
     BOX_X_MAX = 0.490
     BOX_Y_MIN = -0.713
@@ -74,6 +73,7 @@ def detectCollision(positions):
         print("camera")
         return True
     # Are we bumping into the screen?
+    e = 0.01
     SCR_X_MAX = -0.182
     SCR_Y_MAX = -0.520
     SCR_Z_MIN = 0.375
