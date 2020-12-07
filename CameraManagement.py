@@ -61,11 +61,6 @@ class Camera:
 
     def setCamera(self):
         try:
-            tlFactory = pylon.TlFactory.GetInstance()
-
-            # Get all attached devices and exit application if no device is found.
-            devices = tlFactory.EnumerateDevices()
-            print(devices)
             if self.serialNumber is None:
                 self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
             else:
