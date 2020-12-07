@@ -1,6 +1,6 @@
 import time
 import numpy as np
-from lib.KinematicsModule import ForwardKinematics
+from KinematicsLib.KinematicsModule import ForwardKinematics
 
 
 def SpeedOfCurrentKinematics():

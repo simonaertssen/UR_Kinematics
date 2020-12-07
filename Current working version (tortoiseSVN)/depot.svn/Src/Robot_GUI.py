@@ -233,7 +233,7 @@ class MainObjectWidget(QWidget):
         path = os.path.join(rootDir + "Library", self.combo1.currentText())
 
         if os.path.exists(path) and not (self.combo1.currentText() == ""):
-            self.files = sorted([file for file in os.listdir(rootDir +'Library//' + self.dirs[0] + "/src") if file.endswith('.png')])
+            self.files = sorted([file for file in os.listdir(rootDir +'Library//' + self.dirs[0] + "/KinematicsModule") if file.endswith('.png')])
             self.files = [x.split('.')[0] for x in self.files]
         else:
             self.files = []

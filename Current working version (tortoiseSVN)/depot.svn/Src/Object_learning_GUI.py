@@ -65,7 +65,7 @@ class MainObjectWidget(QWidget):
         path = os.path.join(rootDir + "Library", self.combo1.currentText())
 
         if os.path.exists(path) and not (self.combo1.currentText() == ""):
-            self.files = sorted([file for file in os.listdir(rootDir + 'Library//' + self.dirs[0] + "/src") if file.endswith('.png')])
+            self.files = sorted([file for file in os.listdir(rootDir + 'Library//' + self.dirs[0] + "/KinematicsModule") if file.endswith('.png')])
             self.files = [x.split('.')[0] for x in self.files]
         else:
             self.files = []
@@ -290,7 +290,7 @@ class MainObjectWidget(QWidget):
             index = 0;
         self.combo1.setCurrentIndex(index)
         self.combo1.currentIndexChanged.connect(self.update_param)
-        path = os.path.join(rootDir + "Library", self.combo1.currentText()  + "/src")
+        path = os.path.join(rootDir + "Library", self.combo1.currentText()  + "/KinematicsModule")
 
         if os.path.exists(path):
             self.files = sorted([file for file in os.listdir(path) if file.endswith('.png')])
@@ -477,7 +477,7 @@ class MainObjectWidget(QWidget):
         path = os.path.join(rootDir + "Library", self.type_name.text())
         if not os.path.exists(path):
             os.mkdir(path)
-            os.mkdir(path + "/src")
+            os.mkdir(path + "/KinematicsModule")
             os.mkdir(path + "/mask")
             os.mkdir(path + "/points")
         self.signal_save_view.emit()
@@ -582,7 +582,7 @@ class MainWindow(QMainWindow):
         self.update_view()
 
     def update_view(self):
-        self.img_src = cv2.imread(rootDir + 'Library/' + self.props.combo1.currentText() + '/src/' + self.props.combo2.currentText() + '.png')
+        self.img_src = cv2.imread(rootDir + 'Library/' + self.props.combo1.currentText() + '/KinematicsModule/' + self.props.combo2.currentText() + '.png')
         src = np.ones((self.img_src.shape[0] + 100, self.img_src.shape[1] + 100, 3), np.uint8) * 255
         src[50:-50, 50:-50] = self.img_src
         src = cv2.resize(src,(src.shape[1]*10,src.shape[0]*10))
@@ -1095,7 +1095,7 @@ class MainWindow(QMainWindow):
     def save_view(self):
         img_src = cv2.resize(self.img_src,(int(self.img_src.shape[1]/10), int(self.img_src.shape[0]/10)))
         img_mask = cv2.resize(self.img_mask, (int(self.img_mask.shape[1] / 10), int(self.img_mask.shape[0] / 10)))
-        cv2.imwrite(rootDir + 'Library\\' + self.props.type_name.text() + '\\src\\'  +self.props.view_name.text() + ".png",  img_src[50:-50, 50:-50]);
+        cv2.imwrite(rootDir + 'Library\\' + self.props.type_name.text() + '\\KinematicsModule\\'  +self.props.view_name.text() + ".png",  img_src[50:-50, 50:-50]);
         cv2.imwrite(rootDir + 'Library\\' + self.props.type_name.text() + '\\mask\\' + self.props.view_name.text() + ".png", img_mask[50:-50, 50:-50]);
         view_angle = np.expand_dims(np.array((int(self.props.angle.value()),0)),0)
 
@@ -1341,7 +1341,7 @@ class AddWindow(QMainWindow):
                 break
 
     def save_view(self):
-        cv2.imwrite(rootDir + 'Library/' + self.type_name + '/src/'  +self.props.type_name.text() + ".png",  self.img_src);
+        cv2.imwrite(rootDir + 'Library/' + self.type_name + '/KinematicsModule/'  +self.props.type_name.text() + ".png",  self.img_src);
         cv2.imwrite(rootDir + 'Library/' + self.type_name + '/mask/' + self.props.type_name.text() + ".png",self.img_mask);
         view_angle = np.expand_dims(np.array((int(self.props.angle.value()),0)),0)
         np.save(rootDir + 'Library/'+ self.type_name + '/points/'  +self.props.type_name.text() + "_pickpoints", np.concatenate((self.viewpoints, self.pickpoints, view_angle)))

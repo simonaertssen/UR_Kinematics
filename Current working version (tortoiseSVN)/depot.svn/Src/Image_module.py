@@ -292,7 +292,7 @@ def getSubImage(rect, src , mask, check=0):
 
     # Get rotation matrix for rectangle
     M = cv2.getRotationMatrix2D( center, theta, 1)
-    # Perform rotation on src image
+    # Perform rotation on KinematicsModule image
     dst_mask = cv2.warpAffine(mask, M, (mask.shape[0]+500, mask.shape[1]+500))
     dst_src = cv2.warpAffine(src, M, (src.shape[0] + 500, src.shape[1] + 500))
 
@@ -364,18 +364,18 @@ def findShape(src, mask, s_contour):
                     type_img = template.copy()
                     type_name = subdir.split(os.path.sep)[-1]
                     orientation = os.path.splitext(file)[0]
-                    #cv2.destroyWindow('Cropped src')
+                    #cv2.destroyWindow('Cropped KinematicsModule')
                     #cv2.destroyWindow('Cropped template')
-                    #cv2.imshow('Cropped src', src)
+                    #cv2.imshow('Cropped KinematicsModule', KinematicsModule)
                     #cv2.imshow('Cropped template', temp_cropped)
                 elif d < d_min:
                     d_min = d
                     type_img = template.copy()
                     type_name = subdir.split(os.path.sep)[-1]
                     orientation = os.path.splitext(file)[0]
-                    #cv2.destroyWindow('Cropped src')
+                    #cv2.destroyWindow('Cropped KinematicsModule')
                     #cv2.destroyWindow('Cropped template')
-                    #cv2.imshow('Cropped src', src)
+                    #cv2.imshow('Cropped KinematicsModule', KinematicsModule)
                     #cv2.imshow('Cropped template', temp_cropped)
 
     return type_img, type_name, orientation
@@ -398,7 +398,7 @@ def findShape_v2(src, mask, s_contour , Lookup = None):
         library = [library]
     for subdir in library:
 
-        for path in glob.glob(os.path.join(rootdir, subdir + "/src/*png")):
+        for path in glob.glob(os.path.join(rootdir, subdir + "/KinematicsModule/*png")):
             file = os.path.split(path)[1]
 
             temp_cropped = cv2.imread(path).astype(np.uint8)

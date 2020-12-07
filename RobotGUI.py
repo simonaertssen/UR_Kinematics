@@ -98,7 +98,7 @@ class LibraryWidget(StandardObjectWidget):
         path = os.path.join(self.libDir, self.combo1.currentText())
 
         if os.path.exists(path) and not (self.combo1.currentText() == ""):
-            self.files = sorted([file for file in os.listdir(self.rootDir + 'Library//' + self.dirs[0] + "/src") if file.endswith('.png')])
+            self.files = sorted([file for file in os.listdir(self.rootDir + 'Library//' + self.dirs[0] + "/KinematicsModule") if file.endswith('.png')])
             self.files = [x.split('.')[0] for x in self.files]
         else:
             self.files = []
@@ -307,7 +307,7 @@ class LibraryWidget(StandardObjectWidget):
             index = 0;
         self.combo1.setCurrentIndex(index)
         self.combo1.currentIndexChanged.connect(self.update_param)
-        path = os.path.join(rootDir + "Library", self.combo1.currentText()  + "/src")
+        path = os.path.join(rootDir + "Library", self.combo1.currentText()  + "/KinematicsModule")
 
         if os.path.exists(path):
             self.files = sorted([file for file in os.listdir(path) if file.endswith('.png')])
@@ -579,7 +579,7 @@ class MainObjectWidget(StandardObjectWidget):
     def registerSelectedObject(self, index):
         selected_object = self.select_objects.itemText(index)
         print('Selected object {}'.format(selected_object))
-        images_of_selected_object = os.listdir(os.path.join(self.libDir, selected_object, "src"))
+        images_of_selected_object = os.listdir(os.path.join(self.libDir, selected_object, "KinematicsModule"))
         self.image_files = [image.split('.')[0] for image in images_of_selected_object if image.endswith('.png')]
         self.objects_status_label = QLabel("Type " + selected_object + " objects found:")
 

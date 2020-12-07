@@ -48,7 +48,7 @@ def getSubImage(rect, src , mask, check=0):
     center, size = tuple(map(int, center)), tuple(map(int, size))
     # Get rotation matrix for rectangle
     M = cv2.getRotationMatrix2D( center, theta, 1)
-    # Perform rotation on src image
+    # Perform rotation on KinematicsModule image
     dst_mask = cv2.warpAffine(mask, M, (mask.shape[0]+500, mask.shape[1]+500))
     dst_src = cv2.warpAffine(src, M, (src.shape[0] + 500, src.shape[1] + 500))
     out_mask = cv2.getRectSubPix(dst_mask, size, center)
@@ -110,18 +110,18 @@ def findShape(src, mask, s_contour):
                     type_img = template.copy()
                     type_name = subdir.split(os.path.sep)[-1]
                     orientation = os.path.splitext(file)[0]
-                    cv2.destroyWindow('Cropped src')
+                    cv2.destroyWindow('Cropped KinematicsModule')
                     cv2.destroyWindow('Cropped template')
-                    cv2.imshow('Cropped src', src)
+                    cv2.imshow('Cropped KinematicsModule', src)
                     cv2.imshow('Cropped template', temp_cropped)
                 elif d < d_min:
                     d_min = d
                     type_img = template.copy()
                     type_name = subdir.split(os.path.sep)[-1]
                     orientation = os.path.splitext(file)[0]
-                    cv2.destroyWindow('Cropped src')
+                    cv2.destroyWindow('Cropped KinematicsModule')
                     cv2.destroyWindow('Cropped template')
-                    cv2.imshow('Cropped src', src)
+                    cv2.imshow('Cropped KinematicsModule', src)
                     cv2.imshow('Cropped template', temp_cropped)
 
     return type_img, type_name, orientation

@@ -5,7 +5,7 @@
 all: make
 
 make:
-	python setup.py build_ext --build-lib lib
+	python setup.py build_ext --build-lib ../KinematicsLib
 clean:
 	@rm *.so
 	@rm *.html
