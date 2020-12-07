@@ -2,7 +2,7 @@ import time
 from threading import Thread
 import winsound
 
-from Kinematics.KinematicsModule import detectCollision
+from Kinematics import detectCollision
 from KinematicsLib.KinematicsModule import ForwardKinematics
 
 from Readers import ModBusReader, RobotChiefCommunicationOfficer

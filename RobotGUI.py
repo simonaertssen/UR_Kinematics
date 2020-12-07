@@ -726,22 +726,23 @@ class MainWindow(StandardMainWindow):
     def updateTopcamView(self, new_image):
         if new_image is None:
             return
-
-        height, width = new_image.shape
-        image = QImage(new_image, width, height, QImage.Format_Grayscale8)
+        height, width, c = new_image.shape
+        image = QImage(new_image, width, height, QImage.Format_RGB888)
         self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(width/2, height/2, QtCore.Qt.KeepAspectRatio))
         self.img_src_display.show()
 
     def updateTopCamInfo(self, new_info):
-        print('Info {}'.format(new_info))
+        # print('Info {}'.format(new_info))
+        pass
 
     def startRobot(self):
         print("Starting robot")
-        self.manager.moveToolTo()
+        self.manager.pickUpObject()
         print("Robot started")
 
     def stopRobot(self):
         print("Stopping robot")
+        self.manager.stopRobot()
         print("Robot stopped")
 
     def keyPressEvent(self, event):
