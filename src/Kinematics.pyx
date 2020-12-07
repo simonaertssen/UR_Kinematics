@@ -142,6 +142,7 @@ cdef forwardkinematics_fromc(joint_angles, tool_position=None):
     cdef double a, b, c, d, e, f, x, y, z
     a, b, c, d, e, f = joint_angles
 
+    # The joint parameters a, d and alpha can be found here: https://www.universal-robots.com/articles/ur-articles/parameters-for-calculations-of-kinematics-and-dynamics/
     cdef double *base     = <double*> T_c(a,  0.089159, -0.134,    pihalf)
     cdef double *shoulder = <double*> T_c(b,  0,        -0.425,    0)
     cdef double *elbow    = <double*> T_c(c, -0.119,     0,        0)
