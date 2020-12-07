@@ -21,7 +21,6 @@ class ImageEventHandler(pylon.ImageEventHandler):
                 with grab_result.GetArrayZeroCopy() as ZCArray:
                     grabbedImage = ZCArray
                 self.imageQueue.put((cameraContextValue, grabbedImage.data))
-                grab_result.Release()
         except genicam.GenericException as e:
             print("ImageEventHandler Exception: {}".format(e))
         finally:
