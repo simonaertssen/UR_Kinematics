@@ -1,6 +1,5 @@
 import numpy as np
 import time
-from numba import jit
 
 
 def T(theta, d, r, alpha):
@@ -50,18 +49,36 @@ def ForwardKinematics(joint_angles, tool_position=None):
 
 def detectCollision(positions):
     X, Y, Z = positions
+    X = np.array(X[2:])  # We don't need all the positions
+    Y = np.array(Y[2:])
+    Z = np.array(Z[2:])
+
     e = 0.05
 
     # Are we inside of the box?
-    # print(-0.713 + e, Y)
-    # print((-0.713 + e < Y))
-    if not (((-0.832 + e < X) & (X < 0.490 - e)).all() and ((-0.713 + e < Y) & (Y < 0.265 - e)).all() and (-0.0021 + e < Z).all()):
+    BOX_X_MIN = -0.832
+    BOX_X_MAX = 0.490
+    BOX_Y_MIN = -0.713
+    BOX_Y_MAX = 0.265
+    BOX_Z_MIN = -0.0021
+    if not (((BOX_X_MIN + e < X) & (X < BOX_X_MAX - e)).all() and ((BOX_Y_MIN + e < Y) & (Y < BOX_Y_MAX - e)).all() and (BOX_Z_MIN + e < Z).all()):
+        print("box")
         return True
     # Are we bumping into the camera and the light?
-    if ((-0.568 + e < X) & (X < -0.364 - e)).any() and ((-0.266 + e < Y) & (Y < 0.031 - e)).any() and (0.765 + e < Z).any():
+    CAM_X_MIN = -0.568
+    CAM_X_MAX = -0.364
+    CAM_Y_MIN = -0.266
+    CAM_Y_MAX = 0.031
+    CAM_Z_MIN = 0.765
+    if ((CAM_X_MIN + e < X) & (X < CAM_X_MAX - e)).any() and ((CAM_Y_MIN + e < Y) & (Y < CAM_Y_MAX - e)).any() and (CAM_Z_MIN + e > Z).any():
+        print("camera")
         return True
-    # Are we bumping into the box?
-    if (X < -0.182 + e).any() and (Y < -0.520 + e).any() and (Z < 0.375 + e).any():
+    # Are we bumping into the screen?
+    SCR_X_MAX = -0.182
+    SCR_Y_MAX = -0.520
+    SCR_Z_MIN = 0.375
+    if (X < SCR_X_MAX + e).any() and (Y < SCR_Y_MAX + e).any() and (Z < SCR_Z_MIN + e).any():
+        print("screen")
         return True
     return False
 
@@ -82,4 +99,3 @@ if __name__ == '__main__':
     # 17859 iterations per second with 'slots'
     # 17663 iterations per second without for loop
     # 14195 iterations per second by using just a function
-    # 54986 iterations per second by using basic Numba, increasing for longer periods
