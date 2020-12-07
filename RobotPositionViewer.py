@@ -5,9 +5,9 @@ import time
 
 from RobotClass import Robot
 # from KinematicsModule import ForwardKinematics  # Old pure python implementation
-from lib.KinematicsModule import ForwardKinematics
+from KinematicsLib.KinematicsModule import ForwardKinematics
 
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtGui, QtCore, QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
@@ -72,13 +72,12 @@ class Viewer(QtWidgets.QMainWindow):
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
-            self.closeMainWindow(event)
+            self.close()  # This calls the closeEvent
 
-    def closeMainWindow(self, event):
+    def closeEvent(self, event):
         self.jointReader.running = False
         self.jointReader.wait()
         self.shutdownRobot()
-        self.close()
 
 
 class RobotRotationEmulator:
