@@ -579,7 +579,7 @@ class MainObjectWidget(StandardObjectWidget):
     def registerSelectedObject(self, index):
         selected_object = self.select_objects.itemText(index)
         print('Selected object {}'.format(selected_object))
-        images_of_selected_object = os.listdir(os.path.join(self.libDir, selected_object, "KinematicsModule"))
+        images_of_selected_object = os.listdir(os.path.join(self.libDir, selected_object, "src"))
         self.image_files = [image.split('.')[0] for image in images_of_selected_object if image.endswith('.png')]
         self.objects_status_label = QLabel("Type " + selected_object + " objects found:")
 
@@ -745,7 +745,7 @@ class MainWindow(StandardMainWindow):
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
-            self.closeEvent(event)
+            self.close()
 
     def closeEvent(self, event):
         if not self.manager.running:  # It happens that the close event is called twice
