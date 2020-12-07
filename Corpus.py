@@ -14,6 +14,7 @@ class MainManager(Thread):
         self.topCam = None
         self.detailCam = None
         self.actions = dict()
+        print("self.tryConnect()")
         self.tryConnect()
         self.start()
 
@@ -25,6 +26,11 @@ class MainManager(Thread):
                         Thread(target=startAsync, args=('detailCam', DetailCamera,))]
         [x.start() for x in startThreads]
         [x.join() for x in startThreads]
+
+        def testConnection(obj):
+            if obj is None:
+                raise ConnectionError(obj, "is not connected.")
+        [testConnection(x) for x in [self.robot, self.topCam, self.detailCam]]
 
     def run(self):
         while self.running:

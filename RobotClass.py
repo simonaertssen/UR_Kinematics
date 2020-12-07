@@ -14,10 +14,16 @@ class Robot:
 
         def startAsync(attribute, constructor):
             setattr(self, attribute, constructor())
+
         startThreads = [Thread(target=startAsync, args=('ModBusReader', ModBusReader,)),
                         Thread(target=startAsync, args=('RobotCCO', RobotChiefCommunicationOfficer,))]
         [x.start() for x in startThreads]
         [x.join() for x in startThreads]
+
+        def testConnection(obj):
+            if obj is None:
+                raise ConnectionError(obj, "is not connected.")
+        [testConnection(x) for x in [self.ModBusReader, self.RobotCCO]]
 
         # Save some important positions as attributes:
         pi180 = 3.14159265359/180
