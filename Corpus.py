@@ -35,7 +35,6 @@ class MainManager(Thread):
     def run(self):
         while self.running:
             for function_name, function_to_call in self.actions.items():
-                # print(function_name)
                 try:
                     function_to_call()
                 except TypeError as e:
@@ -93,6 +92,12 @@ class MainManager(Thread):
 
     def test(self):
         print('Testing')
+
+    def openGripper(self):
+        self.robot.openGripper()
+
+    def closeGripper(self):
+        self.robot.closeGripper()
 
     def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
         self.robot.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=True)

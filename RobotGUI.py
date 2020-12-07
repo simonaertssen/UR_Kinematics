@@ -192,7 +192,6 @@ class LibraryWidget(StandardObjectWidget):
         self.get_image_label = QLabel("")
         self.get_image_label.setAlignment(Qt.AlignCenter)
 
-
         Add_label = QLabel("Add/Change View")
         Add_label.setAlignment(Qt.AlignCenter)
 
@@ -290,7 +289,7 @@ class LibraryWidget(StandardObjectWidget):
         self.update_param()
 
     def update_param(self, clear=True):
-        #Update parameters, so it fits to the current image.
+        # Update parameters, so it fits to the current image.
         self.delete_error_label.setText("")
         #if self.view_indicator != 0:
         #    self.btnstate("grip" if self.view_indicator == 2 else "view")
@@ -501,7 +500,7 @@ class MainObjectWidget(StandardObjectWidget):
         # At the bottom
         self.user_message = QLabel(" ", self)
         self.button_exit = QPushButton("Exit program", self)
-        self.button_exit.clicked.connect(parent.closeEvent)
+        self.button_exit.clicked.connect(parent.close)
 
         # Stylesheet options
         self.text_size1 = str(int(self.screen_width * 0.01 * 1.2)) + 'px'
@@ -640,10 +639,12 @@ class MainObjectWidget(StandardObjectWidget):
 
     def openGripperButtonClicked(self):
         print('Opening gripper')
+        self.parent.manager.openGripper()
         print('Opened gripper')
 
     def closeGripperButtonClicked(self):
         print('Closing gripper')
+        self.parent.manager.closeGripper()
         print('Closed gripper')
 
     def startRobotButtonClicked(self):
