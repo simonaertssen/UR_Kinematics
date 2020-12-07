@@ -114,7 +114,9 @@ class MainManager(Thread):
         if len(self.imageInfoList) < 1:
             return
         X, Y, angle = self.imageInfoList[0]
-
+        target_position = self.robot.ToolPositionLightBox
+        self.moveToolTo(target_position, 'movel', wait=True, check_collisions=True)
+        print("test")
 
 
 if __name__ == '__main__':
