@@ -13,6 +13,7 @@ def findObjectsToPickUp(image_to_extract):
 
     drawonme = cv.cvtColor(image_to_extract.copy(), cv.COLOR_GRAY2RGB)
     output = list()
+    contournum = 0
     for contour in contours:
         area = cv.contourArea(contour)
         if area/image_to_extract.size*100 < 0.1:  # Do not proceed if less than 0.1 percent of the image
@@ -39,9 +40,11 @@ def findObjectsToPickUp(image_to_extract):
         output.append((X, Y, angle * 180 / np.pi))
         # Draw info on the image:
         drawonme = cv.polylines(drawonme, [box], True, (0, 255, 0), thickness=5)
-        drawonme = cv.circle(drawonme, (X, Y), 5, (255, 0, 0), -1)
+        # drawonme = cv.circle(drawonme, (X, Y), 5, (255, 0, 0), -1)
+        drawonme = cv.putText(drawonme, str(contournum), (X, Y), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
         for i in range(4):
             drawonme = cv.circle(drawonme, (midX[i], midY[i]), 5, (255, 0, 0), -1)
+        contournum += 1
 
     output.insert(0, drawonme)
     return output
