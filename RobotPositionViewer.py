@@ -4,7 +4,7 @@ import numpy as np
 import time
 
 from RobotClass import Robot
-# from KinematicsModule import ForwardKinematics
+# from KinematicsModule import ForwardKinematics  # Old pure python implementation
 from lib.KinematicsModule import ForwardKinematics
 
 from PyQt5 import QtCore, QtWidgets
@@ -68,14 +68,13 @@ class Viewer(QtWidgets.QMainWindow):
 
         self.jointReader = RobotJointReader(robot.getJointPositions, self.canvas.updatePlot)
         self.jointReader.start()
-        # time.sleep(0.1)
         self.show()
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
-            self.closeEvent(event)
+            self.closeMainWindow(event)
 
-    def closeEvent(self, event):
+    def closeMainWindow(self, event):
         self.jointReader.running = False
         self.jointReader.wait()
         self.shutdownRobot()
@@ -122,7 +121,7 @@ def seeViewerAtWorkWithRobot():
 
 
 if __name__ == '__main__':
-    seeViewerAtWorkWithEmulator()
+    seeViewerAtWorkWithRobot()
 
 
 
