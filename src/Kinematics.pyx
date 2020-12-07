@@ -5,7 +5,6 @@ from libc.stdlib cimport calloc, free
 cdef extern from "forwardkinematics.h":
     double *T_c(double, double, double, double)
     void dot_c(double*, double*)
-    # double *forwardkinematics_c(double, double, double, double, double, double, short, double, double, double)
 
 
 cdef double *T(double theta, double d, double r, double alpha):
@@ -69,6 +68,7 @@ cdef void printarray(double* array):
         if i != 3:
             printf("\n")
     printf("]\n")
+
 
 cdef void test():
     # Matrix multiplication is correct.
