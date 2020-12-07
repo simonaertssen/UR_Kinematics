@@ -133,7 +133,6 @@ class Robot:
                 self.waitUntilTargetReached(current_position, target_position, check_collisions)
             except RuntimeError as e:
                 self.set_IO_PORT(1, False)
-                # self.send(b'stopl(5) + \n')
                 time.sleep(0.1)
                 self.moveTo(start_position, "movel", wait=True, p=p, check_collisions=False)
             time.sleep(0.075)  # To let momentum fade away
@@ -159,8 +158,9 @@ class Robot:
                 raise RuntimeError('Bumping in to stuff!')
 
     @staticmethod
-    def waitForParallelTask(function, arguments=None):
-        print('Task received')
+    def waitForParallelTask(function, arguments=None, information=None):
+        if information:
+            print('Task received:', information)
         thread = Thread(target=function, args=[], daemon=True)
         thread.start()
         thread.join()
@@ -190,7 +190,7 @@ class Robot:
             if distanceFromAngleInit > 0.05:
                 self.moveJointsTo(self.JointAngleInit, "movej", wait=True)
             print("Initialisation Done")
-        self.waitForParallelTask(function=initialiseInThread, arguments=None)
+        self.waitForParallelTask(function=initialiseInThread, arguments=None, information="Initialising")
 
     def test(self):
         print('Testing the gripper')
