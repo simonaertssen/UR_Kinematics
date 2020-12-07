@@ -14,6 +14,7 @@ class MainManager(Thread):
         self.topCam = None
         self.detailCam = None
         self.actions = dict()
+        self.imageInfoList = []
         print("self.tryConnect()")
         self.tryConnect()
         self.start()
@@ -55,25 +56,25 @@ class MainManager(Thread):
     def isRobotConnected(self):
         try:
             return self.robot.RobotCCO.Connected
-        except:
+        except Exception as e:
             return False
 
     def isModBusConnected(self):
         try:
             return self.robot.ModBusReader.Connected
-        except:
+        except Exception as e:
             return False
 
     def isTopCameraConnected(self):
         try:
             return self.topCam.Connected
-        except:
+        except Exception as e:
             return False
 
     def isDetailCameraConnected(self):
         try:
             return self.detailCam.Connected
-        except:
+        except Exception as e:
             return False
 
     def getContinuousImages(self, continuous_image_callback, continuous_info_callback):
@@ -86,7 +87,8 @@ class MainManager(Thread):
             output = self.topCam.grabImage()
             if output:
                 continuous_image_callback(output[0])
-            elif len(output) > 1:
+            if len(output) > 1:
+                self.imageInfoList = output[1]
                 continuous_info_callback(output[1:])
         self.actions[str(continuous_image_callback)] = wrap_callback
 
@@ -99,11 +101,20 @@ class MainManager(Thread):
     def closeGripper(self):
         self.robot.closeGripper()
 
+    def stopRobot(self):
+        self.robot.send(b'stopl(10) + \n')
+
     def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
-        self.robot.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=True)
+        self.robot.moveToolTo(target_position, move, wait, check_collisions)
 
     def moveJointsTo(self, target_position, move, wait=True, check_collisions=True):
-        self.robot.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=False)
+        self.robot.moveJointsTo(target_position, move, wait, check_collisions)
+
+    def pickUpObject(self):
+        if len(self.imageInfoList) < 1:
+            return
+        X, Y, angle = self.imageInfoList[0]
+
 
 
 if __name__ == '__main__':
