@@ -7,6 +7,23 @@ from queue import Queue
 from threading import Thread, Event, Lock
 
 
+class CustomQueue:
+    def __init__(self):
+        self._value = None
+        self.ThreadLock = Lock()
+
+    def get(self):
+        with self.ThreadLock:
+            return self._value
+
+    def put(self, new_value):
+        with self.ThreadLock:
+            self._value = new_value
+
+    def isempty(self):
+        return self._value is None
+
+
 class ParameterInfo:
     Instances = list()
 
@@ -49,6 +66,16 @@ class Reader(socket.socket):
 
     def renewSocket(self):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
+
+    def __getstate__(self):
+        self.close()
+        attributes = self.__dict__.copy()
+        del attributes["ThreadLock"]
+        return attributes
+
+    def __setstate__(self, state):
+        self.__dict__ = state
+        self.connectSafely()
 
     def connectSafely(self):
         try:
