@@ -43,16 +43,13 @@ class MainManager:
                     print('An uncallable function was encountered: {}'.format(e))
 
     def shutdownAllComponents(self):
-        print("active threads: ", enumerate())
         self.running.clear()
         self.task.join()
-
         shutdownThreads = [Thread(target=self.robot.shutdownSafely, name='Corpus.robot.shutdownSafely'),
                            Thread(target=self.topCam.Shutdown, name='Corpus.topCam.Shutdown'),
                            Thread(target=self.detailCam.Shutdown, name='Corpus.detailCam.Shutdown')]
         [x.start() for x in shutdownThreads]
         [x.join() for x in shutdownThreads]
-        print("active threads: ", enumerate())
 
     def checkComponentsAreConnected(self):
         return self.isRobotConnected() and self.isModBusConnected() and self.isTopCameraConnected() and self.isDetailCameraConnected()

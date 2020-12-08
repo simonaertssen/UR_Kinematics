@@ -752,16 +752,12 @@ class MainWindow(StandardMainWindow):
             self.close()
 
     def closeEvent(self, event):
-        exitmessage = "Safely exiting the application..."
-        self.properties.user_message.setText(exitmessage)
-        print(exitmessage)
-
-        # if not self.manager.running:  # It happens that the close event is called twice
-        #     return
-        print(threading.enumerate())
+        exit_message = "Safely exiting the application..."
+        self.properties.user_message.setText(exit_message)
+        print(exit_message)
         self.manager.shutdownAllComponents()
-        print(threading.enumerate())
         self.close()
+
 
 
 JLI_logo_bytes = bytearray(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x01\xf4\x00\x00\x01\xf4\x08\x06\x00\x00\x00\xcb\xd6\xdf\x8a\x00\x00\x80\x00IDATx\xda\xec\x9d\x07x\x14U\xd7\xc7\xffw\xb6\xa6w\x92\x90@\x08\x10 \xf4\xde{WAT\x94\x8e(\x08\xf6\xcf\x8a]\x10\xc5\x8e\xbd\xbe\x88\x15\x11DPA\x91\x12\x8a\xd2{\xef\x01\x12BI\x02IHO\xb6\xcd\xfd\x9e\x19\x04I\xd9dw\xb3\xb3\xd9M\xce\xefyx\xde\xd7\xec\xee\xec\xcc\x99\xbb\xf7?\xe7\xdeS\xd4 '
