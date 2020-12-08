@@ -1,13 +1,15 @@
 import time
 from RobotClass import Robot
 from CameraManagement import TopCamera, DetailCamera
-from threading import Thread
+from threading import Thread, Event
 
 
 class MainManager(Thread):
     def __init__(self):
         super(MainManager, self).__init__(daemon=True)
-        self.running = True
+        self.running = Event()
+        self.running.set()
+
         self.robot = None
         self.topCam = None
         self.detailCam = None
@@ -32,7 +34,7 @@ class MainManager(Thread):
         [testConnection(x) for x in [self.robot, self.topCam, self.detailCam]]
 
     def run(self):
-        while self.running:
+        while self.running.is_set():
             for function_name, function_to_call in self.actions.items():
                 try:
                     function_to_call()
@@ -40,13 +42,16 @@ class MainManager(Thread):
                     print('An uncallable function was encountered: {}'.format(e))
 
     def shutdownAllComponents(self):
-        self.running = False
-        self.join()
         shutdownThreads = [Thread(target=self.robot.shutdownSafely),
                            Thread(target=self.topCam.Shutdown),
                            Thread(target=self.detailCam.Shutdown)]
         [x.start() for x in shutdownThreads]
         [x.join() for x in shutdownThreads]
+        print('test')
+
+        self.running.clear()
+        self.join()
+        print('test2')
 
     def checkComponentsAreConnected(self):
         return self.isRobotConnected() and self.isModBusConnected() and self.isTopCameraConnected() and self.isDetailCameraConnected()

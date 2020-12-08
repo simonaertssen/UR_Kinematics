@@ -1,11 +1,10 @@
 import socket
-import threading
 
 from sys import exit
 from weakref import ref
 from queue import Queue
 
-from threading import Lock
+from threading import Thread, Event, Lock
 
 
 class ParameterInfo:
@@ -44,9 +43,9 @@ class Reader(socket.socket):
         self.settimeout(self.TimeOut)
         self.Address = (ip, port)
         self.BufferLength = 1116
-        self.Connected = False
+        self.Connected = Event()
         self.connectSafely()
-        self.ThreadLock = threading.Lock()
+        self.ThreadLock = Lock()
 
     def renewSocket(self):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
@@ -54,8 +53,8 @@ class Reader(socket.socket):
     def connectSafely(self):
         try:
             self.connect(self.Address)
-            self.Connected = True
-            
+            self.Connected.set()
+
             def sprint(*args, sep=" ", end="", **kwargs):
                 joined_string = sep.join([str(arg) for arg in args])
                 print(joined_string + "\n", sep=sep, end=end, **kwargs)
@@ -63,7 +62,7 @@ class Reader(socket.socket):
 
         except socket.timeout:
             self.close()
-            self.Connected = False
+            self.Connected.clear()
             exit('{} connection timed out.'.format(self.Address))
 
 
@@ -97,12 +96,13 @@ class ModBusReader(Reader):
         self.toolRY        = ParameterInfo(404, b'\x01\x94', "Cartesian Tool Orientation RY in tenth of mm from the base frame", self.extractAngle)
         self.toolRZ        = ParameterInfo(405, b'\x01\x95', "Cartesian Tool Orientation RZ in tenth of mm from the base frame", self.extractAngle)
 
-        self.Communicating = True
-        self.CommunicationThread = threading.Thread(target=self.readContinuously, args=(), daemon=True)
+        self.Communicating = Event()
+        self.Communicating.set()
+        self.CommunicationThread = Thread(target=self.readContinuously, args=(), daemon=True)
         self.CommunicationThread.start()
 
     def readContinuously(self):
-        while self.Communicating:
+        while self.Communicating.is_set():
             self.read()
 
     @staticmethod
@@ -184,8 +184,8 @@ class ModBusReader(Reader):
 
     def shutdownSafely(self):
         print(self.Address, "shutting down safely.")
-        self.Communicating = False
-        self.Connected = False
+        self.Communicating.clear()
+        self.Connected.clear()
         self.CommunicationThread.join()
         self.shutdown(socket.SHUT_RDWR)
         self.close()
@@ -199,7 +199,7 @@ class RobotChiefCommunicationOfficer(Reader):
 
     def shutdownSafely(self):
         print(self.Address, "shutting down safely.")
-        self.Connected = False
+        self.Connected.clear()
         self.shutdown(socket.SHUT_RDWR)
         self.close()
 
