@@ -59,8 +59,8 @@ def detectCollision(positions):
     BOX_X_MAX = 0.490
     BOX_Y_MIN = -0.713
     BOX_Y_MAX = 0.265
-    BOX_Z_MIN = -0.0021
-    if not (((BOX_X_MIN + e < X) & (X < BOX_X_MAX - e)).all() and ((BOX_Y_MIN + e < Y) & (Y < BOX_Y_MAX - e)).all() and (BOX_Z_MIN + e < Z).all()):
+    BOX_Z_MIN = 0
+    if not (((BOX_X_MIN + e < X) & (X < BOX_X_MAX - e)).all() and ((BOX_Y_MIN + e < Y) & (Y < BOX_Y_MAX - e)).all() and (BOX_Z_MIN < Z).all()):
         print("box")
         return True
     # Are we bumping into the camera and the light?
