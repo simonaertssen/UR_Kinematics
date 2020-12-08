@@ -655,7 +655,10 @@ class MainObjectWidget(StandardObjectWidget):
         self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: green")
         self.camera_status_text.setText("Running")
         self.camera_status_text.setStyleSheet('font-size: ' + self.text_size3 + '; color: green')
+
+        self.parent.startRobot()
         print('Robot started')
+        self.stopRobotButtonClicked()
 
     def stopRobotButtonClicked(self):
         print('Stopping robot')
@@ -663,6 +666,8 @@ class MainObjectWidget(StandardObjectWidget):
         self.button_start_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: green}')
         self.robot_status_text.setText("Not running")
         self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
+
+        self.parent.stopRobot()
         print('Robot stopped')
 
     def showViewButtonClicked(self):
@@ -732,26 +737,22 @@ class MainWindow(StandardMainWindow):
         self.img_src_display.show()
 
     def updateTopCamInfo(self, new_info):
+        old_info = new_info
         # print('Info {}'.format(new_info))
-        pass
 
     def startRobot(self):
-        print("Starting robot")
         self.manager.pickUpObject()
-        print("Robot started")
 
     def stopRobot(self):
-        print("Stopping robot")
         self.manager.stopRobot()
-        print("Robot stopped")
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
             self.close()
 
     def closeEvent(self, event):
-        if not self.manager.running:  # It happens that the close event is called twice
-            return
+        # if not self.manager.running:  # It happens that the close event is called twice
+        #     return
         self.properties.user_message.setText("Exiting the application...")
         self.manager.shutdownAllComponents()
         self.close()

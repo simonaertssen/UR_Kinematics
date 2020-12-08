@@ -3,8 +3,6 @@ from RobotClass import Robot
 from CameraManagement import TopCamera, DetailCamera
 from threading import Thread
 
-import cv2
-
 
 class MainManager(Thread):
     def __init__(self):
@@ -111,12 +109,30 @@ class MainManager(Thread):
         self.robot.moveJointsTo(target_position, move, wait, check_collisions)
 
     def pickUpObject(self):
+        LIGHTBOX_LENGTH = 0.250  # m
+        LIGHTBOX_WIDTH = 0.176  # m
+        print(self.imageInfoList)
         if len(self.imageInfoList) < 1:
             return
-        X, Y, angle = self.imageInfoList[0]
+        X, Y, angle = self.imageInfoList
         target_position = self.robot.ToolPositionLightBox
-        self.moveToolTo(target_position, 'movel', wait=True, check_collisions=True)
-        print("test")
+        print(target_position)
+
+        target_position[0] += Y * LIGHTBOX_WIDTH
+        target_position[1] -= X * LIGHTBOX_LENGTH
+        self.moveToolTo(target_position, 'movel')
+        try:
+            target_position = self.robot.getJointAngles()
+            print(type(target_position))
+            print(target_position)
+            target_position[-1] = angle
+            self.moveJointsTo(target_position, 'movej')
+        except Exception as e:
+            print(e)
+
+        time.sleep(2)
+        self.moveJointsTo(self.robot.JointAngleInit, "movej")
+        print(target_position)
 
 
 if __name__ == '__main__':
