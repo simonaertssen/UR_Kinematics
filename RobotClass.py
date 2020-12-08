@@ -46,7 +46,6 @@ class Robot:
                            Thread(target=self.RobotCCO.shutdownSafely, name='RobotClass.RobotCCO.shutdownSafely')]
         [x.start() for x in shutdownThreads]
         [x.join() for x in shutdownThreads]
-        print("Robot is shut down.")
 
     def send(self, message):
         self.RobotCCO.send(message)
