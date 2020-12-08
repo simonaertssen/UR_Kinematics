@@ -41,12 +41,12 @@ class Robot:
         self.initialise()
 
     def shutdownSafely(self):
-        print("Shutting down robot.")
         # self.initialise()  # Only initialise if we want to reset the robot entirely
         shutdownThreads = [Thread(target=self.ModBusReader.shutdownSafely, name='RobotClass.ModBusReader.shutdownSafely'),
                            Thread(target=self.RobotCCO.shutdownSafely, name='RobotClass.RobotCCO.shutdownSafely')]
         [x.start() for x in shutdownThreads]
         [x.join() for x in shutdownThreads]
+        print("Robot is shut down.")
 
     def send(self, message):
         self.RobotCCO.send(message)

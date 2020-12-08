@@ -85,7 +85,8 @@ class Camera:
         self.Connected = False
         self.Close()
         self.camera.DetachDevice()
-        self.camera.DestroyDevice()
+        print("Camera ", self.serialNumber, " is shut down.")
+        # self.camera.DestroyDevice()
 
     def registerGrabbingStrategy(self):
         self.camera.RegisterConfiguration(pylon.SoftwareTriggerConfiguration(), pylon.RegistrationMode_ReplaceAll, pylon.Cleanup_Delete)
