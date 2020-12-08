@@ -29,11 +29,13 @@ class Robot:
 
         # Save some important positions as attributes:
         pi180 = 3.14159265359/180
+        self.ToolPickUpHeight = 0.009
+
         self.JointAngleInit = [i * pi180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
         self.JointAngleBrickDrop = [i * pi180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
 
         self.ToolPositionBrickDrop = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
-        self.ToolPositionLightBox = [0.14882, -0.30662, 0.0944, -2.05, 2.2669, 0.1219]
+        self.ToolPositionLightBox = [0.14912, -0.30970, 0.05, 0.000, 3.14159, 0.000]
 
         self.ToolPositionCollisionStart = [0.08838, -0.46649, 0.24701, -0.3335, 3.11, 0.0202]
         self.ToolPositionTestCollision = [0.08838, -0.76649, 0.24701, -0.3335, 3.11, 0.0202]
@@ -147,16 +149,6 @@ class Robot:
                 self.moveTo(start_position, "movel", wait=True, p=p, check_collisions=False)
             time.sleep(0.075)  # To let momentum fade away
 
-    def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
-        def moveToolToInThread():
-            self.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=True)
-        self.waitForParallelTask(function=moveToolToInThread, arguments=None, information="Moving Tool Head")
-
-    def moveJointsTo(self, target_position, move, wait=True, check_collisions=True):
-        def moveJointsToInThread():
-            self.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=False)
-        self.waitForParallelTask(function=moveJointsToInThread, arguments=None, information="Moving Tool Head")
-
     @staticmethod
     def spatialDifference(current_position, target_position):
         x1, y1, z1, _, _, _ = current_position
@@ -178,6 +170,54 @@ class Robot:
         thread = Thread(target=function, args=[], daemon=True, name=information)
         thread.start()
         thread.join()
+
+    def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
+        def moveToolToInThread():
+            self.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=True)
+        self.waitForParallelTask(function=moveToolToInThread, arguments=None, information="Moving Tool Head")
+
+    def moveJointsTo(self, target_position, move, wait=True, check_collisions=True):
+        def moveJointsToInThread():
+            self.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=False)
+        self.waitForParallelTask(function=moveJointsToInThread, arguments=None, information="Moving Tool Head")
+
+    def goHome(self):
+        self.moveJointsTo(self.JointAngleInit.copy(), "movej")
+
+    def dropObject(self):
+        self.moveJointsTo(self.JointAngleBrickDrop.copy(), "movej", wait=True)
+        self.openGripper()
+
+    def pickUpObject(self, object_position):
+        LIGHTBOX_LENGTH = 0.250  # m
+        LIGHTBOX_WIDTH = 0.176  # m
+        print("object_position: ", object_position)
+        if len(object_position) < 1:
+            return
+        X, Y, angle = object_position
+
+        # Adjust position to the object
+        target_position = self.ToolPositionLightBox.copy()
+        target_position[0] += X * LIGHTBOX_WIDTH   # adjust X position
+        target_position[1] -= Y * LIGHTBOX_LENGTH  # adjust Y position
+        self.moveToolTo(target_position, 'movel')
+
+        # Adjust wrist3 rotation angle
+        target_joints = self.getJointAngles()
+        target_joints[-1] += angle  # adjust wrist3 angle
+        self.moveJointsTo(target_joints, 'movej')
+
+        # Go down and pickup the object
+        target_position = self.getToolPosition()
+        target_position[2] = self.ToolPickUpHeight  # descend to object height
+        self.moveToolTo(target_position, 'movel')
+        self.closeGripper()
+
+        # Return
+        self.goHome()
+
+        # Drop object
+        self.dropObject()
 
     def initialise(self):
         def initialiseInThread():

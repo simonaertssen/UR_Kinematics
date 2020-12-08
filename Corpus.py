@@ -1,9 +1,9 @@
 import time
 from RobotClass import Robot
 from CameraManagement import TopCamera, DetailCamera
-from threading import Thread, enumerate
+from threading import Thread, Event, enumerate
 
-from multiprocessing import Process, Event
+# from multiprocessing import Process, Event
 
 
 class MainManager:
@@ -13,7 +13,7 @@ class MainManager:
         self.detailCam = None
         self.actions = dict()
         self.imageInfoList = []
-        
+
         self.running = Event()
         self.task = Thread(target=self.run, args=(self.running, ), daemon=True, name='MainManagerTask')
         self.tryConnect()
@@ -112,29 +112,7 @@ class MainManager:
         self.robot.moveJointsTo(target_position, move, wait, check_collisions)
 
     def pickUpObject(self):
-        LIGHTBOX_LENGTH = 0.250  # m
-        LIGHTBOX_WIDTH = 0.176  # m
-        print(self.imageInfoList)
-        if len(self.imageInfoList) < 1:
-            return
-        X, Y, angle = self.imageInfoList
-        target_position = self.robot.ToolPositionLightBox.copy()
-
-        target_position[0] += Y * LIGHTBOX_WIDTH
-        target_position[1] -= X * LIGHTBOX_LENGTH
-        self.moveToolTo(target_position, 'movej')
-        # try:
-        #     target_joints = self.robot.getJointAngles()
-        #     print(type(target_joints))
-        #     print(target_joints)
-        #     target_joints[-1] = angle
-        #     self.moveJointsTo(target_joints, 'movej')
-        # except Exception as e:
-        #     print(e)
-
-        time.sleep(1)
-        self.moveJointsTo(self.robot.JointAngleInit, "movej")
-        print(target_position)
+        self.robot.pickUpObject(self.imageInfoList)
 
 
 if __name__ == '__main__':
