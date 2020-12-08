@@ -17,6 +17,7 @@ from PyQt5.QtCore import pyqtSignal, Qt, QThreadPool, QRunnable, pyqtSlot, QThre
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QSizePolicy, QSpinBox, QComboBox, QStatusBar, QMessageBox,
                              QGridLayout, QVBoxLayout, QSplitter, QPushButton, QLineEdit, QRadioButton, QCheckBox, QShortcut)
 
+import threading
 
 class StandardObjectWidget(QWidget):
     def __init__(self, screen_width, screen_height, parent):
@@ -751,10 +752,15 @@ class MainWindow(StandardMainWindow):
             self.close()
 
     def closeEvent(self, event):
+        exitmessage = "Safely exiting the application..."
+        self.properties.user_message.setText(exitmessage)
+        print(exitmessage)
+
         # if not self.manager.running:  # It happens that the close event is called twice
         #     return
-        self.properties.user_message.setText("Exiting the application...")
+        print(threading.enumerate())
         self.manager.shutdownAllComponents()
+        print(threading.enumerate())
         self.close()
 
 

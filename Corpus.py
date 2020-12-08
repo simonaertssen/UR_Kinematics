@@ -42,7 +42,7 @@ class MainManager(Thread):
                     print('An uncallable function was encountered: {}'.format(e))
 
     def shutdownAllComponents(self):
-        shutdownThreads = [Thread(target=self.robot.shutdownSafely),
+        shutdownThreads = [Thread(target=self.robot.shutdownSafely, name='robot.shutdownSafely'),
                            Thread(target=self.topCam.Shutdown),
                            Thread(target=self.detailCam.Shutdown)]
         [x.start() for x in shutdownThreads]

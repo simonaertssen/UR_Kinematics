@@ -17,8 +17,8 @@ class Robot:
         def startAsync(attribute, constructor):
             setattr(self, attribute, constructor())
 
-        startThreads = [Thread(target=startAsync, args=('ModBusReader', ModBusReader,)),
-                        Thread(target=startAsync, args=('RobotCCO', RobotChiefCommunicationOfficer,))]
+        startThreads = [Thread(target=startAsync, args=('ModBusReader', ModBusReader,), name='RobotClass.ModBusReader.startAsync'),
+                        Thread(target=startAsync, args=('RobotCCO', RobotChiefCommunicationOfficer,), name='RobotClass.RobotCCO.startAsync')]
         [x.start() for x in startThreads]
         [x.join() for x in startThreads]
 
@@ -41,8 +41,10 @@ class Robot:
         self.initialise()
 
     def shutdownSafely(self):
-        self.initialise()
-        shutdownThreads = [Thread(target=self.ModBusReader.shutdownSafely), Thread(target=self.RobotCCO.shutdownSafely)]
+        print("Shutting down robot.")
+        # self.initialise()  # Only initialise if we want to reset the robot entirely
+        shutdownThreads = [Thread(target=self.ModBusReader.shutdownSafely, name='RobotClass.ModBusReader.shutdownSafely'),
+                           Thread(target=self.RobotCCO.shutdownSafely, name='RobotClass.RobotCCO.shutdownSafely')]
         [x.start() for x in shutdownThreads]
         [x.join() for x in shutdownThreads]
 
@@ -147,10 +149,14 @@ class Robot:
             time.sleep(0.075)  # To let momentum fade away
 
     def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
-        self.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=True)
+        def moveToolToInThread():
+            self.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=True)
+        self.waitForParallelTask(function=moveToolToInThread, arguments=None, information="Moving Tool Head")
 
     def moveJointsTo(self, target_position, move, wait=True, check_collisions=True):
-        self.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=False)
+        def moveJointsToInThread():
+            self.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=False)
+        self.waitForParallelTask(function=moveJointsToInThread, arguments=None, information="Moving Tool Head")
 
     @staticmethod
     def spatialDifference(current_position, target_position):
@@ -170,7 +176,7 @@ class Robot:
     def waitForParallelTask(function, arguments=None, information=None):
         if information:
             print('Task received:', information)
-        thread = Thread(target=function, args=[], daemon=True)
+        thread = Thread(target=function, args=[], daemon=True, name=information)
         thread.start()
         thread.join()
 
