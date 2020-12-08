@@ -41,7 +41,7 @@ def findObjectsToPickUp(image_to_extract):
         # Find angle:
         pts = np.array([[midX[i], midY[i]] for i in longest_side + [0, 2]])
         angle = sign * np.arccos(np.abs(pts[1] - pts[0]).dot(np.array([1, 0])) / np.linalg.norm(pts[0] - pts[1]))
-        output.append((X/h, (w-Y)/w, angle * 180 / np.pi))
+        output.append((X/h, (w-Y)/w, angle))
         # Draw info on the image:
         drawonme = cv.polylines(drawonme, [box], True, (0, 255, 0), thickness=5)
         drawonme = cv.putText(drawonme, str(contournum), (X, Y), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv.LINE_AA)
