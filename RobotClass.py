@@ -31,8 +31,9 @@ class Robot:
         pi180 = 3.14159265359/180
         self.JointAngleInit = [i * pi180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
         self.JointAngleBrickDrop = [i * pi180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
+
         self.ToolPositionBrickDrop = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
-        self.ToolPositionLightBox = [0.14882, -0.30662, 0.0944, 0.00000, 0.00000, 0.00000]
+        self.ToolPositionLightBox = [0.14882, -0.30662, 0.0944, -2.05, 2.2669, 0.1219]
 
         self.ToolPositionCollisionStart = [0.08838, -0.46649, 0.24701, -0.3335, 3.11, 0.0202]
         self.ToolPositionTestCollision = [0.08838, -0.76649, 0.24701, -0.3335, 3.11, 0.0202]
@@ -182,9 +183,9 @@ class Robot:
                 if currentToolPosition[2] < 0.300:
                     targetToolPosition = currentToolPosition.copy()
                     targetToolPosition[2] = 0.300
-                    self.moveToolTo(targetToolPosition, "movel", wait=True)
+                    self.moveToolTo(targetToolPosition, "movel", wait=True, check_collisions=False)
             else:
-                if self.spatialDifference(currentToolPosition, self.ToolPositionBrickDrop) < 0.3:
+                if self.spatialDifference(currentToolPosition, self.ToolPositionBrickDrop) < 0.5:
                     if currentToolPosition[2] < 0.07:
                         targetToolPosition = currentToolPosition.copy()
                         targetToolPosition[2] = 0.07
