@@ -8,12 +8,12 @@ from multiprocessing import Process, Event
 
 class MainManager:
     def __init__(self):
-        # super(MainManager, self).__init__(name='MainManagerThread')
         self.robot = None
         self.topCam = None
         self.detailCam = None
         self.actions = dict()
         self.imageInfoList = []
+        
         self.running = Event()
         self.task = Thread(target=self.run, args=(self.running, ), daemon=True, name='MainManagerTask')
         self.tryConnect()
@@ -118,22 +118,21 @@ class MainManager:
         if len(self.imageInfoList) < 1:
             return
         X, Y, angle = self.imageInfoList
-        target_position = self.robot.ToolPositionLightBox
-        print(target_position)
+        target_position = self.robot.ToolPositionLightBox.copy()
 
         target_position[0] += Y * LIGHTBOX_WIDTH
         target_position[1] -= X * LIGHTBOX_LENGTH
-        self.moveToolTo(target_position, 'movel')
-        try:
-            target_position = self.robot.getJointAngles()
-            print(type(target_position))
-            print(target_position)
-            target_position[-1] = angle
-            self.moveJointsTo(target_position, 'movej')
-        except Exception as e:
-            print(e)
+        self.moveToolTo(target_position, 'movej')
+        # try:
+        #     target_joints = self.robot.getJointAngles()
+        #     print(type(target_joints))
+        #     print(target_joints)
+        #     target_joints[-1] = angle
+        #     self.moveJointsTo(target_joints, 'movej')
+        # except Exception as e:
+        #     print(e)
 
-        time.sleep(2)
+        time.sleep(1)
         self.moveJointsTo(self.robot.JointAngleInit, "movej")
         print(target_position)
 

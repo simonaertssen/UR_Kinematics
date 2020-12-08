@@ -182,7 +182,7 @@ class Robot:
     def initialise(self):
         def initialiseInThread():
             currentJointPosition = self.getJointAngles()
-            distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit)])
+            distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit.copy())])
             currentToolPosition = self.getToolPosition()
             if self.isGripperOpen():
                 if currentToolPosition[2] < 0.300:
@@ -197,12 +197,12 @@ class Robot:
                         self.moveToolTo(targetToolPosition, "movel", wait=True)
                 else:
                     if distanceFromAngleInit > 0.05:
-                        self.moveJointsTo(self.JointAngleInit, "movej", wait=True)
+                        self.moveJointsTo(self.JointAngleInit.copy(), "movej", wait=True)
 
-                self.moveJointsTo(self.JointAngleBrickDrop, "movej", wait=True)
+                self.moveJointsTo(self.JointAngleBrickDrop.copy(), "movej", wait=True)
                 self.openGripper()
             if distanceFromAngleInit > 0.05:
-                self.moveJointsTo(self.JointAngleInit, "movej", wait=True)
+                self.moveJointsTo(self.JointAngleInit.copy(), "movej", wait=True)
             print("Initialisation Done")
         self.waitForParallelTask(function=initialiseInThread, arguments=None, information="Initialising")
 
