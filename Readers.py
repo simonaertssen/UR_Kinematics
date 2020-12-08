@@ -98,7 +98,7 @@ class ModBusReader(Reader):
 
         self.Communicating = Event()
         self.Communicating.set()
-        self.CommunicationThread = Thread(target=self.readContinuously, args=(), daemon=True)
+        self.CommunicationThread = Thread(target=self.readContinuously, args=(), daemon=True, name='ModBusReaderThread')
         self.CommunicationThread.start()
 
     def readContinuously(self):
