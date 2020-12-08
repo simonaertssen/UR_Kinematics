@@ -1,7 +1,9 @@
 import time
 from RobotClass import Robot
 from CameraManagement import TopCamera, DetailCamera
-from threading import Thread, Event
+from threading import Thread, Event, enumerate
+
+from multiprocessing import Process
 
 
 class MainManager(Thread):
@@ -15,16 +17,15 @@ class MainManager(Thread):
         self.detailCam = None
         self.actions = dict()
         self.imageInfoList = []
-        print("self.tryConnect()")
         self.tryConnect()
         self.start()
 
     def tryConnect(self):
         def startAsync(attribute, constructor):
             setattr(self, attribute, constructor())
-        startThreads = [Thread(target=startAsync, args=('robot', Robot,)),
-                        Thread(target=startAsync, args=('topCam', TopCamera,)),
-                        Thread(target=startAsync, args=('detailCam', DetailCamera,))]
+        startThreads = [Thread(target=startAsync, args=('robot', Robot,), name='Corpus.robot.startAsync'),
+                        Thread(target=startAsync, args=('topCam', TopCamera,), name='Corpus.robot.startAsync'),
+                        Thread(target=startAsync, args=('detailCam', DetailCamera,), name='Corpus.robot.startAsync')]
         [x.start() for x in startThreads]
         [x.join() for x in startThreads]
 
@@ -35,6 +36,7 @@ class MainManager(Thread):
 
     def run(self):
         while self.running.is_set():
+            print('r')
             for function_name, function_to_call in self.actions.items():
                 try:
                     function_to_call()
@@ -42,16 +44,17 @@ class MainManager(Thread):
                     print('An uncallable function was encountered: {}'.format(e))
 
     def shutdownAllComponents(self):
-        shutdownThreads = [Thread(target=self.robot.shutdownSafely, name='robot.shutdownSafely'),
-                           Thread(target=self.topCam.Shutdown),
-                           Thread(target=self.detailCam.Shutdown)]
+        print("active threads: ", enumerate())
+        self.running.clear()
+        shutdownThreads = [Thread(target=self.robot.shutdownSafely, name='Corpus.robot.shutdownSafely'),
+                           Thread(target=self.topCam.Shutdown, name='Corpus.topCam.Shutdown'),
+                           Thread(target=self.detailCam.Shutdown, name='Corpus.detailCam.Shutdown')]
         [x.start() for x in shutdownThreads]
         [x.join() for x in shutdownThreads]
+        print("active threads: ", enumerate())
+        self.join()
         print('test')
 
-        self.running.clear()
-        self.join()
-        print('test2')
 
     def checkComponentsAreConnected(self):
         return self.isRobotConnected() and self.isModBusConnected() and self.isTopCameraConnected() and self.isDetailCameraConnected()
