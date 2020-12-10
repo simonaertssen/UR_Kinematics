@@ -66,7 +66,7 @@ class Reader(socket.socket):
         # Verify correct IP address is set, only seems to currently work with 192.168.111.6
         HOST_NAME = socket.gethostname()
         HOST_IP   = socket.gethostbyname(HOST_NAME)
-        if HOST_IP == '192.168.111.6':
+        if HOST_IP != '192.168.111.6':
             raise ConnectionError("Verify IP of robot and cameras are on the same subnet.")
 
     def renewSocket(self):
