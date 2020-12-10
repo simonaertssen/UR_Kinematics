@@ -743,7 +743,7 @@ class MainWindow(StandardMainWindow):
         # print('Info {}'.format(new_info))
 
     def startRobot(self):
-        self.manager.pickUpObject()
+        self.manager.startRobot()
 
     def stopRobot(self):
         self.manager.stopRobot()
@@ -756,6 +756,7 @@ class MainWindow(StandardMainWindow):
         exit_message = "Safely exiting the application..."
         self.properties.user_message.setText(exit_message)
         print(exit_message)
+        print(threading.enumerate())
         self.manager.shutdownAllComponents()
         self.close()
 

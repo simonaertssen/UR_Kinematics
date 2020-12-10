@@ -2,7 +2,7 @@ import time
 from threading import Thread
 import winsound
 
-from KinematicsModule.Kinematics import detectCollision
+from KinematicsModule.Kinematics import detectCollision, RPY2RotVec
 from KinematicsLib.KinematicsModule import ForwardKinematics
 
 from Readers import ModBusReader, RobotChiefCommunicationOfficer
@@ -28,11 +28,12 @@ class Robot:
         [testConnection(x) for x in [self.ModBusReader, self.RobotCCO]]
 
         # Save some important positions as attributes:
-        pi180 = 3.14159265359/180
+        self.pidiv180 = 3.14159265359/180
         self.ToolPickUpHeight = 0.009
+        self.ToolHoverHeight = 0.06
 
-        self.JointAngleInit = [i * pi180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
-        self.JointAngleBrickDrop = [i * pi180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
+        self.JointAngleInit = [i * self.pidiv180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
+        self.JointAngleBrickDrop = [i * self.pidiv180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
 
         self.ToolPositionBrickDrop = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
         self.ToolPositionLightBox = [0.14912, -0.30970, 0.05, 0.000, 3.14159, 0.000]
@@ -193,7 +194,7 @@ class Robot:
         self.moveJointsTo(self.JointAngleBrickDrop.copy(), "movej", wait=True)
         self.openGripper()
 
-    def pickUpObject(self, object_position):
+    def pickUpObjectSimple(self, object_position):
         LIGHTBOX_LENGTH = 0.250  # m
         LIGHTBOX_WIDTH = 0.176  # m
         print("object_position: ", object_position)
@@ -223,6 +224,33 @@ class Robot:
 
         # Drop object
         self.dropObject()
+
+    def pickUpObject(self, object_position):
+        LIGHTBOX_LENGTH = 0.250  # m
+        LIGHTBOX_WIDTH = 0.176  # m
+        print("object_position: ", object_position)
+        if len(object_position) < 1:
+            return
+        X, Y, angle = object_position
+
+        # Adjust position to the object
+        target_position = self.ToolPositionLightBox.copy()
+        target_position[0] += X * LIGHTBOX_WIDTH   # adjust X position
+        target_position[1] -= Y * LIGHTBOX_LENGTH  # adjust Y position
+        target_position[2] = self.ToolHoverHeight
+        # Get right orientation from Rodrigues conversion
+        a, b, c = RPY2RotVec(0, 3.1415926, -angle)
+        target_position[3] = a
+        target_position[4] = b
+        target_position[5] = c
+        self.moveToolTo(target_position, 'movel')
+        # Go down and pickup the object
+        target_position[2] = self.ToolPickUpHeight
+        self.moveToolTo(target_position, 'movel')
+        self.closeGripper()
+        # Go down and pickup the object
+        target_position[2] = self.ToolPickUpHeight
+        self.moveToolTo(target_position, 'movel')
 
     def initialise(self):
         def initialiseInThread():

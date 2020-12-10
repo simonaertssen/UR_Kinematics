@@ -102,17 +102,23 @@ class MainManager:
     def closeGripper(self):
         self.robot.closeGripper()
 
+    def startRobot(self):
+        try:
+            self.robot.pickUpObject(self.imageInfoList)
+            self.robot.dropObject()
+        except Exception as e:
+            print(e)
+        finally:
+            self.robot.goHome()
+
     def stopRobot(self):
-        self.robot.send(b'stopl(10) + \n')
+        self.robot.send(b'stop(10) + \n')
 
     def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
         self.robot.moveToolTo(target_position, move, wait, check_collisions)
 
     def moveJointsTo(self, target_position, move, wait=True, check_collisions=True):
         self.robot.moveJointsTo(target_position, move, wait, check_collisions)
-
-    def pickUpObject(self):
-        self.robot.pickUpObject(self.imageInfoList)
 
 
 if __name__ == '__main__':

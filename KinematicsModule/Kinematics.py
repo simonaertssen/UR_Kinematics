@@ -1,6 +1,8 @@
 import numpy as np
 import time
 
+import cv2  # For Rodrigues
+
 
 def T(theta, d, r, alpha):
     cos_t = np.cos(theta)
@@ -83,6 +85,49 @@ def detectCollision(positions):
     return False
 
 
+def RPY2RotVec(roll, pitch, yaw):
+    """
+    DESCRIPTION: Convert roll pitch, yaw angles to a rotation vector.
+    :param roll: x-rotation in radians
+    :param pitch: y-rotation in radians
+    :param yaw: z-rotation in radians
+    :return rx: converted roll in Euler angles
+    :return ry: converted pitch in Euler angles
+    :return rz: converted yaw in Euler angles
+    See: https://www.zacobria.com/universal-robots-knowledge-base-tech-support-forum-hints-tips/python-code-example-of-converting-rpyeuler-angles-to-rotation-vectorangle-axis-for-universal-robots/
+    """
+    sin = np.sin
+    cos = np.cos
+
+    yawMatrix = np.array([
+        [cos(yaw), -sin(yaw), 0],
+        [sin(yaw), cos(yaw), 0],
+        [0, 0, 1]
+    ])
+
+    pitchMatrix = np.array([
+        [cos(pitch), 0, sin(pitch)],
+        [0, 1, 0],
+        [-sin(pitch), 0, cos(pitch)]
+    ])
+
+    rollMatrix = np.array([
+        [1, 0, 0],
+        [0, cos(roll), -sin(roll)],
+        [0, sin(roll), cos(roll)]
+    ])
+
+    RotMat = yawMatrix.dot(pitchMatrix.dot(rollMatrix))
+
+    rot = np.zeros((3, 1))
+    cv2.Rodrigues(RotMat, rot)
+
+    rx = rot[0, 0]
+    ry = rot[1, 0]
+    rz = rot[2, 0]
+    return rx, ry, rz
+
+
 def SpeedOfCurrentKinematics():
     start = time.time()
     n = 100000
@@ -94,8 +139,9 @@ def SpeedOfCurrentKinematics():
 
 
 if __name__ == '__main__':
-    SpeedOfCurrentKinematics()
+    # SpeedOfCurrentKinematics()
     # 17945 iterations per second without 'slots'
     # 17859 iterations per second with 'slots'
     # 17663 iterations per second without for loop
     # 14195 iterations per second by using just a function
+    print(RPY2RotVec(0, 3.1415926, (180 - 46) * np.pi/180))
