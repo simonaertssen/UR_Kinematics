@@ -119,6 +119,9 @@ class Robot:
             if tool_bit is bit_value and settled:
                 break
 
+    def halt(self):
+        self.send(b'stop(5)')
+
     def detectCollision(self):
         return detectCollision(self.getJointPositions())
 
@@ -143,8 +146,10 @@ class Robot:
         if wait:
             try:
                 self.waitUntilTargetReached(current_position, target_position, check_collisions)
-            except RuntimeError as e:
-                self.set_IO_PORT(1, False)
+            except RuntimeError as e:  # Collision raises RuntimeError
+                # self.set_IO_PORT(1, False)
+                # time.sleep(0.1)
+                self.halt()
                 time.sleep(0.1)
                 self.moveTo(start_position, "movel", wait=True, p=p, check_collisions=False)
             time.sleep(0.075)  # To let momentum fade away
@@ -179,7 +184,7 @@ class Robot:
     def moveJointsTo(self, target_position, move, wait=True, check_collisions=True):
         def moveJointsToInThread():
             self.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=False)
-        self.waitForParallelTask(function=moveJointsToInThread, arguments=None, information="Moving Tool Head")
+        self.waitForParallelTask(function=moveJointsToInThread, arguments=None, information="Moving Joints")
 
     def goHome(self):
         self.moveJointsTo(self.JointAngleInit.copy(), "movej")
