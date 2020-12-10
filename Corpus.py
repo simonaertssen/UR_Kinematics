@@ -105,6 +105,7 @@ class MainManager:
     def startRobot(self):
         try:
             self.robot.pickUpObject(self.imageInfoList)
+            self.robot.goHome()
             self.robot.dropObject()
         except Exception as e:
             print(e)

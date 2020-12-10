@@ -147,6 +147,8 @@ class Robot:
         if wait:
             try:
                 self.waitUntilTargetReached(current_position, target_position, check_collisions)
+            except TimeoutError as e:  # Time ran out to test for object position
+                print(e)
             except RuntimeError as e:  # Collision raises RuntimeError
                 # self.set_IO_PORT(1, False)
                 # time.sleep(0.1)
@@ -162,10 +164,20 @@ class Robot:
         return ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) ** 0.5
 
     def waitUntilTargetReached(self, current_position, target_position, check_collisions):
+        all_differences = 100 * [0]
         difference = [1000.0 for _ in target_position]
+        start_time = time.time()
+
         totalDifferenceTolerance = 5e-3
         while sum(difference) >= totalDifferenceTolerance:
             difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
+            all_differences.pop(0)
+            all_differences.append(sum(difference))
+            if sum(all_differences) == 5e-3*100:
+                print('Too long in one position ')
+                break
+            if time.time() - start_time > 15.0:
+                raise TimeoutError('Movement took too long')
             if check_collisions and self.detectCollision():
                 raise RuntimeError('Bumping in to stuff!')
 
@@ -189,68 +201,6 @@ class Robot:
 
     def goHome(self):
         self.moveJointsTo(self.JointAngleInit.copy(), "movej")
-
-    def dropObject(self):
-        self.moveJointsTo(self.JointAngleBrickDrop.copy(), "movej", wait=True)
-        self.openGripper()
-
-    def pickUpObjectSimple(self, object_position):
-        LIGHTBOX_LENGTH = 0.250  # m
-        LIGHTBOX_WIDTH = 0.176  # m
-        print("object_position: ", object_position)
-        if len(object_position) < 1:
-            return
-        X, Y, angle = object_position
-
-        # Adjust position to the object
-        target_position = self.ToolPositionLightBox.copy()
-        target_position[0] += X * LIGHTBOX_WIDTH   # adjust X position
-        target_position[1] -= Y * LIGHTBOX_LENGTH  # adjust Y position
-        self.moveToolTo(target_position, 'movel')
-
-        # Adjust wrist3 rotation angle
-        target_joints = self.getJointAngles()
-        target_joints[-1] += angle  # adjust wrist3 angle
-        self.moveJointsTo(target_joints, 'movej')
-
-        # Go down and pickup the object
-        target_position = self.getToolPosition()
-        target_position[2] = self.ToolPickUpHeight  # descend to object height
-        self.moveToolTo(target_position, 'movel')
-        self.closeGripper()
-
-        # Return
-        self.goHome()
-
-        # Drop object
-        self.dropObject()
-
-    def pickUpObject(self, object_position):
-        LIGHTBOX_LENGTH = 0.250  # m
-        LIGHTBOX_WIDTH = 0.176  # m
-        print("object_position: ", object_position)
-        if len(object_position) < 1:
-            return
-        X, Y, angle = object_position
-
-        # Adjust position to the object
-        target_position = self.ToolPositionLightBox.copy()
-        target_position[0] += X * LIGHTBOX_WIDTH   # adjust X position
-        target_position[1] -= Y * LIGHTBOX_LENGTH  # adjust Y position
-        target_position[2] = self.ToolHoverHeight
-        # Get right orientation from Rodrigues conversion
-        a, b, c = RPY2RotVec(0, 3.1415926, -angle)
-        target_position[3] = a
-        target_position[4] = b
-        target_position[5] = c
-        self.moveToolTo(target_position, 'movel')
-        # Go down and pickup the object
-        target_position[2] = self.ToolPickUpHeight
-        self.moveToolTo(target_position, 'movel')
-        self.closeGripper()
-        # Go down and pickup the object
-        target_position[2] = self.ToolPickUpHeight
-        self.moveToolTo(target_position, 'movel')
 
     def initialise(self):
         def initialiseInThread():
@@ -279,16 +229,41 @@ class Robot:
             print("Initialisation Done")
         self.waitForParallelTask(function=initialiseInThread, arguments=None, information="Initialising")
 
+    def dropObject(self):
+        self.moveJointsTo(self.JointAngleBrickDrop.copy(), "movej", wait=True)
+        self.openGripper()
+
+    def pickUpObject(self, object_position):
+        LIGHTBOX_LENGTH = 0.250  # m
+        LIGHTBOX_WIDTH = 0.176  # m
+        print("object_position: ", object_position)
+        if len(object_position) < 1:
+            return
+        X, Y, angle = object_position
+
+        # Adjust position to the object
+        target_position = self.ToolPositionLightBox.copy()
+        target_position[0] += X * LIGHTBOX_WIDTH   # adjust X position
+        target_position[1] -= Y * LIGHTBOX_LENGTH  # adjust Y position
+        target_position[2] = self.ToolHoverHeight
+        # Get right orientation from Rodrigues conversion
+        a, b, c = RPY2RotVec(0, 3.1415926, -angle)
+        target_position[3] = a
+        target_position[4] = b
+        target_position[5] = c
+        self.moveToolTo(target_position, 'movel')
+        # Go down and pickup the object
+        target_position[2] = self.ToolPickUpHeight
+        self.moveToolTo(target_position, 'movel')
+        self.closeGripper()
+        # Go down and pickup the object
+        target_position[2] = self.ToolPickUpHeight
+        self.moveToolTo(target_position, 'movel')
+
     def test(self):
         print('Testing the gripper')
         self.closeGripper()
         self.openGripper()
-
-    def testCollision(self):
-        self.moveToolTo(robot.ToolPositionCollisionStart, "movel", wait=True, check_collisions=False)
-        self.moveToolTo(robot.ToolPositionTestCollision, "movel", wait=True)
-        time.sleep(1)
-        self.moveToolTo(robot.ToolPositionCollisionStart, "movel", wait=True)
 
     @staticmethod
     def beep():
