@@ -56,7 +56,7 @@ class Reader(socket.socket):
     def __init__(self, ip, port):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.settimeout(3) # Timeout after one second
+        self.settimeout(1) # Timeout after one second
         self.Address = (ip, port)
         self.BufferLength = 1116
         self.Connected = Event()
@@ -64,9 +64,9 @@ class Reader(socket.socket):
         # Verify correct IP address is set, only seems to currently work with 192.168.111.6
         HOST_NAME = socket.gethostname()
         HOST_IP   = socket.gethostbyname(HOST_NAME)
-        if HOST_IP != '192.168.111.6':
-            self.shutdownSafely()
-            raise ConnectionError("Verify IP of robotarm and cameras are on the same subnet.")
+        # if HOST_IP != '192.168.111.6':
+        #     self.shutdownSafely()
+        #     raise ConnectionError("Verify IP of robotarm and cameras are on the same subnet.")
         self.connectSafely()
 
     def renewSocket(self):
@@ -76,7 +76,6 @@ class Reader(socket.socket):
         try:
             self.connect(self.Address)
             self.Connected.set()
-
             def sprint(*args, sep=" ", end="", **kwargs):
                 joined_string = sep.join([str(arg) for arg in args])
                 print(joined_string + "\n", sep=sep, end=end, **kwargs)
@@ -93,7 +92,7 @@ class ModBusReader(Reader):
     def __init__(self):
         IP = "192.168.1.17"
         PORT = 502
-        super(ModBusReader, self).__init__(IP, PORT)
+
         self.ToolBitQueue = Queue()
         self.ToolPositionQueue = Queue()
         self.JointAngleQueue = Queue()
@@ -120,9 +119,11 @@ class ModBusReader(Reader):
         self.toolRZ        = ParameterInfo(405, b'\x01\x95', "Cartesian Tool Orientation RZ in tenth of mm from the base frame", self.extractAngle)
 
         self.Communicating = Event()
-        print('created communicating')
         self.Communicating.set()
         self.CommunicationThread = Thread(target=self.readContinuously, args=(), daemon=True, name='ModBusReaderThread')
+
+        # Startup parent after creation of all attributes:
+        super(ModBusReader, self).__init__(IP, PORT)
         self.CommunicationThread.start()
 
     def readContinuously(self):
@@ -210,7 +211,8 @@ class ModBusReader(Reader):
         print(self.Address, "shutting down safely.")
         self.Communicating.clear()
         self.Connected.clear()
-        self.CommunicationThread.join()
+        if self.CommunicationThread.is_alive():
+            self.CommunicationThread.join()
         self.shutdown(socket.SHUT_RDWR)
         self.close()
 
@@ -229,5 +231,5 @@ class RobotChiefCommunicationOfficer(Reader):
 
 
 if __name__ == '__main__':
-    ModBusReader()
     RobotChiefCommunicationOfficer()
+    ModBusReader()
