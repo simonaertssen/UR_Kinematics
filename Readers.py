@@ -72,16 +72,6 @@ class Reader(socket.socket):
     def renewSocket(self):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
 
-    def __getstate__(self):
-        self.close()
-        attributes = self.__dict__.copy()
-        del attributes["ThreadLock"]
-        return attributes
-
-    def __setstate__(self, state):
-        self.__dict__ = state
-        self.connectSafely()
-
     def connectSafely(self):
         try:
             self.connect(self.Address)
