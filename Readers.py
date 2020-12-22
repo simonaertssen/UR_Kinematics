@@ -7,23 +7,6 @@ from queue import Queue
 from threading import Thread, Event, Lock
 
 
-class CustomQueue:
-    def __init__(self):
-        self._value = None
-        self.ThreadLock = Lock()
-
-    def get(self):
-        with self.ThreadLock:
-            return self._value
-
-    def put(self, new_value):
-        with self.ThreadLock:
-            self._value = new_value
-
-    def isempty(self):
-        return self._value is None
-
-
 class ParameterInfo:
     Instances = list()
 
@@ -64,9 +47,9 @@ class Reader(socket.socket):
         # Verify correct IP address is set, only seems to currently work with 192.168.111.6
         HOST_NAME = socket.gethostname()
         HOST_IP   = socket.gethostbyname(HOST_NAME)
-        # if HOST_IP != '192.168.111.6':
-        #     self.shutdownSafely()
-        #     raise ConnectionError("Verify IP of robotarm and cameras are on the same subnet.")
+        if HOST_IP != '192.168.111.6':
+            self.shutdownSafely()
+            raise ConnectionError("Verify IP of robotarm and cameras are on the same subnet.")
         self.connectSafely()
 
     def renewSocket(self):
