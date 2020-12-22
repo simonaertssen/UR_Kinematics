@@ -56,18 +56,18 @@ class Reader(socket.socket):
     def __init__(self, ip, port):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.TimeOut = 3
-        self.settimeout(self.TimeOut)
+        self.settimeout(3) # Timeout after one second
         self.Address = (ip, port)
         self.BufferLength = 1116
         self.Connected = Event()
-        self.connectSafely()
         self.ThreadLock = Lock()
         # Verify correct IP address is set, only seems to currently work with 192.168.111.6
         HOST_NAME = socket.gethostname()
         HOST_IP   = socket.gethostbyname(HOST_NAME)
         if HOST_IP != '192.168.111.6':
-            raise ConnectionError("Verify IP of robot and cameras are on the same subnet.")
+            self.shutdownSafely()
+            raise ConnectionError("Verify IP of robotarm and cameras are on the same subnet.")
+        self.connectSafely()
 
     def renewSocket(self):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
@@ -91,11 +91,12 @@ class Reader(socket.socket):
                 joined_string = sep.join([str(arg) for arg in args])
                 print(joined_string + "\n", sep=sep, end=end, **kwargs)
             sprint(self.Address, "is safely connected")
-
         except socket.timeout:
-            self.close()
-            self.Connected.clear()
-            exit('{} connection timed out.'.format(self.Address))
+            self.shutdownSafely()
+            raise ConnectionError('{} connection timed out.'.format(self.Address))
+
+    def shutdownSafely(self):
+        raise NotImplementedError("shutdownSafely() method not implemented")
 
 
 class ModBusReader(Reader):
@@ -129,6 +130,7 @@ class ModBusReader(Reader):
         self.toolRZ        = ParameterInfo(405, b'\x01\x95', "Cartesian Tool Orientation RZ in tenth of mm from the base frame", self.extractAngle)
 
         self.Communicating = Event()
+        print('created communicating')
         self.Communicating.set()
         self.CommunicationThread = Thread(target=self.readContinuously, args=(), daemon=True, name='ModBusReaderThread')
         self.CommunicationThread.start()
@@ -238,3 +240,4 @@ class RobotChiefCommunicationOfficer(Reader):
 
 if __name__ == '__main__':
     ModBusReader()
+    RobotChiefCommunicationOfficer()
