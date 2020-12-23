@@ -13,25 +13,26 @@ class Robot:
         super(Robot, self).__init__()
         self.ModBusReader = None
         self.RobotCCO = None
+        self.PartNotConnected = Event()
 
-        def startAsync(attribute, constructor):
+        def startAsync(constructor, part_not_connected):
             try:
-                setattr(self, attribute, constructor())
+                print('starting {} async: type = '.format(constructor, type(constructor)))
+                setattr(self, str(constructor), constructor())
             except ConnectionError as e:
-                # If any item fails, then all others should shut down.
-                # Signal to instances that startup has failed.
-                raise
+                # Startup of this part has failed and we need to shutdown all parts
+                if not part_not_connected.isSet():
+                    part_not_connected.set()
+                pass
 
-
-        startThreads = [Thread(target=startAsync, args=('ModBusReader', ModBusReader,), name='RobotClass.ModBusReader.startAsync'),
-                        Thread(target=startAsync, args=('RobotCCO', RobotCCO,), name='RobotClass.RobotCCO.startAsync')]
+        parts = [ModBusReader, RobotCCO]
+        startThreads = [Thread(target=startAsync, args=(partname,self.PartNotConnected,), name='{} startAsync'.format(partname)) for partname in parts]
         [x.start() for x in startThreads]
         [x.join() for x in startThreads]
 
-        def testConnection(obj):
-            if obj is None:
-                raise ConnectionError(obj, "is not connected.")
-        [testConnection(x) for x in [self.ModBusReader, self.RobotCCO]]
+        if self.PartNotConnected.isSet():
+            self.shutdownSafely()
+            # Then a part failed and we need to shutdown safely:
 
         # Save some important positions as attributes:
         self.pidiv180 = 3.14159265359/180
