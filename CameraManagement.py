@@ -220,6 +220,8 @@ class DetailCamera(Camera):
         super(DetailCamera, self).__init__(serial_number, grayscale)
 
     def grabImage(self):
+        if not self.Connected:
+            return None
         self.Open()
         grabbedImage = None
         if not self.camera.IsGrabbing():
