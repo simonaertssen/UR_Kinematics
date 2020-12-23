@@ -1,6 +1,9 @@
 import time
+import sys
+
 from threading import Thread, Event
-# import winsound
+from queue import Queue
+import winsound
 
 from KinematicsModule.Kinematics import detectCollision, RPY2RotVec
 from KinematicsLib.KinematicsModule import ForwardKinematics
@@ -13,26 +16,26 @@ class Robot:
         super(Robot, self).__init__()
         self.ModBusReader = None
         self.RobotCCO = None
-        self.PartNotConnected = Event()
 
-        def startAsync(constructor, part_not_connected):
+        # Start these parts safely before anything else:
+        ReturnErrorMessageQueue = Queue()
+        def startAsync(constructor, error_queue):
             try:
-                print('starting {} async: type = '.format(constructor, type(constructor)))
+                # print('starting {} async: type = '.format(constructor, type(constructor)))
                 setattr(self, str(constructor), constructor())
-            except ConnectionError as e:
+            except Exception as e:
                 # Startup of this part has failed and we need to shutdown all parts
-                if not part_not_connected.isSet():
-                    part_not_connected.set()
-                pass
+                error_queue.put(e)
 
         parts = [ModBusReader, RobotCCO]
-        startThreads = [Thread(target=startAsync, args=(partname,self.PartNotConnected,), name='{} startAsync'.format(partname)) for partname in parts]
+        startThreads = [Thread(target=startAsync, args=(partname,ReturnErrorMessageQueue,), name='{} startAsync'.format(partname)) for partname in parts]
         [x.start() for x in startThreads]
         [x.join() for x in startThreads]
 
-        if self.PartNotConnected.isSet():
+        # Get first error, if any, and raise it to warn the instance and the parent
+        if not ReturnErrorMessageQueue.empty():
             self.shutdownSafely()
-            # Then a part failed and we need to shutdown safely:
+            raise ReturnErrorMessageQueue.get()
 
         # Save some important positions as attributes:
         self.pidiv180 = 3.14159265359/180
@@ -52,8 +55,15 @@ class Robot:
 
     def shutdownSafely(self):
         # self.initialise()  # Only initialise if we want to reset the robot entirely
-        shutdownThreads = [Thread(target=self.ModBusReader.shutdownSafely, name='RobotClass.ModBusReader.shutdownSafely'),
-                           Thread(target=self.RobotCCO.shutdownSafely, name='RobotClass.RobotCCO.shutdownSafely')]
+        def shutdownAsync(object):
+            if object is None:
+                return
+            try:
+                object.shutdownSafely()
+            except Exception as e:
+                raise SystemExit("Safe shutdown failed due to {}. Aborting".format(e))
+
+        shutdownThreads = [Thread(target=shutdownAsync, args=(part,), name='{} shutdownSafely'.format(part)) for part in [self.ModBusReader, self.RobotCCO]]
         [x.start() for x in shutdownThreads]
         [x.join() for x in shutdownThreads]
 
@@ -274,12 +284,12 @@ class Robot:
 
     @staticmethod
     def beep():
-        # winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
+        winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
         pass
 
 
 if __name__ == '__main__':
     robot = Robot()
-    # robot.moveToolTo(robot.ToolPositionLightBox, "movel", wait=False)
+    robot.moveToolTo(robot.ToolPositionLightBox, "movel", wait=False)
     robot.beep()
     # time.sleep(200)
