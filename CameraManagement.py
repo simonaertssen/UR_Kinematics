@@ -86,9 +86,13 @@ class Camera:
         self.camera.RegisterConfiguration(pylon.SoftwareTriggerConfiguration(), pylon.RegistrationMode_ReplaceAll, pylon.Cleanup_Delete)
         self.camera.RegisterImageEventHandler(self.imageEventHandler, pylon.RegistrationMode_Append, pylon.Cleanup_Delete)
 
+    def toGrayScale(self, image_to_gray):
+        if len(image_to_gray.shape) == 3 and self.grayScale:
+            image_to_gray = cv.cvtColor(image_to_gray, cv.COLOR_RGB2GRAY)
+        return image_to_gray
+
     def manipulateImage(self, image_to_manipulate):
-        if len(image_to_format.shape) == 3 and self.grayScale:
-            image_to_manipulate = cv.cvtColor(image_to_manipulate, cv.COLOR_RGB2GRAY)
+        image_to_manipulate = self.toGrayScale(image_to_manipulate)
         return image_to_manipulate
 
     def grabImage(self, image):
@@ -164,9 +168,13 @@ class CameraArray:
         self.Close()
         self.cameraArray.DestroyDevice()
 
+    def toGrayScale(self, image_to_gray):
+        if len(image_to_gray.shape) == 3 and self.grayScale:
+            image_to_gray = cv.cvtColor(image_to_gray, cv.COLOR_RGB2GRAY)
+        return image_to_gray
+
     def manipulateImage(self, image_to_manipulate):
-        if len(image_to_format.shape) == 3 and self.grayScale:
-            image_to_manipulate = cv.cvtColor(image_to_manipulate, cv.COLOR_RGB2GRAY)
+        image_to_manipulate = self.toGrayScale(image_to_manipulate)
         return image_to_manipulate
 
     def grabImage(self, images):
@@ -189,6 +197,12 @@ class TopCamera(Camera):
     def __init__(self, serial_number="22290932", grayscale=True):
         super(TopCamera, self).__init__(serial_number, grayscale)
 
+    def manipulateImage(self, image_to_manipulate):
+        if len(image_to_format.shape) == 3 and self.grayScale:
+            image_to_manipulate = cv.cvtColor(image_to_manipulate, cv.COLOR_RGB2GRAY)
+        image_to_manipulate = findObjectsToPickUp(image_to_manipulate)
+        return image_to_manipulate
+
     def grabImage(self):
         if not self.Connected:
             return None
@@ -206,7 +220,7 @@ class TopCamera(Camera):
                     break
                 elif i == max_tries-1:
                     raise RuntimeError('Too many tries on one image.')
-            return findObjectsToPickUp(np.asarray(grabbedImage))
+            return manipulateImage(np.asarray(grabbedImage))
         except genicam.RuntimeException as e:
             print('Runtime Exception: {}'.format(e))
             return None
