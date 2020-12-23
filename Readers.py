@@ -43,7 +43,6 @@ class Reader(socket.socket):
         self.settimeout(1) # Timeout after one second
         self.Address = (ip, port)
         self.BufferLength = 1116
-        self.Connected = Event()
         self.ThreadLock = Lock()
         # Verify correct IP address is set, only seems to currently work with 192.168.111.6
         HOST_NAME = socket.gethostname()
@@ -55,6 +54,9 @@ class Reader(socket.socket):
             raise ConnectionError("Verify IP of robotarm and cameras are on the same subnet.")
         self.connectSafely()
 
+    def isConnected(self):
+        return self.fileno() != -1
+
     def renewSocket(self):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -62,7 +64,6 @@ class Reader(socket.socket):
         print("{} connecting".format(self.Address))
         try:
             self.connect(self.Address)
-            self.Connected.set()
             def sprint(*args, sep=" ", end="", **kwargs):
                 joined_string = sep.join([str(arg) for arg in args])
                 print(joined_string + "\n", sep=sep, end=end, **kwargs)
@@ -200,13 +201,11 @@ class ModBusReader(Reader):
 
     def shutdownSafely(self):
         print(self.Address, "shutting down safely.")
-        if self.Connected.isSet():
+        if self.Communicating.isSet():
             self.Communicating.clear()
-        if self.Connected.isSet():
-            self.Connected.clear()
         if self.CommunicationThread.is_alive():
             self.CommunicationThread.join()
-        if not self._closed:  # Use private methods from the socket to test if it's alive
+        if self.isConnected():  # Use private methods from the socket to test if it's alive
             self.shutdown(socket.SHUT_RDWR)
             self.close()
 
@@ -219,9 +218,7 @@ class RobotCCO(Reader):  # RobotChiefCommunicationOfficer
 
     def shutdownSafely(self):
         print(self.Address, "shutting down safely.")
-        if self.Connected.isSet():
-            self.Connected.clear()
-        if not self._closed:  # Use private methods from the socket to test if it's alive
+        if self.isConnected():  # Use private methods from the socket to test if it's alive
             self.shutdown(socket.SHUT_RDWR)
             self.close()
 
