@@ -53,11 +53,6 @@ class Camera:
     def getShape(self):
         return self.pixelHeight, self.pixelWidth
 
-    def formatImage(self, image_to_format):
-        if len(image_to_format.shape) == 3 and self.grayScale:
-            image_to_format = cv.cvtColor(image_to_format, cv.COLOR_RGB2GRAY)
-        return image_to_format
-
     def setCamera(self):
         try:
             if self.serialNumber is None:
@@ -91,6 +86,11 @@ class Camera:
         self.camera.RegisterConfiguration(pylon.SoftwareTriggerConfiguration(), pylon.RegistrationMode_ReplaceAll, pylon.Cleanup_Delete)
         self.camera.RegisterImageEventHandler(self.imageEventHandler, pylon.RegistrationMode_Append, pylon.Cleanup_Delete)
 
+    def manipulateImage(self, image_to_manipulate):
+        if len(image_to_format.shape) == 3 and self.grayScale:
+            image_to_manipulate = cv.cvtColor(image_to_manipulate, cv.COLOR_RGB2GRAY)
+        return image_to_manipulate
+
     def grabImage(self, image):
         # This is an experimental function, and works slightly faster due to the container
         # of the image being recycled. This requires the image to be returned to the method,
@@ -104,7 +104,7 @@ class Camera:
                 self.camera.ExecuteSoftwareTrigger()
             while grabbedImage is None:
                 _, grabbedImage = self.imageEventHandler.imageQueue.get()
-            np.copyto(image, self.formatImage(grabbedImage))
+            np.copyto(image, self.manipulateImage(grabbedImage))
             return 0
         except genicam.RuntimeException as e:
             print('Runtime Exception: {}'.format(e))
@@ -135,11 +135,6 @@ class CameraArray:
     def getShape(self):
         return self.pixelHeights, self.pixelWidths
 
-    def formatImage(self, image_to_format):
-        if len(image_to_format.shape) == 3 and self.grayScale:
-            image_to_format = cv.cvtColor(image_to_format, cv.COLOR_RGB2GRAY)
-        return image_to_format.astype('uint8')
-
     def registerGrabbingStrategy(self, camera):
         camera.RegisterConfiguration(pylon.SoftwareTriggerConfiguration(), pylon.RegistrationMode_ReplaceAll, pylon.Cleanup_Delete)
         camera.RegisterImageEventHandler(self.imageEventHandler, pylon.RegistrationMode_ReplaceAll, pylon.Cleanup_Delete)
@@ -169,8 +164,10 @@ class CameraArray:
         self.Close()
         self.cameraArray.DestroyDevice()
 
-    def imageFromQueue(self):
-        return self.imageEventHandler.imageQueue.get
+    def manipulateImage(self, image_to_manipulate):
+        if len(image_to_format.shape) == 3 and self.grayScale:
+            image_to_manipulate = cv.cvtColor(image_to_manipulate, cv.COLOR_RGB2GRAY)
+        return image_to_manipulate
 
     def grabImage(self, images):
         if not self.cameraArray.IsGrabbing():
@@ -181,7 +178,7 @@ class CameraArray:
                     cam.ExecuteSoftwareTrigger()
             for _ in range(2):
                 context, grabbedImage = self.imageEventHandler.imageQueue.get()
-                np.copyto(images[context], self.formatImage(grabbedImage))
+                np.copyto(images[context], self.manipulateImage(grabbedImage))
             return 0
         except genicam.RuntimeException as e:
             print('Runtime Exception: {}'.format(e))
