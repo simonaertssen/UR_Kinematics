@@ -69,7 +69,7 @@ class Camera:
             print("Camera {} is connected.".format(self.serialNumber))
         except genicam.GenericException as e:
             self.Connected = False
-            raise SystemExit('Camera {} could not be found: {}'.format(self.serialNumber, e))
+            raise ConnectionError('Camera {} could not be found: {}'.format(self.serialNumber, e))
 
     def Open(self):
         if not self.camera.IsOpen():
@@ -205,13 +205,13 @@ class TopCamera(Camera):
                 if grabbedImage is not None:
                     break
                 elif i == max_tries-1:
-                    raise ValueError('Too many tries on one image.')
+                    raise RuntimeError('Too many tries on one image.')
             return findObjectsToPickUp(np.asarray(grabbedImage))
         except genicam.RuntimeException as e:
             print('Runtime Exception: {}'.format(e))
             return None
-        except ValueError as e:
-            print('Value Exception: {}'.format(e))
+        except RuntimeError as e:
+            print('{}'.format(e))
             return None
 
 
@@ -222,7 +222,6 @@ class DetailCamera(Camera):
     def grabImage(self):
         self.Open()
         grabbedImage = None
-        SurfaceView = np.zeros(self.getShape(), dtype=np.uint8)
         if not self.camera.IsGrabbing():
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
         try:
@@ -234,15 +233,13 @@ class DetailCamera(Camera):
                 if grabbedImage is not None:
                     break
                 elif i == max_tries-1:
-                    raise ValueError('Too many tries on one image.')
-            np.copyto(SurfaceView, self.formatImage(grabbedImage))
-            return SurfaceView
-
+                    raise RuntimeError('Too many tries on one image.')
+            return np.asarray(grabbedImage)
         except genicam.RuntimeException as e:
             print('Runtime Exception: {}'.format(e))
             return None
-        except ValueError as e:
-            print('Value Exception: {}'.format(e))
+        except RuntimeError as e:
+            print('{}'.format(e))
             return None
 
 
@@ -367,4 +364,3 @@ def runCamerasAlternate():
 
 if __name__ == '__main__':
     runSingleCamera()
-
