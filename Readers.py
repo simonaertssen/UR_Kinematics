@@ -194,12 +194,15 @@ class ModBusReader(Reader):
 
     def shutdownSafely(self):
         print(self.Address, "shutting down safely.")
-        self.Communicating.clear()
-        self.Connected.clear()
+        if self.Connected.isSet():
+            self.Communicating.clear()
+        if self.Connected.isSet():
+            self.Connected.clear()
         if self.CommunicationThread.is_alive():
             self.CommunicationThread.join()
-        self.shutdown(socket.SHUT_RDWR)
-        self.close()
+        if not self._closed:  # Use private methods from the socket to test if it's alive
+            self.shutdown(socket.SHUT_RDWR)
+            self.close()
 
 
 class RobotChiefCommunicationOfficer(Reader):
@@ -210,9 +213,11 @@ class RobotChiefCommunicationOfficer(Reader):
 
     def shutdownSafely(self):
         print(self.Address, "shutting down safely.")
-        self.Connected.clear()
-        self.shutdown(socket.SHUT_RDWR)
-        self.close()
+        if self.Connected.isSet():
+            self.Connected.clear()
+        if not self._closed:  # Use private methods from the socket to test if it's alive
+            self.shutdown(socket.SHUT_RDWR)
+            self.close()
 
 
 if __name__ == '__main__':
