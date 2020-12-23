@@ -92,6 +92,9 @@ class Camera:
         self.camera.RegisterImageEventHandler(self.imageEventHandler, pylon.RegistrationMode_Append, pylon.Cleanup_Delete)
 
     def grabImage(self, image):
+        # This is an experimental function, and works slightly faster due to the container
+        # of the image being recycled. This requires the image to be returned to the method,
+        # which is not always simply implemented.
         self.Open()
         grabbedImage = None
         if not self.camera.IsGrabbing():
