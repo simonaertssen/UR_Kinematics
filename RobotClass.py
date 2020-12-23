@@ -1,11 +1,11 @@
 import time
-from threading import Thread
-import winsound
+from threading import Thread, Event
+# import winsound
 
 from KinematicsModule.Kinematics import detectCollision, RPY2RotVec
 from KinematicsLib.KinematicsModule import ForwardKinematics
 
-from Readers import ModBusReader, RobotChiefCommunicationOfficer
+from Readers import ModBusReader, RobotCCO
 
 
 class Robot:
@@ -15,10 +15,16 @@ class Robot:
         self.RobotCCO = None
 
         def startAsync(attribute, constructor):
-            setattr(self, attribute, constructor())
+            try:
+                setattr(self, attribute, constructor())
+            except ConnectionError as e:
+                # If any item fails, then all others should shut down.
+                # Signal to instances that startup has failed.
+                raise
+
 
         startThreads = [Thread(target=startAsync, args=('ModBusReader', ModBusReader,), name='RobotClass.ModBusReader.startAsync'),
-                        Thread(target=startAsync, args=('RobotCCO', RobotChiefCommunicationOfficer,), name='RobotClass.RobotCCO.startAsync')]
+                        Thread(target=startAsync, args=('RobotCCO', RobotCCO,), name='RobotClass.RobotCCO.startAsync')]
         [x.start() for x in startThreads]
         [x.join() for x in startThreads]
 
@@ -267,7 +273,8 @@ class Robot:
 
     @staticmethod
     def beep():
-        winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
+        # winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
+        pass
 
 
 if __name__ == '__main__':
@@ -275,4 +282,3 @@ if __name__ == '__main__':
     # robot.moveToolTo(robot.ToolPositionLightBox, "movel", wait=False)
     robot.beep()
     # time.sleep(200)
-

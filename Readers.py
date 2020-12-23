@@ -210,11 +210,11 @@ class ModBusReader(Reader):
             self.close()
 
 
-class RobotChiefCommunicationOfficer(Reader):
+class RobotCCO(Reader):  # RobotChiefCommunicationOfficer
     def __init__(self):
         IP = "192.168.1.17"
         PORT = 30003
-        super(RobotChiefCommunicationOfficer, self).__init__(IP, PORT)
+        super(RobotCCO, self).__init__(IP, PORT)
 
     def shutdownSafely(self):
         print(self.Address, "shutting down safely.")
@@ -226,5 +226,5 @@ class RobotChiefCommunicationOfficer(Reader):
 
 
 if __name__ == '__main__':
-    RobotChiefCommunicationOfficer()
+    RobotCCO()
     ModBusReader()
