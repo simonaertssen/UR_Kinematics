@@ -3,7 +3,7 @@ import sys
 
 from threading import Thread, Event
 from queue import Queue
-import winsound
+# import winsound
 
 from KinematicsModule.Kinematics import detectCollision, RPY2RotVec
 from KinematicsLib.KinematicsModule import ForwardKinematics
@@ -51,10 +51,15 @@ class Robot:
         self.ToolPositionCollisionStart = [0.08838, -0.46649, 0.24701, -0.3335, 3.11, 0.0202]
         self.ToolPositionTestCollision = [0.08838, -0.76649, 0.24701, -0.3335, 3.11, 0.0202]
 
+        self.Running = Event()
         self.initialise()
+        self.Running.set()
 
     def shutdownSafely(self):
         # self.initialise()  # Only initialise if we want to reset the robot entirely
+        if self.RobotCCO is not None and self.RobotCCO.isConnected():
+            self.halt()
+
         def shutdownAsync(object):
             if object is None:
                 return
@@ -137,8 +142,13 @@ class Robot:
             if tool_bit is bit_value and settled:
                 break
 
-    def halt(self):
+    def stop(self):
         self.send(b'stop(5)')
+
+    def halt(self):
+        if self.Running.isSet():
+            self.Running.clear()
+        self.stop()
 
     def detectCollision(self):
         return detectCollision(self.getJointPositions())
@@ -169,7 +179,7 @@ class Robot:
             except RuntimeError as e:  # Collision raises RuntimeError
                 # self.set_IO_PORT(1, False)
                 # time.sleep(0.1)
-                self.halt()
+                self.stop()
                 time.sleep(0.1)
                 self.moveTo(start_position, "movel", wait=True, p=p, check_collisions=False)
             time.sleep(0.075)  # To let momentum fade away
@@ -284,7 +294,7 @@ class Robot:
 
     @staticmethod
     def beep():
-        winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
+        # winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
         pass
 
 
