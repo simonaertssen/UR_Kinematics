@@ -59,6 +59,7 @@ class Reader(socket.socket):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
 
     def connectSafely(self):
+        print("{} connecting".format(self.Address))
         try:
             self.connect(self.Address)
             self.Connected.set()
@@ -68,7 +69,7 @@ class Reader(socket.socket):
             sprint(self.Address, "is safely connected")
         except socket.timeout:
             self.shutdownSafely()
-            raise ConnectionError('{} connection timed out.'.format(self.Address))
+            raise ConnectionError('{} connection timed out.'.format(self.Address)) from None
 
     def shutdownSafely(self):
         raise NotImplementedError("shutdownSafely() method not implemented")
