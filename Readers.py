@@ -47,8 +47,10 @@ class Reader(socket.socket):
         # Verify correct IP address is set, only seems to currently work with 192.168.111.6
         HOST_NAME = socket.gethostname()
         HOST_IP   = socket.gethostbyname(HOST_NAME)
-        print(HOST_NAME, HOST_IP)
+
         if HOST_NAME != 'MacBook-Pro-van-Simon.local' and HOST_IP != '192.168.111.6':
+            # This is only a test. My personal computer was added to make testing easier.
+            # Delete this condition when using the code but keep the ip check.
             raise ConnectionError("Verify IP of robotarm and cameras are on the same subnet.")
         self.connectSafely()
 
