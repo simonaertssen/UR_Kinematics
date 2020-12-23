@@ -198,8 +198,8 @@ class TopCamera(Camera):
         super(TopCamera, self).__init__(serial_number, grayscale)
 
     def manipulateImage(self, image_to_manipulate):
-        if len(image_to_format.shape) == 3 and self.grayScale:
-            image_to_manipulate = cv.cvtColor(image_to_manipulate, cv.COLOR_RGB2GRAY)
+        # Overload to deal with images in the right way
+        image_to_manipulate = self.toGrayScale(image_to_manipulate)
         image_to_manipulate = findObjectsToPickUp(image_to_manipulate)
         return image_to_manipulate
 
@@ -233,6 +233,11 @@ class DetailCamera(Camera):
     def __init__(self, serial_number="21565643", grayscale=True):
         super(DetailCamera, self).__init__(serial_number, grayscale)
 
+    def manipulateImage(self, image_to_manipulate):
+        # Overload to deal with images in the right way
+        image_to_manipulate = self.toGrayScale(image_to_manipulate)
+        return image_to_manipulate
+
     def grabImage(self):
         if not self.Connected:
             return None
@@ -250,7 +255,7 @@ class DetailCamera(Camera):
                     break
                 elif i == max_tries-1:
                     raise RuntimeError('Too many tries on one image.')
-            return np.asarray(grabbedImage)
+            return manipulateImage(np.asarray(grabbedImage))
         except genicam.RuntimeException as e:
             print('Runtime Exception: {}'.format(e))
             return None
