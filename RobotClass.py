@@ -81,6 +81,7 @@ class Robot:
         if not self.StopEvent.isSet():
             self.StopEvent.set()
         self.stop()
+        self.StopEvent.clear()
 
     def receive(self):
         return self.RobotCCO.recv(self.RobotCCO.BufferLength)
@@ -173,9 +174,10 @@ class Robot:
         command = str.encode("{}({}{}) \n".format(move, "p" if p is True else "", target_position))
         self.send(command)
 
+        start_position = current_position()
         if wait:
             try:
-                self.waitUntilTargetReached(current_position(), target_position, check_collisions, stop_event)
+                self.waitUntilTargetReached(current_position, target_position, check_collisions, stop_event)
             except TimeoutError as e:  # Time ran out to test for object position
                 print(e)
             except RuntimeError as e:  # Collision raises RuntimeError
@@ -183,7 +185,7 @@ class Robot:
                 # time.sleep(0.1)
                 self.stop()
                 time.sleep(0.1)
-                self.moveTo(, "movel", wait=True, p=p, check_collisions=False)
+                self.moveTo(start_position, "movel", wait=True, p=p, check_collisions=False)
             time.sleep(0.075)  # To let momentum fade away
 
     @staticmethod
