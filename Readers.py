@@ -108,14 +108,14 @@ class ModBusReader(Reader):
 
         self.Communicating = Event()
         self.Communicating.set()
-        self.CommunicationThread = Thread(target=self.readContinuously, args=(self.ToolBitQueue, self.ToolPositionQueue, self.JointAngleQueue), daemon=True, name='ModBusReaderThread')
+        self.CommunicationThread = Thread(target=self.readContinuously, args=[self.Communicating, self.ToolBitQueue, self.ToolPositionQueue, self.JointAngleQueue], daemon=True, name='ModBusReaderThread')
 
         # Startup parent after creation of all attributes:
         super(ModBusReader, self).__init__(IP, PORT)
         self.CommunicationThread.start()
 
-    def readContinuously(self, tool_bit_queue, tool_position_queue, joint_angle_queue):
-        while self.Communicating.is_set():
+    def readContinuously(self, communicating, tool_bit_queue, tool_position_queue, joint_angle_queue):
+        while communicating.is_set():
             self.read(tool_bit_queue, tool_position_queue, joint_angle_queue)
 
     @staticmethod
