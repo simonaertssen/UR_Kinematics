@@ -51,9 +51,8 @@ class Robot:
         self.ToolPositionCollisionStart = [0.08838, -0.46649, 0.24701, -0.3335, 3.11, 0.0202]
         self.ToolPositionTestCollision = [0.08838, -0.76649, 0.24701, -0.3335, 3.11, 0.0202]
 
-        self.Running = Event()
+        self.StopEvent = Event()
         self.initialise()
-        self.Running.set()
 
     def shutdownSafely(self):
         # self.initialise()  # Only initialise if we want to reset the robot entirely
@@ -74,6 +73,14 @@ class Robot:
 
     def send(self, message):
         self.RobotCCO.send(message)
+
+    def stop(self):
+        self.send(b'stop(5)')
+
+    def halt(self):
+        if not self.StopEvent.isSet():
+            self.StopEvent.set()
+        self.stop()
 
     def receive(self):
         return self.RobotCCO.recv(self.RobotCCO.BufferLength)
@@ -142,26 +149,22 @@ class Robot:
             if tool_bit is bit_value and settled:
                 break
 
-    def stop(self):
-        self.send(b'stop(5)')
-
-    def halt(self):
-        if self.Running.isSet():
-            self.Running.clear()
-        self.stop()
-
     def detectCollision(self):
         return detectCollision(self.getJointPositions())
 
-    def moveTo(self, target_position, move, wait=True, check_collisions=True, p=True):
+    def moveTo(self, target_position, move, wait=True, p=True, check_collisions=True, stop_event=Event):
         """
-        DESCRIPTION: Moves the robot to the target
-        :param move: movej (find best move) or movel (move in a line)
-        :param target_position: target joint angles (p=False) or tool position (given by p)
-        :param wait: wait for the program to reach the required position (blocking or not)
+        DESCRIPTION: Moves the robot to the target.
+        :param move: movej (find best move) or movel (move in a line).
+        :param target_position: target joint angles (p=False) or tool position (given by p).
+        :param wait: wait for the program to reach the required position (blocking or not).
         :param p: defines weather the target is a set of joint angles (p=False) or a tool position (p=True).
-        :param check_collisions: check whether a collision occurs during the move
+        :param check_collisions: check whether a collision occurs during the move.
+        :param stop_event: a threading event designed to halt the execution of a thread if necessary.
         """
+        if stop_event.isSet():
+            return
+
         if p:
             current_position = self.getToolPosition
         else:
@@ -170,10 +173,9 @@ class Robot:
         command = str.encode("{}({}{}) \n".format(move, "p" if p is True else "", target_position))
         self.send(command)
 
-        start_position = current_position()
         if wait:
             try:
-                self.waitUntilTargetReached(current_position, target_position, check_collisions)
+                self.waitUntilTargetReached(current_position(), target_position, check_collisions, stop_event)
             except TimeoutError as e:  # Time ran out to test for object position
                 print(e)
             except RuntimeError as e:  # Collision raises RuntimeError
@@ -181,7 +183,7 @@ class Robot:
                 # time.sleep(0.1)
                 self.stop()
                 time.sleep(0.1)
-                self.moveTo(start_position, "movel", wait=True, p=p, check_collisions=False)
+                self.moveTo(, "movel", wait=True, p=p, check_collisions=False)
             time.sleep(0.075)  # To let momentum fade away
 
     @staticmethod
@@ -190,13 +192,13 @@ class Robot:
         x2, y2, z2, _, _, _ = target_position
         return ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) ** 0.5
 
-    def waitUntilTargetReached(self, current_position, target_position, check_collisions):
+    def waitUntilTargetReached(self, current_position, target_position, check_collisions, stop_event):
         all_differences = 100 * [0]
         difference = [1000.0 for _ in target_position]
         start_time = time.time()
 
         totalDifferenceTolerance = 5e-3
-        while sum(difference) >= totalDifferenceTolerance:
+        while not stop_event.isSet() and sum(difference) >= totalDifferenceTolerance:
             difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
             all_differences.pop(0)
             all_differences.append(sum(difference))
@@ -208,29 +210,32 @@ class Robot:
             if check_collisions and self.detectCollision():
                 raise RuntimeError('Bumping in to stuff!')
 
-    @staticmethod
     def waitForParallelTask(function, arguments=None, information=None):
         if information:
             print('Task received:', information)
-        thread = Thread(target=function, args=[], daemon=True, name=information)
+        # The function is a handle that has all the necessary arguments already,
+        # only the event needs to be passed when the robot needs to be stopped.
+        thread = Thread(target=function, args=[self.StopEvent], daemon=True, name=information)
         thread.start()
         thread.join()
+        if self.StopEvent.isSet():
+            self.StopEvent.clear()
 
     def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
-        def moveToolToInThread():
-            self.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=True)
+        def moveToolToInThread(stop_event):
+            self.moveTo(stop_event, target_position, move, wait=wait, check_collisions=check_collisions, p=True)
         self.waitForParallelTask(function=moveToolToInThread, arguments=None, information="Moving Tool Head")
 
     def moveJointsTo(self, target_position, move, wait=True, check_collisions=True):
-        def moveJointsToInThread():
-            self.moveTo(target_position, move, wait=wait, check_collisions=check_collisions, p=False)
+        def moveJointsToInThread(stop_event):
+            self.moveTo(stop_event, target_position, move, wait=wait, check_collisions=check_collisions, p=False)
         self.waitForParallelTask(function=moveJointsToInThread, arguments=None, information="Moving Joints")
 
-    def goHome(self):
-        self.moveJointsTo(self.JointAngleInit.copy(), "movej")
+    def goHome(self, stop_event):
+        self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej")
 
     def initialise(self):
-        def initialiseInThread():
+        def initialiseInThread(stop_event):
             currentJointPosition = self.getJointAngles()
             distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit.copy())])
             currentToolPosition = self.getToolPosition()
@@ -238,29 +243,29 @@ class Robot:
                 if currentToolPosition[2] < 0.300:
                     targetToolPosition = currentToolPosition.copy()
                     targetToolPosition[2] = 0.300
-                    self.moveToolTo(targetToolPosition, "movel", wait=True, check_collisions=False)
+                    self.moveToolTo(stop_event, targetToolPosition, "movel", wait=True, check_collisions=False)
             else:
                 if self.spatialDifference(currentToolPosition, self.ToolPositionBrickDrop) < 0.5:
                     if currentToolPosition[2] < 0.07:
                         targetToolPosition = currentToolPosition.copy()
                         targetToolPosition[2] = 0.07
-                        self.moveToolTo(targetToolPosition, "movel", wait=True)
+                        self.moveToolTo(stop_event, targetToolPosition, "movel", wait=True)
                 else:
                     if distanceFromAngleInit > 0.05:
-                        self.moveJointsTo(self.JointAngleInit.copy(), "movej", wait=True)
+                        self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej", wait=True)
 
-                self.moveJointsTo(self.JointAngleBrickDrop.copy(), "movej", wait=True)
+                self.moveJointsTo(run_event, self.JointAngleBrickDrop.copy(), "movej", wait=True)
                 self.openGripper()
             if distanceFromAngleInit > 0.05:
-                self.moveJointsTo(self.JointAngleInit.copy(), "movej", wait=True)
+                self.moveJointsTo(run_event, self.JointAngleInit.copy(), "movej", wait=True)
             print("Initialisation Done")
         self.waitForParallelTask(function=initialiseInThread, arguments=None, information="Initialising")
 
-    def dropObject(self):
-        self.moveJointsTo(self.JointAngleBrickDrop.copy(), "movej", wait=True)
+    def dropObject(self, run_event):
+        self.moveJointsTo(run_event, self.JointAngleBrickDrop.copy(), "movej", wait=True)
         self.openGripper()
 
-    def pickUpObject(self, object_position):
+    def pickUpObject(self, run_event, object_position):
         LIGHTBOX_LENGTH = 0.250  # m
         LIGHTBOX_WIDTH = 0.176  # m
         print("object_position: ", object_position)
@@ -278,14 +283,14 @@ class Robot:
         target_position[3] = a
         target_position[4] = b
         target_position[5] = c
-        self.moveToolTo(target_position, 'movel')
+        self.moveToolTo(run_event, target_position, 'movel')
         # Go down and pickup the object
         target_position[2] = self.ToolPickUpHeight
-        self.moveToolTo(target_position, 'movel')
+        self.moveToolTo(run_event, target_position, 'movel')
         self.closeGripper()
         # Go down and pickup the object
         target_position[2] = self.ToolPickUpHeight
-        self.moveToolTo(target_position, 'movel')
+        self.moveToolTo(run_event, target_position, 'movel')
 
     def test(self):
         print('Testing the gripper')
