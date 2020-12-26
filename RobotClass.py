@@ -5,8 +5,8 @@ from threading import Thread, Event
 from queue import Queue
 # import winsound
 
-from KinematicsModule.Kinematics import detectCollision, RPY2RotVec
-from KinematicsLib.KinematicsModule import ForwardKinematics
+from KinematicsModule.Kinematics import detectCollision, RPY2RotVec  # Slow Python implementation
+from KinematicsLib.KinematicsModule import ForwardKinematics  # Fast c implementation
 
 from Readers import ModBusReader, RobotCCO
 

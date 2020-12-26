@@ -121,6 +121,3 @@ def seeViewerAtWorkWithRobot():
 
 if __name__ == '__main__':
     seeViewerAtWorkWithRobot()
-
-
-

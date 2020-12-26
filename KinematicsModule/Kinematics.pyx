@@ -183,5 +183,3 @@ cdef forwardkinematics_fromc(joint_angles, tool_position=None):
 
 cpdef ForwardKinematics(joint_angles, tool_position=None):
     return forwardkinematics_fromc(joint_angles, tool_position=tool_position)
-
-

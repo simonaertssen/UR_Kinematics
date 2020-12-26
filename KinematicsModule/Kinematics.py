@@ -45,8 +45,7 @@ def ForwardKinematics(joint_angles, tool_position=None):
         X.append(x)
         Y.append(y)
         Z.append(z)
-
-    return np.array(X), np.array(Y), np.array(Z)
+    return X, Y, Z  # return np.array(X), np.array(Y), np.array(Z) for arrays instead
 
 
 def detectCollision(positions):
@@ -144,4 +143,3 @@ if __name__ == '__main__':
     # 17859 iterations per second with 'slots'
     # 17663 iterations per second without for loop
     # 14195 iterations per second by using just a function
-    print(RPY2RotVec(0, 3.1415926, (180 - 46) * np.pi/180))
