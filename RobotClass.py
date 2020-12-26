@@ -160,7 +160,7 @@ class Robot:
     def detectCollision(self):
         return detectCollision(self.getJointPositions())
 
-    def moveTo(self, target_position, move, stop_event, wait=True, p=True, check_collisions=True):
+    def moveTo(self, target_position, move, stop_event, p=True, wait=True, check_collisions=True):
         """
         DESCRIPTION: Moves the robot to the target.
         :param move: movej (find best move) or movel (move in a line).
@@ -226,25 +226,42 @@ class Robot:
         if self.StopEvent.isSet():
             self.StopEvent.clear()
 
-    def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
-        def moveToolToInThread(stop_event):
-            self.moveTo(target_position, move, stop_event, wait=wait, p=True, check_collisions=check_collisions)
-        self.waitForParallelTask(function=moveToolToInThread, arguments=None, information="Moving Tool Head")
+    def moveToolTo(self, target_position, move, wait=True, check_collisions=True, stop_event=None):
+        # If the stop_event is given, then a thread is calling this function.
+        # If it is not given, then we want to start a thread.
+        # This avoids having two different funcions with two different but similar names.
+        def moveToolHandle(stop_event_as_argument):
+            self.moveTo(target_position, move, stop_event_as_argument, wait=wait, p=True, check_collisions=check_collisions)
+        if stop_event:
+            moveToolHandle(stop_event)
+        else:
+            self.waitForParallelTask(function=moveToolHandle, arguments=None, information="Moving Joints")
 
-    def moveJointsTo(self, target_position, move, wait=True, check_collisions=True):
-        def moveJointsToInThread(stop_event):
-            self.moveTo(target_position, move, stop_event, wait=wait, p=False, check_collisions=check_collisions)
-        self.waitForParallelTask(function=moveJointsToInThread, arguments=None, information="Moving Joints")
+    def moveJointsTo(self, target_position, move, wait=True, check_collisions=True, stop_event=None):
+        # If the stop_event is given, then a thread is calling this function.
+        # If it is not given, then we want to start a thread.
+        # This avoids having two different funcions with two different but similar names.
+        def moveJointsHandle(stop_event_as_argument):
+            self.moveTo(target_position, move, stop_event_as_argument, wait=wait, p=False, check_collisions=check_collisions)
+        if stop_event:
+            moveJointsHandle(stop_event)
+        else:
+            self.waitForParallelTask(function=moveJointsHandle, arguments=None, information="Moving Joints")
 
-    def goHome(self):
-        self.moveJointsTo(self.JointAngleInit.copy(), "movej")
+    def goHome(self, stop_event=None):
+        self.moveJointsTo(self.JointAngleInit.copy(), "movej", stop_event=stop_event)
 
-    def dropObject(self):
-        self.moveJointsTo(self.JointAngleBrickDrop.copy(), "movej")
-        self.openGripper()
+    def dropObject(self, stop_event=None):
+        def drop(stop_event_as_argument):
+            self.moveJointsTo(self.JointAngleBrickDrop.copy(), "movej", stop_event=stop_event_as_argument)
+            self.openGripper()
+        if stop_event:
+            drop(stop_event_as_argument)
+        else:
+            self.waitForParallelTask(function=drop, arguments=None, information="Moving Joints")
 
     def pickUpObject(self, object_position):
-        def pickUpObjectInThread():
+        def pickUpObjectInThread(stop_event_as_argument):
             LIGHTBOX_LENGTH = 0.250  # m
             LIGHTBOX_WIDTH = 0.176  # m
             print("object_position: ", object_position)
@@ -262,19 +279,19 @@ class Robot:
             target_position[3] = a
             target_position[4] = b
             target_position[5] = c
-            self.moveToolTo(target_position, 'movel')
+            self.moveToolTo(target_position, 'movel', stop_event=stop_event_as_argument)
             # Go down and pickup the object
             target_position[2] = self.ToolPickUpHeight
-            self.moveToolTo(target_position, 'movel')
+            self.moveToolTo(target_position, 'movel', stop_event=stop_event_as_argument)
             self.closeGripper()
             # Go back up
             target_position[2] = self.ToolPickUpHeight
-            self.moveToolTo(target_position, 'movel')
+            self.moveToolTo(target_position, 'movel', stop_event=stop_event_as_argument)
         self.waitForParallelTask(function=initialiseInThread, arguments=None, information="pickUpObject")
 
 
     def initialise(self):
-        def initialiseInThread():
+        def initialiseInThread(stop_event_as_argument):
             currentJointPosition = self.getJointAngles()
             distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit.copy())])
             currentToolPosition = self.getToolPosition()
@@ -284,20 +301,20 @@ class Robot:
                     targetToolPosition[2] = 0.300
                     # Move towards first location, don't check collisions
                     # because we might start from a bad position.
-                    self.moveToolTo(targetToolPosition, "movel", check_collisions=False)
+                    self.moveToolTo(targetToolPosition, "movel", check_collisions=False, stop_event=stop_event)
             else:
                 if self.spatialDifference(currentToolPosition, self.ToolPositionBrickDrop) < 0.5:
                     if currentToolPosition[2] < 0.07:
                         targetToolPosition = currentToolPosition.copy()
                         targetToolPosition[2] = 0.07
-                        self.moveToolTo(targetToolPosition, "movel")
+                        self.moveToolTo(targetToolPosition, "movel", stop_event=stop_event_as_argument)
                 else:
                     if distanceFromAngleInit > 0.05:
-                        self.goHome()
+                        self.goHome(stop_event=stop_event_as_argument)
 
-                self.dropObject(stop_event)
+                self.dropObject(stop_event=stop_event_as_argument)
             if distanceFromAngleInit > 0.05:
-                self.goHome()
+                self.goHome(stop_event=stop_event_as_argument)
             print("Initialisation Done")
         self.waitForParallelTask(function=initialiseInThread, arguments=None, information="Initialising")
 
