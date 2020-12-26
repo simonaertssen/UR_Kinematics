@@ -1,32 +1,33 @@
 import time
-from RobotClass import Robot
-# from CameraManagement import TopCamera, DetailCamera
+from RobotClass import Robot as robot
+# from CameraManagement import TopCamera as topCamera
+# from CameraManagement import DetailCamera as detailCamera
 from threading import Thread, Event, enumerate
 
 
-class TopCamera:
+class topCamera:
     def __init__(self):
-        print("TopCamera started")
+        print("topCamera started")
 
 
-class DetailCamera:
+class detailCamera:
     def __init__(self):
-        print("DetailCamera started")
+        print("detailCamera started")
 
 
 class MainManager:
     def __init__(self):
-        self.robot = None
-        self.topCam = None
-        self.detailCam = None
-        self.actions = dict()
-        self.imageInfoList = []
+        self.Robot = None
+        self.TopCam = None
+        self.DetailCam = None
+        self.Actions = dict()
+        self.ImageInfoList = []
 
-        self.running = Event()
-        self.task = Thread(target=self.run, args=[self.running], daemon=True, name='MainManagerTask')
+        self.StopEvent = Event()
+        self.Task = Thread(target=self.run, args=[self.running], daemon=True, name='MainManagerTask')
+
         self.tryConnect()
-        self.running.set()
-        self.task.start()
+        self.Task.start()
 
     def tryConnect(self):
         def startAsync(attribute, constructor):
@@ -40,11 +41,11 @@ class MainManager:
         def testConnection(obj):
             if obj is None:
                 raise ConnectionError(obj, "is not connected.")
-        [testConnection(x) for x in [self.robot, self.topCam, self.detailCam]]
+        [testConnection(x) for x in [self.Robot, self.TopCam, self.DetailCam]]
 
     def run(self, stopevent):
         while stopevent.is_set():
-            for function_name, function_to_call in self.actions.items():
+            for function_name, function_to_call in self.Actions.items():
                 try:
                     function_to_call()
                 except TypeError as e:
@@ -52,10 +53,10 @@ class MainManager:
 
     def shutdownAllComponents(self):
         self.running.clear()
-        self.task.join()
-        shutdownThreads = [Thread(target=self.robot.shutdownSafely, name='Corpus.robot.shutdownSafely'),
-                           Thread(target=self.topCam.Shutdown, name='Corpus.topCam.Shutdown'),
-                           Thread(target=self.detailCam.Shutdown, name='Corpus.detailCam.Shutdown')]
+        self.Task.join()
+        shutdownThreads = [Thread(target=self.Robot.shutdownSafely, name='Corpus.robot.shutdownSafely'),
+                           Thread(target=self.TopCam.Shutdown, name='Corpus.topCam.Shutdown'),
+                           Thread(target=self.DetailCam.Shutdown, name='Corpus.detailCam.Shutdown')]
         [x.start() for x in shutdownThreads]
         [x.join() for x in shutdownThreads]
 
@@ -64,25 +65,25 @@ class MainManager:
 
     def isRobotConnected(self):
         try:
-            return self.robot.RobotCCO.Connected
+            return self.Robot.RobotCCO.Connected
         except Exception as e:
             return False
 
     def isModBusConnected(self):
         try:
-            return self.robot.ModBusReader.Connected
+            return self.Robot.ModBusReader.Connected
         except Exception as e:
             return False
 
     def isTopCameraConnected(self):
         try:
-            return self.topCam.Connected
+            return self.TopCam.Connected
         except Exception as e:
             return False
 
     def isDetailCameraConnected(self):
         try:
-            return self.detailCam.Connected
+            return self.DetailCam.Connected
         except Exception as e:
             return False
 
@@ -93,41 +94,41 @@ class MainManager:
             raise ValueError('Continuous Info Callback not callable')
 
         def wrap_callback():
-            output = self.topCam.grabImage()
+            output = self.TopCam.grabImage()
             if output:
                 continuous_image_callback(output[0])
             if len(output) > 1:
-                self.imageInfoList = output[1]
+                self.ImageInfoList = output[1]
                 continuous_info_callback(output[1:])
-        self.actions[str(continuous_image_callback)] = wrap_callback
+        self.Actions[str(continuous_image_callback)] = wrap_callback
 
     def test(self):
         print('Testing')
 
     def openGripper(self):
-        self.robot.openGripper()
+        self.Robot.openGripper()
 
     def closeGripper(self):
-        self.robot.closeGripper()
+        self.Robot.closeGripper()
 
     def startRobot(self):
         try:
-            self.robot.pickUpObject(self.imageInfoList)
-            self.robot.goHome()
-            self.robot.dropObject()
+            self.Robot.pickUpObject(self.ImageInfoList)
+            self.Robot.goHome()
+            self.Robot.dropObject()
         except Exception as e:
             print(e)
         finally:
-            self.robot.goHome()
+            self.Robot.goHome()
 
     def stopRobot(self):
-        self.robot.send(b'stop(10) + \n')
+        self.Robot.send(b'stop(10) + \n')
 
     def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
-        self.robot.moveToolTo(target_position, move, wait, check_collisions)
+        self.Robot.moveToolTo(target_position, move, wait, check_collisions)
 
     def moveJointsTo(self, target_position, move, wait=True, check_collisions=True):
-        self.robot.moveJointsTo(target_position, move, wait, check_collisions)
+        self.Robot.moveJointsTo(target_position, move, wait, check_collisions)
 
 
 if __name__ == '__main__':
