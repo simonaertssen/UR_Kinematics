@@ -19,16 +19,14 @@ class Robot:
 
         # Start these parts safely before anything else:
         ReturnErrorMessageQueue = Queue()
-        def startAsync(constructor, error_queue):
+        def startAsync(error_queue, constructor):
             try:
-                # print('starting {} async: type = '.format(constructor, type(constructor)))
                 setattr(self, str(constructor), constructor())
             except Exception as e:
                 # Startup of this part has failed and we need to shutdown all parts
                 error_queue.put(e)
 
-        parts = [ModBusReader, RobotCCO]
-        startThreads = [Thread(target=startAsync, args=(partname,ReturnErrorMessageQueue,), name='{} startAsync'.format(partname)) for partname in parts]
+        startThreads = [Thread(target=startAsync, args=[ReturnErrorMessageQueue, partname], name='{} startAsync'.format(partname)) for partname in [ModBusReader, RobotCCO]]
         [x.start() for x in startThreads]
         [x.join() for x in startThreads]
 
@@ -67,12 +65,15 @@ class Robot:
             except Exception as e:
                 raise SystemExit("Safe shutdown failed due to {}. Aborting".format(e))
 
-        shutdownThreads = [Thread(target=shutdownAsync, args=(part,), name='{} shutdownSafely'.format(part)) for part in [self.ModBusReader, self.RobotCCO]]
+        shutdownThreads = [Thread(target=shutdownAsync, args=[part], name='{} shutdownSafely'.format(part)) for part in [self.ModBusReader, self.RobotCCO]]
         [x.start() for x in shutdownThreads]
         [x.join() for x in shutdownThreads]
 
     def send(self, message):
-        self.RobotCCO.send(message)
+        try:
+            self.RobotCCO.send(message)
+        except Exception as e:
+            print("Sending failed due to {}".format(e))
 
     def stop(self):
         self.send(b'stop(5)')
@@ -84,7 +85,11 @@ class Robot:
         self.StopEvent.clear()
 
     def receive(self):
-        return self.RobotCCO.recv(self.RobotCCO.BufferLength)
+        try:
+            return self.RobotCCO.recv(self.RobotCCO.BufferLength)
+        except Exception as e:
+            print("Receiving failed due to {}".format(e))
+            return b''  # An empty bytes object
 
     def getToolBitInfo(self):
         return self.ModBusReader.getToolBitInfo()
@@ -153,7 +158,7 @@ class Robot:
     def detectCollision(self):
         return detectCollision(self.getJointPositions())
 
-    def moveTo(self, target_position, move, wait=True, p=True, check_collisions=True, stop_event=Event):
+    def moveTo(self, target_position, move, stop_event, wait=True, p=True, check_collisions=True):
         """
         DESCRIPTION: Moves the robot to the target.
         :param move: movej (find best move) or movel (move in a line).
@@ -180,12 +185,10 @@ class Robot:
                 self.waitUntilTargetReached(current_position, target_position, check_collisions, stop_event)
             except TimeoutError as e:  # Time ran out to test for object position
                 print(e)
-            except RuntimeError as e:  # Collision raises RuntimeError
-                # self.set_IO_PORT(1, False)
-                # time.sleep(0.1)
+            except RuntimeError as e:  # Collision raises RuntimeError, so move to startpoition
                 self.stop()
                 time.sleep(0.1)
-                self.moveTo(start_position, "movel", wait=True, p=p, check_collisions=False)
+                self.moveTo(start_position, "movel", stop_event, wait=True, p=p, check_collisions=False)
             time.sleep(0.075)  # To let momentum fade away
 
     @staticmethod
@@ -195,18 +198,12 @@ class Robot:
         return ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) ** 0.5
 
     def waitUntilTargetReached(self, current_position, target_position, check_collisions, stop_event):
-        all_differences = 100 * [0]
         difference = [1000.0 for _ in target_position]
         start_time = time.time()
 
         totalDifferenceTolerance = 5e-3
         while not stop_event.isSet() and sum(difference) >= totalDifferenceTolerance:
             difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
-            all_differences.pop(0)
-            all_differences.append(sum(difference))
-            if sum(all_differences) == 5e-3*100:
-                print('Too long in one position ')
-                break
             if time.time() - start_time > 15.0:
                 raise TimeoutError('Movement took too long')
             if check_collisions and self.detectCollision():
@@ -217,24 +214,66 @@ class Robot:
             print('Task received:', information)
         # The function is a handle that has all the necessary arguments already,
         # only the event needs to be passed when the robot needs to be stopped.
-        thread = Thread(target=function, args=[self.StopEvent], daemon=True, name=information)
+        # But leave possibility to extend with more args.
+        threadargs = [self.StopEvent]
+        if arguments is not None:
+            threadargs.extend(arguments)
+        thread = Thread(target=function, args=threadargs, daemon=True, name=information)
         thread.start()
         thread.join()
         if self.StopEvent.isSet():
             self.StopEvent.clear()
 
-    def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
+    def moveToolTo(self, target_position, move, stop_event, wait=True, check_collisions=True):
         def moveToolToInThread(stop_event):
-            self.moveTo(stop_event, target_position, move, wait=wait, check_collisions=check_collisions, p=True)
+            self.moveTo(target_position, move, stop_event, wait=wait, p=True, check_collisions=check_collisions)
         self.waitForParallelTask(function=moveToolToInThread, arguments=None, information="Moving Tool Head")
 
-    def moveJointsTo(self, target_position, move, wait=True, check_collisions=True):
+    def moveJointsTo(self, target_position, move, stop_event, wait=True, check_collisions=True, ):
         def moveJointsToInThread(stop_event):
-            self.moveTo(stop_event, target_position, move, wait=wait, check_collisions=check_collisions, p=False)
+            self.moveTo(target_position, move, stop_event, wait=wait, p=False, check_collisions=check_collisions)
         self.waitForParallelTask(function=moveJointsToInThread, arguments=None, information="Moving Joints")
 
     def goHome(self, stop_event):
-        self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej")
+        if stop_event.isSet():
+            return
+        self.moveJointsTo(self.JointAngleInit.copy(), "movej", stop_event)
+
+    def dropObject(self, stop_event):
+        if stop_event.isSet():
+            return
+        self.moveJointsTo(self.JointAngleBrickDrop.copy(), "movej", stop_event)
+        self.openGripper()
+
+    def pickUpObject(self, object_position):
+        def pickUpObjectInThread(stop_event):
+            LIGHTBOX_LENGTH = 0.250  # m
+            LIGHTBOX_WIDTH = 0.176  # m
+            print("object_position: ", object_position)
+            if len(object_position) < 1:
+                return
+            X, Y, angle = object_position
+
+            # Adjust position to the object
+            target_position = self.ToolPositionLightBox.copy()
+            target_position[0] += X * LIGHTBOX_WIDTH   # adjust X position
+            target_position[1] -= Y * LIGHTBOX_LENGTH  # adjust Y position
+            target_position[2] = self.ToolHoverHeight
+            # Get right orientation from Rodrigues conversion
+            a, b, c = RPY2RotVec(0, 3.1415926, -angle)
+            target_position[3] = a
+            target_position[4] = b
+            target_position[5] = c
+            self.moveToolTo(target_position, 'movel', stop_event)
+            # Go down and pickup the object
+            target_position[2] = self.ToolPickUpHeight
+            self.moveToolTo(target_position, 'movel', stop_event)
+            self.closeGripper()
+            # Go back up
+            target_position[2] = self.ToolPickUpHeight
+            self.moveToolTo(target_position, 'movel', stop_event)
+        self.waitForParallelTask(function=initialiseInThread, arguments=None, information="pickUpObject")
+
 
     def initialise(self):
         def initialiseInThread(stop_event):
@@ -245,54 +284,24 @@ class Robot:
                 if currentToolPosition[2] < 0.300:
                     targetToolPosition = currentToolPosition.copy()
                     targetToolPosition[2] = 0.300
-                    self.moveToolTo(stop_event, targetToolPosition, "movel", wait=True, check_collisions=False)
+                    # Move towards first location, don't check collisions
+                    # because we might start from a bad position.
+                    self.moveToolTo(targetToolPosition, "movel", stop_event, check_collisions=False)
             else:
                 if self.spatialDifference(currentToolPosition, self.ToolPositionBrickDrop) < 0.5:
                     if currentToolPosition[2] < 0.07:
                         targetToolPosition = currentToolPosition.copy()
                         targetToolPosition[2] = 0.07
-                        self.moveToolTo(stop_event, targetToolPosition, "movel", wait=True)
+                        self.moveToolTo(targetToolPosition, "movel", stop_event, wait=True)
                 else:
                     if distanceFromAngleInit > 0.05:
-                        self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej", wait=True)
+                        self.goHome(stop_event)
 
-                self.moveJointsTo(run_event, self.JointAngleBrickDrop.copy(), "movej", wait=True)
-                self.openGripper()
+                self.dropObject(stop_event)
             if distanceFromAngleInit > 0.05:
-                self.moveJointsTo(run_event, self.JointAngleInit.copy(), "movej", wait=True)
+                self.goHome(stop_event)
             print("Initialisation Done")
         self.waitForParallelTask(function=initialiseInThread, arguments=None, information="Initialising")
-
-    def dropObject(self, run_event):
-        self.moveJointsTo(run_event, self.JointAngleBrickDrop.copy(), "movej", wait=True)
-        self.openGripper()
-
-    def pickUpObject(self, run_event, object_position):
-        LIGHTBOX_LENGTH = 0.250  # m
-        LIGHTBOX_WIDTH = 0.176  # m
-        print("object_position: ", object_position)
-        if len(object_position) < 1:
-            return
-        X, Y, angle = object_position
-
-        # Adjust position to the object
-        target_position = self.ToolPositionLightBox.copy()
-        target_position[0] += X * LIGHTBOX_WIDTH   # adjust X position
-        target_position[1] -= Y * LIGHTBOX_LENGTH  # adjust Y position
-        target_position[2] = self.ToolHoverHeight
-        # Get right orientation from Rodrigues conversion
-        a, b, c = RPY2RotVec(0, 3.1415926, -angle)
-        target_position[3] = a
-        target_position[4] = b
-        target_position[5] = c
-        self.moveToolTo(run_event, target_position, 'movel')
-        # Go down and pickup the object
-        target_position[2] = self.ToolPickUpHeight
-        self.moveToolTo(run_event, target_position, 'movel')
-        self.closeGripper()
-        # Go down and pickup the object
-        target_position[2] = self.ToolPickUpHeight
-        self.moveToolTo(run_event, target_position, 'movel')
 
     def test(self):
         print('Testing the gripper')
