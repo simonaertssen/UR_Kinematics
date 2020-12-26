@@ -20,28 +20,34 @@ class MainManager:
         self.Robot = None
         self.TopCam = None
         self.DetailCam = None
+        self.tryConnect()
+
         self.Actions = dict()
         self.ImageInfoList = []
 
         self.StopEvent = Event()
-        self.Task = Thread(target=self.run, args=[self.running], daemon=True, name='MainManagerTask')
-
-        self.tryConnect()
+        self.Task = Thread(target=self.run, args=[self.StopEvent], daemon=True, name='MainManagerTask')
         self.Task.start()
 
     def tryConnect(self):
-        def startAsync(attribute, constructor):
-            setattr(self, attribute, constructor())
-        startThreads = [Thread(target=startAsync, args=('robot', Robot,), name='Corpus.robot.startAsync'),
-                        Thread(target=startAsync, args=('topCam', TopCamera,), name='Corpus.robot.startAsync'),
-                        Thread(target=startAsync, args=('detailCam', DetailCamera,), name='Corpus.robot.startAsync')]
+        # Start these parts safely before anything else:
+        ReturnErrorMessageQueue = Queue()
+        def startAsync(error_queue, constructor):
+            try:
+                setattr(self, str(constructor), constructor())
+            except Exception as e:
+                # Startup of this part has failed and we need to shutdown all parts
+                error_queue.put(e)
+
+        startThreads = [Thread(target=startAsync, args=[ReturnErrorMessageQueue, partname], name='{} startAsync'.format(partname)) for partname in [Robot, TopCamera, DetailCamera]]
         [x.start() for x in startThreads]
         [x.join() for x in startThreads]
 
-        def testConnection(obj):
-            if obj is None:
-                raise ConnectionError(obj, "is not connected.")
-        [testConnection(x) for x in [self.Robot, self.TopCam, self.DetailCam]]
+        # Get first error, if any, and raise it to warn the instance and the parent
+        if not ReturnErrorMessageQueue.empty():
+            self.shutdownSafely()
+            raise ReturnErrorMessageQueue.get()
+
 
     def run(self, stopevent):
         while stopevent.is_set():
