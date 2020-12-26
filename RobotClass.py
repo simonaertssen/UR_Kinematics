@@ -226,16 +226,19 @@ class Robot:
         if self.StopEvent.isSet():
             self.StopEvent.clear()
 
+    def wrapInThread(function_handle, stop_event):
+        if stop_event:
+            function_handle(stop_event)
+        else:
+            self.waitForParallelTask(function=function_handle, arguments=None, information=str(function_handle))
+
     def moveToolTo(self, target_position, move, wait=True, check_collisions=True, stop_event=None):
         # If the stop_event is given, then a thread is calling this function.
         # If it is not given, then we want to start a thread.
         # This avoids having two different funcions with two different but similar names.
         def moveToolHandle(stop_event_as_argument):
             self.moveTo(target_position, move, stop_event_as_argument, wait=wait, p=True, check_collisions=check_collisions)
-        if stop_event:
-            moveToolHandle(stop_event)
-        else:
-            self.waitForParallelTask(function=moveToolHandle, arguments=None, information="Moving Joints")
+        self.wrapInThread(moveToolHandle, stop_event)
 
     def moveJointsTo(self, target_position, move, wait=True, check_collisions=True, stop_event=None):
         # If the stop_event is given, then a thread is calling this function.
@@ -243,25 +246,21 @@ class Robot:
         # This avoids having two different funcions with two different but similar names.
         def moveJointsHandle(stop_event_as_argument):
             self.moveTo(target_position, move, stop_event_as_argument, wait=wait, p=False, check_collisions=check_collisions)
-        if stop_event:
-            moveJointsHandle(stop_event)
-        else:
-            self.waitForParallelTask(function=moveJointsHandle, arguments=None, information="Moving Joints")
+        self.wrapInThread(moveJointsHandle, stop_event)
 
     def goHome(self, stop_event=None):
-        self.moveJointsTo(self.JointAngleInit.copy(), "movej", stop_event=stop_event)
+        def goHomeHandle(stop_event_as_argument):
+            self.moveJointsTo(self.JointAngleInit.copy(), "movej", stop_event=stop_event_as_argument)
+        self.wrapInThread(goHomeHandle, stop_event)
 
     def dropObject(self, stop_event=None):
-        def drop(stop_event_as_argument):
+        def dropObjectHandle(stop_event_as_argument):
             self.moveJointsTo(self.JointAngleBrickDrop.copy(), "movej", stop_event=stop_event_as_argument)
             self.openGripper()
-        if stop_event:
-            drop(stop_event_as_argument)
-        else:
-            self.waitForParallelTask(function=drop, arguments=None, information="Moving Joints")
+        self.wrapInThread(dropObjectHandle, stop_event)
 
-    def pickUpObject(self, object_position):
-        def pickUpObjectInThread(stop_event_as_argument):
+    def pickUpObject(self, object_position, stop_event=None):
+        def pickUpObjectHandle(stop_event_as_argument):
             LIGHTBOX_LENGTH = 0.250  # m
             LIGHTBOX_WIDTH = 0.176  # m
             print("object_position: ", object_position)
@@ -287,7 +286,7 @@ class Robot:
             # Go back up
             target_position[2] = self.ToolPickUpHeight
             self.moveToolTo(target_position, 'movel', stop_event=stop_event_as_argument)
-        self.waitForParallelTask(function=initialiseInThread, arguments=None, information="pickUpObject")
+        self.wrapInThread(pickUpObjectHandle, stop_event)
 
 
     def initialise(self):
@@ -333,4 +332,3 @@ if __name__ == '__main__':
     robot = Robot()
     robot.moveToolTo(robot.ToolPositionLightBox, "movel", wait=False)
     robot.beep()
-    # time.sleep(200)
