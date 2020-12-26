@@ -1,5 +1,7 @@
 import socket
 
+import errno
+
 from sys import exit
 from weakref import ref
 from queue import Queue
@@ -52,10 +54,15 @@ class Reader(socket.socket):
             # This is only a test. My personal computer was added to make testing easier.
             # Delete this condition when using the code but keep the ip check.
             raise ConnectionError("Verify IP of robotarm and cameras are on the same subnet.")
-        self.connectSafely()
 
-    def isConnected(self):
-        return self.fileno() != -1
+        # Disconnect to make sure the socket can connect:
+        try:
+            self.shutdownSafely(verbose=False)
+        except OSError as e:
+            if e.errno != errno.ENOTCONN:  # Catch OSError 57: socket not connected
+                raise
+        finally:
+            self.connectSafely()
 
     def renewSocket(self):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
@@ -72,7 +79,7 @@ class Reader(socket.socket):
             self.shutdownSafely()
             raise ConnectionError('{} connection timed out.'.format(self.Address)) from None
 
-    def shutdownSafely(self):
+    def shutdownSafely(self, verbose):
         raise NotImplementedError("shutdownSafely() method not implemented")
 
 
@@ -106,16 +113,15 @@ class ModBusReader(Reader):
         self.toolRY        = ParameterInfo(404, b'\x01\x94', "Cartesian Tool Orientation RY in tenth of mm from the base frame.", self.extractAngle)
         self.toolRZ        = ParameterInfo(405, b'\x01\x95', "Cartesian Tool Orientation RZ in tenth of mm from the base frame.", self.extractAngle)
 
-        self.Communicating = Event()
-        self.Communicating.set()
-        self.CommunicationThread = Thread(target=self.readContinuously, args=[self.ToolBitQueue, self.ToolPositionQueue, self.JointAngleQueue, self.Communicating], daemon=True, name='ModBusReaderThread')
+        self.StopCommunicatingEvent = Event()
+        self.CommunicationThread = Thread(target=self.readContinuously, args=[self.ToolBitQueue, self.ToolPositionQueue, self.JointAngleQueue, self.StopCommunicatingEvent], daemon=True, name='ModBusReaderThread')
 
         # Startup parent after creation of all attributes:
         super(ModBusReader, self).__init__(IP, PORT)
         self.CommunicationThread.start()
 
-    def readContinuously(self, tool_bit_queue, tool_position_queue, joint_angle_queue, communicating):
-        while communicating.is_set():
+    def readContinuously(self, tool_bit_queue, tool_position_queue, joint_angle_queue, stop_communicating_event):
+        while not stop_communicating_event.is_set():
             self.read(tool_bit_queue, tool_position_queue, joint_angle_queue)
 
     @staticmethod
@@ -199,13 +205,14 @@ class ModBusReader(Reader):
     def getJointAngles(self):
         return self.JointAngleQueue.get()
 
-    def shutdownSafely(self):
-        print(self.Address, "shutting down safely.")
-        if self.Communicating.isSet():
-            self.Communicating.clear()
+    def shutdownSafely(self, verbose=True):
+        if verbose:
+            print(self.Address, "shutting down safely.")
+        if not self.StopCommunicatingEvent.isSet():
+            self.StopCommunicatingEvent.set()
         if self.CommunicationThread.is_alive():
             self.CommunicationThread.join()
-        if self.isConnected():  # Use private methods from the socket to test if it's alive
+        if not self._closed:  # Use private methods from the socket to test if it's alive
             self.shutdown(socket.SHUT_RDWR)
             self.close()
 
@@ -216,13 +223,14 @@ class RobotCCO(Reader):  # RobotChiefCommunicationOfficer
         PORT = 30003
         super(RobotCCO, self).__init__(IP, PORT)
 
-    def shutdownSafely(self):
-        print(self.Address, "shutting down safely.")
-        if self.isConnected():  # Use private methods from the socket to test if it's alive
+    def shutdownSafely(self, verbose=True):
+        if verbose:
+            print(self.Address, "shutting down safely.")
+        if not self._closed:  # Use private methods from the socket to test if it's alive
             self.shutdown(socket.SHUT_RDWR)
             self.close()
 
 
 if __name__ == '__main__':
-    RobotCCO()
     ModBusReader()
+    RobotCCO()
