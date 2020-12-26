@@ -67,6 +67,9 @@ class Reader(socket.socket):
     def renewSocket(self):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
 
+    def isConnected(self):
+        return self.fileno() != 1
+
     def connectSafely(self):
         print("{} connecting".format(self.Address))
         try:
