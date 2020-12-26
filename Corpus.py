@@ -131,7 +131,6 @@ class MainManager:
 
 
 if __name__ == '__main__':
-    print('Before')
     c = MainManager()
     time.sleep(10)
     print(c.checkComponentsAreConnected())
