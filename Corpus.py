@@ -1,33 +1,40 @@
 import time
+
+from threading import Thread, Event
+from queue import Queue
+
 from RobotClass import Robot as robot
 # from CameraManagement import TopCamera as topCamera
 # from CameraManagement import DetailCamera as detailCamera
-from threading import Thread, Event, enumerate
 
 
 class topCamera:
     def __init__(self):
         print("topCamera started")
+    def shutdownSafely(self):
+        print("topCamera shut down")
 
 
 class detailCamera:
     def __init__(self):
         print("detailCamera started")
+    def shutdownSafely(self):
+        print("detailCamera shut down")
 
 
 class MainManager:
     def __init__(self):
-        self.Robot = None
-        self.TopCam = None
-        self.DetailCam = None
-        self.tryConnect()
+        self.Robot = robot
+        self.TopCam = topCamera
+        self.DetailCam = detailCamera
+        self.StopEvent = Event()
 
         self.Actions = dict()
         self.ImageInfoList = []
 
-        self.StopEvent = Event()
-        self.Task = Thread(target=self.run, args=[self.StopEvent], daemon=True, name='MainManagerTask')
-        self.Task.start()
+        self.Tasks = Thread(target=self.run, args=[self.StopEvent], daemon=True, name='MainManager tasks')
+        self.tryConnect()
+        self.Tasks.start()
 
     def tryConnect(self):
         # Start these parts safely before anything else:
@@ -39,7 +46,7 @@ class MainManager:
                 # Startup of this part has failed and we need to shutdown all parts
                 error_queue.put(e)
 
-        startThreads = [Thread(target=startAsync, args=[ReturnErrorMessageQueue, partname], name='{} startAsync'.format(partname)) for partname in [Robot, TopCamera, DetailCamera]]
+        startThreads = [Thread(target=startAsync, args=[ReturnErrorMessageQueue, partname], name='{} startAsync'.format(partname)) for partname in [robot, topCamera, detailCamera]]
         [x.start() for x in startThreads]
         [x.join() for x in startThreads]
 
@@ -48,50 +55,41 @@ class MainManager:
             self.shutdownSafely()
             raise ReturnErrorMessageQueue.get()
 
+    def shutdownSafely(self):
+        if not self.StopEvent.isSet():
+            self.StopEvent.set()
+        if self.Tasks.is_alive():
+            self.Tasks.join()
+            self.StopEvent.clear()
+
+        def shutdownAsync(object):
+            if object is None:
+                return
+            try:
+                object.shutdownSafely()
+            except Exception as e:
+                raise SystemExit("Safe shutdown failed due to {}. Aborting".format(e))
+
+        shutdownThreads = [Thread(target=shutdownAsync, args=[part], name='{} shutdownSafely'.format(part)) for part in [self.Robot, self.TopCam, self.DetailCam]]
+        [x.start() for x in shutdownThreads]
+        [x.join() for x in shutdownThreads]
 
     def run(self, stopevent):
-        while stopevent.is_set():
+        while not stopevent.is_set():
             for function_name, function_to_call in self.Actions.items():
                 try:
                     function_to_call()
                 except TypeError as e:
                     print('An uncallable function was encountered: {}'.format(e))
 
-    def shutdownAllComponents(self):
-        self.running.clear()
-        self.Task.join()
-        shutdownThreads = [Thread(target=self.Robot.shutdownSafely, name='Corpus.robot.shutdownSafely'),
-                           Thread(target=self.TopCam.Shutdown, name='Corpus.topCam.Shutdown'),
-                           Thread(target=self.DetailCam.Shutdown, name='Corpus.detailCam.Shutdown')]
-        [x.start() for x in shutdownThreads]
-        [x.join() for x in shutdownThreads]
-
-    def checkComponentsAreConnected(self):
-        return self.isRobotConnected() and self.isModBusConnected() and self.isTopCameraConnected() and self.isDetailCameraConnected()
-
-    def isRobotConnected(self):
-        try:
-            return self.Robot.RobotCCO.Connected
-        except Exception as e:
-            return False
-
-    def isModBusConnected(self):
-        try:
-            return self.Robot.ModBusReader.Connected
-        except Exception as e:
-            return False
-
-    def isTopCameraConnected(self):
-        try:
-            return self.TopCam.Connected
-        except Exception as e:
-            return False
-
-    def isDetailCameraConnected(self):
-        try:
-            return self.DetailCam.Connected
-        except Exception as e:
-            return False
+    def isConnected(self):
+        answer = [False]*4
+        for i, part in enumerate([self.Robot.ModBusReader, self.Robot.RobotCCO, self.TopCam, self.DetailCam]):
+            try:
+                answer[i] = part.isConnected()
+            except Exception as e:
+                answer[i] = False
+        return all(answer)
 
     def getContinuousImages(self, continuous_image_callback, continuous_info_callback):
         if not callable(continuous_image_callback):
