@@ -226,29 +226,25 @@ class Robot:
         if self.StopEvent.isSet():
             self.StopEvent.clear()
 
-    def moveToolTo(self, target_position, move, stop_event, wait=True, check_collisions=True):
+    def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
         def moveToolToInThread(stop_event):
             self.moveTo(target_position, move, stop_event, wait=wait, p=True, check_collisions=check_collisions)
         self.waitForParallelTask(function=moveToolToInThread, arguments=None, information="Moving Tool Head")
 
-    def moveJointsTo(self, target_position, move, stop_event, wait=True, check_collisions=True, ):
+    def moveJointsTo(self, target_position, move, wait=True, check_collisions=True):
         def moveJointsToInThread(stop_event):
             self.moveTo(target_position, move, stop_event, wait=wait, p=False, check_collisions=check_collisions)
         self.waitForParallelTask(function=moveJointsToInThread, arguments=None, information="Moving Joints")
 
-    def goHome(self, stop_event):
-        if stop_event.isSet():
-            return
-        self.moveJointsTo(self.JointAngleInit.copy(), "movej", stop_event)
+    def goHome(self):
+        self.moveJointsTo(self.JointAngleInit.copy(), "movej")
 
-    def dropObject(self, stop_event):
-        if stop_event.isSet():
-            return
-        self.moveJointsTo(self.JointAngleBrickDrop.copy(), "movej", stop_event)
+    def dropObject(self):
+        self.moveJointsTo(self.JointAngleBrickDrop.copy(), "movej")
         self.openGripper()
 
     def pickUpObject(self, object_position):
-        def pickUpObjectInThread(stop_event):
+        def pickUpObjectInThread():
             LIGHTBOX_LENGTH = 0.250  # m
             LIGHTBOX_WIDTH = 0.176  # m
             print("object_position: ", object_position)
@@ -266,19 +262,19 @@ class Robot:
             target_position[3] = a
             target_position[4] = b
             target_position[5] = c
-            self.moveToolTo(target_position, 'movel', stop_event)
+            self.moveToolTo(target_position, 'movel')
             # Go down and pickup the object
             target_position[2] = self.ToolPickUpHeight
-            self.moveToolTo(target_position, 'movel', stop_event)
+            self.moveToolTo(target_position, 'movel')
             self.closeGripper()
             # Go back up
             target_position[2] = self.ToolPickUpHeight
-            self.moveToolTo(target_position, 'movel', stop_event)
+            self.moveToolTo(target_position, 'movel')
         self.waitForParallelTask(function=initialiseInThread, arguments=None, information="pickUpObject")
 
 
     def initialise(self):
-        def initialiseInThread(stop_event):
+        def initialiseInThread():
             currentJointPosition = self.getJointAngles()
             distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit.copy())])
             currentToolPosition = self.getToolPosition()
@@ -288,20 +284,20 @@ class Robot:
                     targetToolPosition[2] = 0.300
                     # Move towards first location, don't check collisions
                     # because we might start from a bad position.
-                    self.moveToolTo(targetToolPosition, "movel", stop_event, check_collisions=False)
+                    self.moveToolTo(targetToolPosition, "movel", check_collisions=False)
             else:
                 if self.spatialDifference(currentToolPosition, self.ToolPositionBrickDrop) < 0.5:
                     if currentToolPosition[2] < 0.07:
                         targetToolPosition = currentToolPosition.copy()
                         targetToolPosition[2] = 0.07
-                        self.moveToolTo(targetToolPosition, "movel", stop_event, wait=True)
+                        self.moveToolTo(targetToolPosition, "movel")
                 else:
                     if distanceFromAngleInit > 0.05:
-                        self.goHome(stop_event)
+                        self.goHome()
 
                 self.dropObject(stop_event)
             if distanceFromAngleInit > 0.05:
-                self.goHome(stop_event)
+                self.goHome()
             print("Initialisation Done")
         self.waitForParallelTask(function=initialiseInThread, arguments=None, information="Initialising")
 
