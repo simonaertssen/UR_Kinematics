@@ -212,6 +212,7 @@ class ModBusReader(Reader):
             self.StopCommunicatingEvent.set()
         if self.CommunicationThread.is_alive():
             self.CommunicationThread.join()
+            self.StopCommunicatingEvent.clear()
         if not self._closed:  # Use private methods from the socket to test if it's alive
             self.shutdown(socket.SHUT_RDWR)
             self.close()
