@@ -74,8 +74,8 @@ class MainManager:
         [x.start() for x in shutdownThreads]
         [x.join() for x in shutdownThreads]
 
-    def run(self, stopevent):
-        while not stopevent.is_set():
+    def run(self, stop_event):
+        while not stop_event.is_set():
             for function_name, function_to_call in self.Actions.items():
                 try:
                     function_to_call()
@@ -106,9 +106,6 @@ class MainManager:
                 continuous_info_callback(output[1:])
         self.Actions[str(continuous_image_callback)] = wrap_callback
 
-    def test(self):
-        print('Testing')
-
     def openGripper(self):
         self.Robot.openGripper()
 
@@ -116,17 +113,15 @@ class MainManager:
         self.Robot.closeGripper()
 
     def startRobot(self):
-        try:
-            self.Robot.pickUpObject(self.ImageInfoList)
-            self.Robot.goHome()
-            self.Robot.dropObject()
-        except Exception as e:
-            print(e)
-        finally:
-            self.Robot.goHome()
+        def startRobotHandle(stop_event_as_argument):
+            self.Robot.pickUpObject(self.ImageInfoList, stop_event=stop_event_as_argument)
+            self.Robot.goHome(stop_event=stop_event_as_argument)
+            self.Robot.dropObject(stop_event=stop_event_as_argument)
+            self.Robot.goHome(stop_event=stop_event_as_argument)
+        self.Robot.wrapInThread(startRobotHandle, stop_event_as_argument)
 
     def stopRobot(self):
-        self.Robot.send(b'stop(10) + \n')
+        self.Robot.halt()
 
     def moveToolTo(self, target_position, move, wait=True, check_collisions=True):
         self.Robot.moveToolTo(target_position, move, wait, check_collisions)
