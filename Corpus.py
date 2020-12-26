@@ -1,9 +1,17 @@
 import time
 from RobotClass import Robot
-from CameraManagement import TopCamera, DetailCamera
+# from CameraManagement import TopCamera, DetailCamera
 from threading import Thread, Event, enumerate
 
-# from multiprocessing import Process, Event
+
+class TopCamera:
+    def __init__(self):
+        print("TopCamera started")
+
+
+class DetailCamera:
+    def __init__(self):
+        print("DetailCamera started")
 
 
 class MainManager:
@@ -15,7 +23,7 @@ class MainManager:
         self.imageInfoList = []
 
         self.running = Event()
-        self.task = Thread(target=self.run, args=(self.running, ), daemon=True, name='MainManagerTask')
+        self.task = Thread(target=self.run, args=[self.running], daemon=True, name='MainManagerTask')
         self.tryConnect()
         self.running.set()
         self.task.start()
