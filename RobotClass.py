@@ -16,24 +16,7 @@ class Robot:
         super(Robot, self).__init__()
         self.ModBusReader = None
         self.RobotCCO = None
-
-        # Start these parts safely before anything else:
-        ReturnErrorMessageQueue = Queue()
-        def startAsync(error_queue, constructor):
-            try:
-                setattr(self, str(constructor), constructor())
-            except Exception as e:
-                # Startup of this part has failed and we need to shutdown all parts
-                error_queue.put(e)
-
-        startThreads = [Thread(target=startAsync, args=[ReturnErrorMessageQueue, partname], name='{} startAsync'.format(partname)) for partname in [ModBusReader, RobotCCO]]
-        [x.start() for x in startThreads]
-        [x.join() for x in startThreads]
-
-        # Get first error, if any, and raise it to warn the instance and the parent
-        if not ReturnErrorMessageQueue.empty():
-            self.shutdownSafely()
-            raise ReturnErrorMessageQueue.get()
+        self.tryConnect()
 
         # Save some important positions as attributes:
         self.pidiv180 = 3.14159265359/180
@@ -51,6 +34,25 @@ class Robot:
 
         self.StopEvent = Event()
         self.initialise()
+
+    def tryConnect(self):
+        # Start these parts safely before anything else:
+        ReturnErrorMessageQueue = Queue()
+        def startAsync(error_queue, constructor):
+            try:
+                setattr(self, str(constructor), constructor())
+            except Exception as e:
+                # Startup of this part has failed and we need to shutdown all parts
+                error_queue.put(e)
+
+        startThreads = [Thread(target=startAsync, args=[ReturnErrorMessageQueue, partname], name='{} startAsync'.format(partname)) for partname in [ModBusReader, RobotCCO]]
+        [x.start() for x in startThreads]
+        [x.join() for x in startThreads]
+
+        # Get first error, if any, and raise it to warn the instance and the parent
+        if not ReturnErrorMessageQueue.empty():
+            self.shutdownSafely()
+            raise ReturnErrorMessageQueue.get()
 
     def shutdownSafely(self):
         # self.initialise()  # Only initialise if we want to reset the robot entirely
