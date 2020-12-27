@@ -65,7 +65,11 @@ class Robot:
         self.initialise()
 
     def tryConnect(self):
-        # Start these parts safely before anything else:
+        """
+        Try to connect to the ModBusReader and the RobotCCO asynchronously. This
+        is faster than starting sequentially. Any errors that were raised are
+        caught, and the RobotClass is destructed before passing on the error.
+        """
         ReturnErrorMessageQueue = Queue()
         def startAsync(error_queue, constructor):
             try:
@@ -84,6 +88,10 @@ class Robot:
             raise ReturnErrorMessageQueue.get()
 
     def shutdownSafely(self):
+        """
+        Safely shutdown the ModBusReader and the RobotCCO asynchronously. This
+        is faster than starting sequentially.
+        """
         # self.initialise()  # Only initialise if we want to reset the robot entirely
         if self.RobotCCO is not None and self.RobotCCO.isConnected():
             self.halt()
@@ -101,21 +109,38 @@ class Robot:
         [x.join() for x in shutdownThreads]
 
     def send(self, message):
+        """
+        Send a given bytestring through the socket.
+
+        Parameters:
+        ----------
+        message : bytes object
+            The message that is sent to URscript.
+        """
         try:
             self.RobotCCO.send(message)
         except Exception as e:
             print("Sending failed due to {}".format(e))
 
     def stop(self):
+        """
+        Signal URscript to stop the robot with an accelleration of 5 m/s^2.
+        """
         self.send(b'stop(5)')
 
     def halt(self):
+        """
+        Stop the current concurrent command and stop the robot.
+        """
         if not self.StopEvent.isSet():
             self.StopEvent.set()
         self.stop()
         self.StopEvent.clear()
 
     def receive(self):
+        """
+        Receive a message from the RobotCCO.
+        """
         try:
             return self.RobotCCO.recv(self.RobotCCO.BufferLength)
         except Exception as e:
@@ -137,10 +162,16 @@ class Robot:
 
     def set_IO_PORT(self, port_number, on):
         """
-        DESCRIPTION: Set robot I/O port described with by 'port_number' and the status of the port described by 'on'.
-        :param port_number: integer
-        :param on: boolean
-        :return: None
+        Set a given IO port of the ModBus to on or off status. This is much
+        simpler through URscript, as the ModBus is only used for listening and
+        the syntax is complicated.
+
+        Parameters:
+        ----------
+        port_number : int
+            The ModBus port number we wish to set.
+        on: boolean
+            The value of the port. "True" = 1, "False" = 0.
         """
         if not (0 <= port_number <= 8) or not isinstance(port_number, int):
             print("set_IO_PORT: port number value error")
@@ -152,6 +183,10 @@ class Robot:
         self.send(command)
 
     def turnWhiteLampON(self):
+        """
+        Preset configuration to set the 0th IO port. Wait for 2 seconds for the
+        light to come on.
+        """
         self.set_IO_PORT(0, True)
         time.sleep(2)
 
@@ -159,6 +194,9 @@ class Robot:
         self.set_IO_PORT(0, False)
 
     def isGripperOpen(self):
+        """
+        Test if the gripper is open.
+        """
         tool_bit, _ = self.getToolBitInfo()
         return tool_bit == 0
 
@@ -191,13 +229,25 @@ class Robot:
 
     def moveTo(self, target_position, move, stop_event, p=True, wait=True, check_collisions=True):
         """
-        DESCRIPTION: Moves the robot to the target.
-        :param move: movej (find best move) or movel (move in a line).
-        :param target_position: target joint angles (p=False) or tool position (given by p).
-        :param wait: wait for the program to reach the required position (blocking or not).
-        :param p: defines weather the target is a set of joint angles (p=False) or a tool position (p=True).
-        :param check_collisions: check whether a collision occurs during the move.
-        :param stop_event: a threading event designed to halt the execution of a thread if necessary.
+        Moves the robot to the target, while blocking the thread which calls this
+        function until either the target position is reached or until the
+        stop event is set or until a collision is detected.
+
+        Parameters:
+        ----------
+        target_position : list
+            The target position, given by either joint angles or a tool position.
+        move: str
+            The motion: movej (find best move) or movel (move in a line).
+        stop_event: Event
+            The threading event designed to halt the execution of a thread.
+        p : bool
+            The boolean that defines wether the target is a set of joint angles
+            (p=False) or a tool position (p=True).
+        wait: bool
+            Wait for the program to reach the required position (blocking or not).
+        check_collisions: boole
+            Check whether a collision occurs during the move.
         """
         if stop_event.isSet():
             return
@@ -225,11 +275,25 @@ class Robot:
 
     @staticmethod
     def spatialDifference(current_position, target_position):
+        """
+        Compute the L2 spatial distance between two tool positions.
+
+        Parameters:
+        ----------
+        current_position : list
+            The current position, given by a tool position.
+        target_position : list
+            The target position, given by a tool position.
+        """
         x1, y1, z1, _, _, _ = current_position
         x2, y2, z2, _, _, _ = target_position
         return ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) ** 0.5
 
     def waitUntilTargetReached(self, current_position, target_position, check_collisions, stop_event):
+        """
+        Block the moveTo command until either the target position is reached or
+        until the stop event is set or until a collision is detected.
+        """
         difference = [1000.0 for _ in target_position]
         start_time = time.time()
 
@@ -242,11 +306,22 @@ class Robot:
                 raise RuntimeError('Bumping in to stuff!')
 
     def waitForParallelTask(function, arguments=None, information=None):
+        """
+        Start a command within a thread and wait for its completion.
+
+        Parameters:
+        ----------
+        function : function handle
+            The function we wish to run concurrently. Should accept a single
+            argument, the stop event.
+        arguments : list
+            The additional arguments a function could need. Included if such
+            situations would emerge in future development.
+        information : str
+            The information we wish to display as the name of the thread.
+        """
         if information:
             print('Task received:', information)
-        # The function is a handle that has all the necessary arguments already,
-        # only the event needs to be passed when the robot needs to be stopped.
-        # But leave possibility to extend with more args.
         threadargs = [self.StopEvent]
         if arguments is not None:
             threadargs.extend(arguments)
@@ -257,23 +332,39 @@ class Robot:
             self.StopEvent.clear()
 
     def wrapInThread(function_handle, stop_event):
+        """
+        Allow a method to be run either from within a handle or on its own. In
+        some situations, we want to be able to call moveTo() once. This should
+        occur in a thread to enable concurrency. If a sequence of moves is
+        required, then the stop event is passed to the function handle containing
+        that sequence and the event is passed between moveTo calls. The reason
+        why we need to pass the StopEvent is that it is threadsafe, as a good practice.
+        """
         if stop_event:
             function_handle(stop_event)
         else:
             self.waitForParallelTask(function=function_handle, arguments=None, information=str(function_handle))
 
     def moveToolTo(self, target_position, move, wait=True, check_collisions=True, stop_event=None):
-        # If the stop_event is given, then a thread is calling this function.
-        # If it is not given, then we want to start a thread.
-        # This avoids having two different funcions with two different but similar names.
+        """
+        Wrapper for the moveTo command to distinguish clearly between tool and
+        joint commands.
+        If the stop_event is given, then a thread is calling this function. If
+        it is not given, then we want to start a thread. This avoids having two
+        different funcions with two different but similar names.
+        """
         def moveToolHandle(stop_event_as_argument):
             self.moveTo(target_position, move, stop_event_as_argument, wait=wait, p=True, check_collisions=check_collisions)
         self.wrapInThread(moveToolHandle, stop_event)
 
     def moveJointsTo(self, target_position, move, wait=True, check_collisions=True, stop_event=None):
-        # If the stop_event is given, then a thread is calling this function.
-        # If it is not given, then we want to start a thread.
-        # This avoids having two different funcions with two different but similar names.
+        """
+        Wrapper for the moveTo command to distinguish clearly between tool and
+        joint commands.
+        If the stop_event is given, then a thread is calling this function. If
+        it is not given, then we want to start a thread. This avoids having two
+        different funcions with two different but similar names.
+        """
         def moveJointsHandle(stop_event_as_argument):
             self.moveTo(target_position, move, stop_event_as_argument, wait=wait, p=False, check_collisions=check_collisions)
         self.wrapInThread(moveJointsHandle, stop_event)
@@ -290,6 +381,10 @@ class Robot:
         self.wrapInThread(dropObjectHandle, stop_event)
 
     def pickUpObject(self, object_position, stop_event=None):
+        """
+        Sequence of moves that are required to pick up an object that was
+        detected by the topCamera.
+        """
         def pickUpObjectHandle(stop_event_as_argument):
             LIGHTBOX_LENGTH = 0.250  # m
             LIGHTBOX_WIDTH = 0.176  # m
@@ -320,6 +415,10 @@ class Robot:
 
 
     def initialise(self):
+        """
+        Sequence of moves that are required to initialise the robot safely, like
+        dropping any objects the gripper is still holding onto.
+        """
         def initialiseInThread(stop_event_as_argument):
             currentJointPosition = self.getJointAngles()
             distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit.copy())])
@@ -354,6 +453,9 @@ class Robot:
 
     @staticmethod
     def beep():
+        """
+        Play a sound as confirmation.
+        """
         # winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
         pass
 
