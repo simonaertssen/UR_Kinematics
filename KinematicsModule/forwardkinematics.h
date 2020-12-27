@@ -4,6 +4,30 @@
 
 
 double *T_c(double theta, double d, double r, double alpha){
+    /*
+    Make a rotation and translation matrix according to the
+    Denavit-Hartenberg convention. Fast C implementation.
+
+    Parameters:
+    ----------
+    theta : float
+        The angle at which the joint is rotated with respect to the previous arm.
+    d : float
+        The distance between the previous x-axis and the current x-axis, along
+        the previous z-axis.
+    r : float
+        The length of the common normal, which is the distance between the
+        previous z-axis and the current z-axis.
+    alpha : float
+        The angle around the common normal to between the previous z-axis and
+        the current z-axis.
+
+    Returns:
+    ----------
+    result : c double array pointer
+        1 x 16 matrix containing the rotation and translation.
+    */
+
     double cos_t = cos(theta);
     double sin_t = sin(theta);
     double cos_a = cos(alpha);
@@ -27,7 +51,21 @@ double *T_c(double theta, double d, double r, double alpha){
 
 
 void dot_c(double *A, double *B){
-    // Multipliy matrices A and B in 1D format and store result in B.
+    /*
+    Multiply two matrices that represent a 4 x 4 matrix in 1 x 16 format. Unroll
+    loops and store results in B. Fast C implementation.
+
+    Parameters:
+    ----------
+    A, B : c double array pointer, c double array pointer
+      The two 1 x 16 double arrays we wish to multiply.
+
+    Returns:
+    ----------
+    B : c double array pointer
+        1 x 16 matrix containing matrix multiplication.
+    */
+
     double *result = (double*) malloc(sizeof(double)*16);
     result[0]  = A[0]*B[0] + A[1]*B[4] + A[2]*B[8] + A[3]*B[12];
     result[1]  = A[0]*B[1] + A[1]*B[5] + A[2]*B[9] + A[3]*B[13];

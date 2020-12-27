@@ -8,6 +8,30 @@ cdef extern from "forwardkinematics.h":
 
 
 cdef double *T(double theta, double d, double r, double alpha):
+    """
+    Make a rotation and translation matrix according to the
+    Denavit-Hartenberg convention. Replaced by a faster C implementation.
+
+    Parameters:
+    ----------
+    theta : float
+        The angle at which the joint is rotated with respect to the previous arm.
+    d : float
+        The distance between the previous x-axis and the current x-axis, along
+        the previous z-axis.
+    r : float
+        The length of the common normal, which is the distance between the
+        previous z-axis and the current z-axis.
+    alpha : float
+        The angle around the common normal to between the previous z-axis and
+        the current z-axis.
+
+    Returns:
+    ----------
+    result : c double array pointer
+        1 x 16 matrix containing the rotation and translation.
+    """
+
     cdef double cos_t = cos(theta)
     cdef double sin_t = sin(theta)
     cdef double cos_a = cos(alpha)
@@ -22,7 +46,21 @@ cdef double *T(double theta, double d, double r, double alpha):
 
 
 cdef void dot(double *A, double *B):
-    # Multipliy matrices A and B in 1D format and store result in B.
+    """
+    Multiply two matrices that represent a 4 x 4 matrix in 1 x 16 format. Unroll
+    loops and store results in B. Replaced by a faster C implementation.
+
+    Parameters:
+    ----------
+    A, B : c double array pointer, c double array pointer
+      The two 1 x 16 double arrays we wish to multiply.
+
+    Returns:
+    ----------
+    B : c double array pointer
+        1 x 16 matrix containing matrix multiplication.
+    """
+
     cdef double *result = <double*> calloc(16, sizeof(double))
     result[0]  = A[0]*B[0] + A[1]*B[4] + A[2]*B[8] + A[3]*B[12]
     result[1]  = A[0]*B[1] + A[1]*B[5] + A[2]*B[9] + A[3]*B[13]
@@ -51,7 +89,9 @@ cdef void dot(double *A, double *B):
 
 
 cdef void printarray(double* array):
-    # Print a 4 x 4 array
+    """
+    Print the contents of 1 x 16 array for inspection.
+    """
     cdef int i
     printf("Array = \n[")
     for i in range(4):
@@ -71,7 +111,9 @@ cdef void printarray(double* array):
 
 
 cdef void test():
-    # Matrix multiplication is correct.
+    """
+    Test whether matrix multiplication in dot() is correct.
+    """
     cdef double * test1 = < double * > calloc(16, sizeof(double))
     test1[0] = -2.1
     test1[5] = -2.1
@@ -94,10 +136,30 @@ cdef void test():
 
 
 cdef forwardkinematics(joint_angles, tool_position=None):
+    """
+    Compute the forward kinematics of the UR5 robot arm according to the
+    Denavit-Hartenberg convention. This requires a matrix per joint.
+    Replaced by a faster C implementation.
+
+    Parameters:
+    ----------
+    joint_angles : list
+        The list of all joint angles of the UR5 robot.
+    tool_position : list
+        The list containing the toolhead position. Better measure than compute
+        it ourselves. Optional.
+    Returns:
+    ----------
+    X, Y, Z : list, list, list
+        The lists containing all x-, y- and z-positions of all joints.
+    """
+
     cdef double pihalf = 1.57079632679
     cdef double a, b, c, d, e, f, x, y, z
     a, b, c, d, e, f = joint_angles
 
+    # The joint parameters a, d and alpha can be found here:
+    # https://www.universal-robots.com/articles/ur-articles/parameters-for-calculations-of-kinematics-and-dynamics/
     cdef double *base     = T(a,  0.089159, -0.134,    pihalf)
     cdef double *shoulder = T(b,  0,        -0.425,    0)
     cdef double *elbow    = T(c, -0.119,     0,        0)
@@ -137,12 +199,30 @@ cdef forwardkinematics(joint_angles, tool_position=None):
 
 
 cdef forwardkinematics_fromc(joint_angles, tool_position=None):
-    cdef double pihalf = 1.57079632679
+    """
+    Compute the forward kinematics of the UR5 robot arm according to the
+    Denavit-Hartenberg convention. This requires a matrix per joint.
+    Fast C implementation.
 
+    Parameters:
+    ----------
+    joint_angles : list
+        The list of all joint angles of the UR5 robot.
+    tool_position : list
+        The list containing the toolhead position. Better measure than compute
+        it ourselves. Optional.
+    Returns:
+    ----------
+    X, Y, Z : list, list, list
+        The lists containing all x-, y- and z-positions of all joints.
+    """
+
+    cdef double pihalf = 1.57079632679
     cdef double a, b, c, d, e, f, x, y, z
     a, b, c, d, e, f = joint_angles
 
-    # The joint parameters a, d and alpha can be found here: https://www.universal-robots.com/articles/ur-articles/parameters-for-calculations-of-kinematics-and-dynamics/
+    # The joint parameters a, d and alpha can be found here:
+    # https://www.universal-robots.com/articles/ur-articles/parameters-for-calculations-of-kinematics-and-dynamics/
     cdef double *base     = <double*> T_c(a,  0.089159, -0.134,    pihalf)
     cdef double *shoulder = <double*> T_c(b,  0,        -0.425,    0)
     cdef double *elbow    = <double*> T_c(c, -0.119,     0,        0)
@@ -182,4 +262,7 @@ cdef forwardkinematics_fromc(joint_angles, tool_position=None):
 
 
 cpdef ForwardKinematics(joint_angles, tool_position=None):
+    """
+    Call the fast C implementation straignt from Python.
+    """
     return forwardkinematics_fromc(joint_angles, tool_position=tool_position)

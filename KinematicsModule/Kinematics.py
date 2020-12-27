@@ -5,6 +5,30 @@ import cv2  # For Rodrigues
 
 
 def T(theta, d, r, alpha):
+    """
+    Make a rotation and translation matrix according to the
+    Denavit-Hartenberg convention. Replaced by a faster Cython implementation.
+
+    Parameters:
+    ----------
+    theta : float
+        The angle at which the joint is rotated with respect to the previous arm.
+    d : float
+        The distance between the previous x-axis and the current x-axis, along
+        the previous z-axis.
+    r : float
+        The length of the common normal, which is the distance between the
+        previous z-axis and the current z-axis.
+    alpha : float
+        The angle around the common normal to between the previous z-axis and
+        the current z-axis.
+
+    Returns:
+    ----------
+    result : np.array
+        4 x 4 matrix containing the rotation and translation.
+    """
+
     cos_t = np.cos(theta)
     sin_t = np.sin(theta)
     cos_a = np.cos(alpha)
@@ -18,8 +42,27 @@ def T(theta, d, r, alpha):
 
 
 def ForwardKinematics(joint_angles, tool_position=None):
+    """
+    Compute the forward kinematics of the UR5 robot arm according to the
+    Denavit-Hartenberg convention. This requires a matrix per joint.
+    Replaced by a faster Cython implementation.
+
+    Parameters:
+    ----------
+    joint_angles : list
+        The list of all joint angles of the UR5 robot.
+    tool_position : list
+        The list containing the toolhead position. Better measure than compute
+        it ourselves. Optional.
+    Returns:
+    ----------
+    X, Y, Z : np.array, np.array, np.array
+        The arrays containing all x-, y- and z-positions of all joints.
+    """
+
     a, b, c, d, e, f = np.float64(joint_angles)
-    # The joint parameters a, d and alpha can be found here: https://www.universal-robots.com/articles/ur-articles/parameters-for-calculations-of-kinematics-and-dynamics/
+    # The joint parameters a, d and alpha can be found here:
+    # https://www.universal-robots.com/articles/ur-articles/parameters-for-calculations-of-kinematics-and-dynamics/
     base     = T(theta=a, d=0.089159, r=-0.134,   alpha=np.pi / 2)
     shoulder = T(theta=b, d=0,        r=-0.425,   alpha=0)
     elbow    = T(theta=c, d=-0.119,   r=0,        alpha=0)
@@ -45,7 +88,7 @@ def ForwardKinematics(joint_angles, tool_position=None):
         X.append(x)
         Y.append(y)
         Z.append(z)
-    return X, Y, Z  # return np.array(X), np.array(Y), np.array(Z) for arrays instead
+    return np.array(X), np.array(Y), np.array(Z) for arrays instead
 
 
 def detectCollision(positions):
