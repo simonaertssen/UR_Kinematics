@@ -148,6 +148,7 @@ cdef forwardkinematics(joint_angles, tool_position=None):
     tool_position : list
         The list containing the toolhead position. Better measure than compute
         it ourselves. Optional.
+
     Returns:
     ----------
     X, Y, Z : list, list, list
@@ -211,6 +212,7 @@ cdef forwardkinematics_fromc(joint_angles, tool_position=None):
     tool_position : list
         The list containing the toolhead position. Better measure than compute
         it ourselves. Optional.
+
     Returns:
     ----------
     X, Y, Z : list, list, list
@@ -266,3 +268,63 @@ cpdef ForwardKinematics(joint_angles, tool_position=None):
     Call the fast C implementation straignt from Python.
     """
     return forwardkinematics_fromc(joint_angles, tool_position=tool_position)
+
+
+cpdef detectCollision(positions):
+    """
+    Detect whether any of the spatial positions computed by the forward kinematics
+    is out of bounds. This prevents the robot arm from bumping into the container,
+    or into the cameras or the screen. Add a margin e for security.
+    Fast Cython implementation.
+
+    Parameters:
+    ----------
+    positions : tuple of lists
+        The lists containing all x-, y- and z-positions of all joints.
+
+    Returns:
+    ----------
+    bool
+        The boolean whether we detected a collision (True) or not (False).
+    """
+
+    cdef list X, Y, Z
+    X, Y, Z = positions
+    X = X[2:]  # We don't need all the positions
+    Y = Y[2:]
+    Z = Z[2:]
+    cdef int items = len(X)
+
+    # Are we inside of the box?
+    cdef double e = 0.05
+    cdef double BOX_X_MIN = -0.832
+    cdef double BOX_X_MAX = 0.490
+    cdef double BOX_Y_MIN = -0.713
+    cdef double BOX_Y_MAX = 0.265
+    cdef double BOX_Z_MIN = 0
+
+    cdef int i
+    for i in range(items):
+      if not (((BOX_X_MIN + e < X[i]) & (X[i] < BOX_X_MAX - e)) and ((BOX_Y_MIN + e < Y[i]) & (Y[i] < BOX_Y_MAX - e)) and (BOX_Z_MIN < Z[i])):
+        print("box")
+        return True
+    # Are we bumping into the camera and the light?
+    CAM_X_MIN = -0.568
+    CAM_X_MAX = -0.364
+    CAM_Y_MIN = -0.266
+    CAM_Y_MAX = 0.031
+    CAM_Z_MIN = 0.765
+    for i in range(items):
+      if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e > Z[i]):
+        print("camera")
+        return True
+    # Are we bumping into the screen?
+    e = 0.01
+    SCR_X_MAX = -0.182
+    SCR_Y_MAX = -0.520
+    SCR_Z_MIN = 0.375
+    for i in range(items):
+      if (X[i] < SCR_X_MAX + e) and (Y[i] < SCR_Y_MAX + e) and (Z[i] < SCR_Z_MIN + e):
+        print("screen")
+        return True
+    return False

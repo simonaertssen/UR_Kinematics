@@ -97,6 +97,7 @@ def detectCollision(positions):
     Detect whether any of the spatial positions computed by the forward kinematics
     is out of bounds. This prevents the robot arm from bumping into the container,
     or into the cameras or the screen. Add a margin e for security.
+    Replaced by a faster Cython implementation.
 
     Parameters:
     ----------
@@ -229,4 +230,4 @@ if __name__ == '__main__':
     # 14195 iterations per second by using just a function
 
     SpeedOfCollisionDetection()
-    # 47293 iterations per second for the pute Python implementation
+    # 47293 iterations per second for the pure Python implementation
