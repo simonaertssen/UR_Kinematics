@@ -54,6 +54,7 @@ def ForwardKinematics(joint_angles, tool_position=None):
     tool_position : list
         The list containing the toolhead position. Better measure than compute
         it ourselves. Optional.
+
     Returns:
     ----------
     X, Y, Z : np.array, np.array, np.array
@@ -88,10 +89,26 @@ def ForwardKinematics(joint_angles, tool_position=None):
         X.append(x)
         Y.append(y)
         Z.append(z)
-    return np.array(X), np.array(Y), np.array(Z) for arrays instead
+    return np.array(X), np.array(Y), np.array(Z)
 
 
 def detectCollision(positions):
+    """
+    Detect whether any of the spatial positions computed by the forward kinematics
+    is out of bounds. This prevents the robot arm from bumping into the container,
+    or into the cameras or the screen. Add a margin e for security.
+
+    Parameters:
+    ----------
+    positions : tuple of lists
+        The lists containing all x-, y- and z-positions of all joints.
+
+    Returns:
+    ----------
+    bool
+        The boolean whether we detected a collision (True) or not (False).
+    """
+
     X, Y, Z = positions
     X = np.array(X[2:])  # We don't need all the positions
     Y = np.array(Y[2:])
@@ -100,10 +117,10 @@ def detectCollision(positions):
     # Are we inside of the box?
     e = 0.05
     BOX_X_MIN = -0.832
-    BOX_X_MAX = 0.490
+    BOX_X_MAX =  0.490
     BOX_Y_MIN = -0.713
-    BOX_Y_MAX = 0.265
-    BOX_Z_MIN = 0
+    BOX_Y_MAX =  0.265
+    BOX_Z_MIN =  0.000
     if not (((BOX_X_MIN + e < X) & (X < BOX_X_MAX - e)).all() and ((BOX_Y_MIN + e < Y) & (Y < BOX_Y_MAX - e)).all() and (BOX_Z_MIN < Z).all()):
         print("box")
         return True
@@ -111,8 +128,8 @@ def detectCollision(positions):
     CAM_X_MIN = -0.568
     CAM_X_MAX = -0.364
     CAM_Y_MIN = -0.266
-    CAM_Y_MAX = 0.031
-    CAM_Z_MIN = 0.765
+    CAM_Y_MAX =  0.031
+    CAM_Z_MIN =  0.765
     if ((CAM_X_MIN + e < X) & (X < CAM_X_MAX - e)).any() and ((CAM_Y_MIN + e < Y) & (Y < CAM_Y_MAX - e)).any() and (CAM_Z_MIN + e > Z).any():
         print("camera")
         return True
@@ -120,7 +137,7 @@ def detectCollision(positions):
     e = 0.01
     SCR_X_MAX = -0.182
     SCR_Y_MAX = -0.520
-    SCR_Z_MIN = 0.375
+    SCR_Z_MIN =  0.375
     if (X < SCR_X_MAX + e).any() and (Y < SCR_Y_MAX + e).any() and (Z < SCR_Z_MIN + e).any():
         print("screen")
         return True
@@ -129,15 +146,26 @@ def detectCollision(positions):
 
 def RPY2RotVec(roll, pitch, yaw):
     """
-    DESCRIPTION: Convert roll pitch, yaw angles to a rotation vector.
-    :param roll: x-rotation in radians
-    :param pitch: y-rotation in radians
-    :param yaw: z-rotation in radians
-    :return rx: converted roll in Euler angles
-    :return ry: converted pitch in Euler angles
-    :return rz: converted yaw in Euler angles
-    See: https://www.zacobria.com/universal-robots-knowledge-base-tech-support-forum-hints-tips/python-code-example-of-converting-rpyeuler-angles-to-rotation-vectorangle-axis-for-universal-robots/
+    Convert roll pitch, yaw angles to a rotation vector.
+    See: www.zacobria.com/universal-robots-knowledge-base-tech-support-
+        forum-hints-tips/python-code-example-of-converting-rpyeuler-angles-to-
+        rotation-vectorangle-axis-for-universal-robots/
+
+    Parameters:
+    ----------
+    roll : float
+        The x-rotation in radians.
+    pitch : float
+        The y-rotation in radians.
+    yaw : float
+        The z-rotation in radians.
+
+    Returns:
+    ----------
+    rx, ry, rz
+        The converted roll, pitch and yaw in Euler angles
     """
+
     sin = np.sin
     cos = np.cos
 
@@ -179,6 +207,19 @@ def SpeedOfCurrentKinematics():
     interval = time.time() - start
     print(n/interval, "iterations per second")
 
+def SpeedOfCollisionDetection():
+    start = time.time()
+    X = [0.1]*9
+    Y = [0.1]*9
+    Z = [0.1]*9
+
+    n = 100000
+    for _ in range(n):
+        toolTip = None
+        collision = detectCollision((X, Y, Z))
+    interval = time.time() - start
+    print(n/interval, "iterations per second")
+
 
 if __name__ == '__main__':
     # SpeedOfCurrentKinematics()
@@ -186,3 +227,6 @@ if __name__ == '__main__':
     # 17859 iterations per second with 'slots'
     # 17663 iterations per second without for loop
     # 14195 iterations per second by using just a function
+
+    SpeedOfCollisionDetection()
+    # 47293 iterations per second for the pute Python implementation
