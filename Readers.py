@@ -17,6 +17,8 @@ class ParameterInfo:
 
     Attributes:
     -------
+    Instances : list
+        The list of existing instances for quick retrieval.
     Decimal : int
         The decimal register address of the parameter. Added for reference to
         the documentation.

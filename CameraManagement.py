@@ -10,9 +10,22 @@ import tracemalloc
 
 
 class ImageEventHandler(pylon.ImageEventHandler):
+    """
+    Class used to represent pylon c class that catches images from the cameras.
+
+    Attributes:
+    -------
+    imageQueue : Queue
+        The queue in which taken images are stored fro threadsafe access.
+    """
+
     imageQueue = Queue()
 
     def OnImageGrabbed(self, camera, grab_result):
+        """
+        Safely acquire an image from the pylon c buffer. The GetArrayZeroCopy()
+        method was shown to be superior in terms of speed.
+        """
         try:
             while not self.imageQueue.empty():
                 self.imageQueue.get()
@@ -28,10 +41,29 @@ class ImageEventHandler(pylon.ImageEventHandler):
 
 
 class Camera:
-    # This class will save all the information coming from the pypylon package, so that two instances of a CW can be created.
-    # Cameras are initialised using their serial number (see the CW serial number).
-    # Subclassing a pylon.InstantCamera is not supported, so this camera1 will be used as an attribute.
-    # See https://github.com/basler/pypylon/issues/196
+    """
+    Class used to represent a pylon camera, holding all the required information
+    for robust performance. Cameras are initialised using their serial number
+    (see the CW serial number). Subclassing a pylon.InstantCamera is not
+    supported, so this camera1 will be used as an attribute.
+    See https://github.com/basler/pypylon/issues/196
+
+    Attributes:
+    -------
+    serialNumber : int
+        The serial number of the camera.
+    grayScale : bool
+        Turn the acquired image in grayscale format or not.
+    info : pylon.CDeviceInfo
+        The camera information used by pylon.
+    camera : pylon.InstantCamera
+        The camera is listed as an attribute as subclassing it is not supported.
+    imageEventHandler: ImageEventHandler
+        The class that acquires an image from the camera safely.
+    Connected : bool
+        The camera is connected or not.
+    """
+
     def __init__(self, serial_number=None, grayscale=True):
         super(Camera, self).__init__()
         self.serialNumber = serial_number
@@ -44,45 +76,62 @@ class Camera:
         self.setCamera()
         self.registerGrabbingStrategy()
 
-        # Open camera briefly to avoid errors.
-        self.camera.Open()
+        # Open camera briefly to avoid errors while registering properties.
+        self.camera.open()
         self.pixelWidth = self.camera.Width.Value
         self.pixelHeight = self.camera.Height.Value
-        self.camera.Close()
+        self.camera.close()
 
     def getShape(self):
+        """
+        Acquire the dimensions of images taken by the current camera.
+        """
         return self.pixelHeight, self.pixelWidth
 
     def setCamera(self):
+        """
+        Find the camera with the pylon internals using the serial number. If that
+        is not given, use the first camera that pylon finds. An error is raised
+        if no cameras could be found.
+        """
         try:
             if self.serialNumber is None:
                 self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
             else:
-                self.info.SetSerialNumber(self.serialNumber)
+                self.info.SetSerialNumber(str(self.serialNumber))
                 self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(self.info))
+            # Close all connections if they exist:
+            self.close()
             self.Connected = True
             print("Camera {} is connected.".format(self.serialNumber))
         except genicam.GenericException as e:
-            self.Connected = False
+            self.shutdownSafely()
             raise ConnectionError('Camera {} could not be found: {}'.format(self.serialNumber, e))
 
-    def Open(self):
-        if not self.camera.IsOpen():
+    def isConnected(self):
+        return self.Connected
+
+    def open(self):
+        if not self.camera.Isopen():
             self.camera.Open()
 
-    def Close(self):
+    def close(self):
         if self.camera.IsGrabbing():
             self.camera.StopGrabbing()
-        if self.camera.IsOpen():
+        if self.camera.Isopen():
             self.camera.Close()
 
-    def Shutdown(self):
+    def shutdownSafely(self):
         self.Connected = False
-        self.Close()
+        self.close()
         self.camera.DetachDevice()
         self.camera.DestroyDevice()
 
     def registerGrabbingStrategy(self):
+        """
+        Load a strategy for the camera to follow on hw to acquire images. The
+        fastest strategy was chosen here.
+        """
         self.camera.RegisterConfiguration(pylon.SoftwareTriggerConfiguration(), pylon.RegistrationMode_ReplaceAll, pylon.Cleanup_Delete)
         self.camera.RegisterImageEventHandler(self.imageEventHandler, pylon.RegistrationMode_Append, pylon.Cleanup_Delete)
 
@@ -92,14 +141,20 @@ class Camera:
         return image_to_gray
 
     def manipulateImage(self, image_to_manipulate):
+        """
+        Wrapper which contains all the functions we wish to apply on images
+        coming from this camera.
+        """
         image_to_manipulate = self.toGrayScale(image_to_manipulate)
         return image_to_manipulate
 
     def grabImage(self, image):
-        # This is an experimental function, and works slightly faster due to the container
-        # of the image being recycled. This requires the image to be returned to the method,
-        # which is not always simply implemented.
-        self.Open()
+        """
+        This is an experimental function, and works slightly faster due to the
+        container of the image being recycled. This requires the image to be
+        returned to the method, which is not always simply implemented.
+        """
+        self.open()
         grabbedImage = None
         if not self.camera.IsGrabbing():
             self.camera.StartGrabbing(pylon.GrabStrategy_OneByOne, pylon.GrabLoop_ProvidedByInstantCamera)
@@ -129,12 +184,12 @@ class CameraArray:
         self.imageEventHandler = ImageEventHandler()
         self.setCameras()
 
-        # Open cameras briefly to avoid errors.
+        # open cameras briefly to avoid errors.
         for camera in self.cameraArray:
-            camera.Open()
+            camera.open()
             self.pixelWidths.append(camera.Width.Value)
             self.pixelHeights.append(camera.Height.Value)
-            camera.Close()
+            camera.close()
 
     def getShape(self):
         return self.pixelHeights, self.pixelWidths
@@ -155,17 +210,17 @@ class CameraArray:
         except genicam.GenericException as e:
             raise SystemExit('Cameras {} could not be found: {}'.format(self.serialNumbers, e))
 
-    def Open(self):
-        self.cameraArray.Open()
+    def open(self):
+        self.cameraArray.open()
 
-    def Close(self):
+    def close(self):
         if self.cameraArray.IsGrabbing():
             self.cameraArray.StopGrabbing()
-        if self.cameraArray.IsOpen():
-            self.cameraArray.Close()
+        if self.cameraArray.Isopen():
+            self.cameraArray.close()
 
-    def Shutdown(self):
-        self.Close()
+    def shutdownSafely(self):
+        self.close()
         self.cameraArray.DestroyDevice()
 
     def toGrayScale(self, image_to_gray):
@@ -194,7 +249,10 @@ class CameraArray:
 
 
 class TopCamera(Camera):
-    def __init__(self, serial_number="22290932", grayscale=True):
+    """
+    Class used to represent the camera looking down on the light box.
+    """
+    def __init__(self, serial_number=22290932, grayscale=True):
         super(TopCamera, self).__init__(serial_number, grayscale)
 
     def manipulateImage(self, image_to_manipulate):
@@ -206,7 +264,7 @@ class TopCamera(Camera):
     def grabImage(self):
         if not self.Connected:
             return None
-        self.Open()
+        self.open()
         grabbedImage = None
         if not self.camera.IsGrabbing():
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
@@ -230,7 +288,11 @@ class TopCamera(Camera):
 
 
 class DetailCamera(Camera):
-    def __init__(self, serial_number="21565643", grayscale=True):
+    """
+    Class used to represent the camera looking down on the items presented by
+    the robot arm.
+    """
+    def __init__(self, serial_number=21565643, grayscale=True):
         super(DetailCamera, self).__init__(serial_number, grayscale)
 
     def manipulateImage(self, image_to_manipulate):
@@ -241,7 +303,7 @@ class DetailCamera(Camera):
     def grabImage(self):
         if not self.Connected:
             return None
-        self.Open()
+        self.open()
         grabbedImage = None
         if not self.camera.IsGrabbing():
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
@@ -266,7 +328,7 @@ class DetailCamera(Camera):
 
 def runSingleCamera():
     # This works well
-    camera = Camera("22290932")
+    camera = Camera(22290932)
     testWindow = 'window1'
     cv.namedWindow(testWindow)
     cv.moveWindow(testWindow, 20, 20)
@@ -285,7 +347,7 @@ def runSingleCamera():
         now = time.time()
         print("FPS =", 1 / (time.time() - start))
         start = now
-    camera.Shutdown()
+    camera.shutdownSafely()
     cv.destroyAllWindows()
 
 
@@ -315,12 +377,12 @@ def debugTopCameraForMemoryLeaks():
             snapshot = tracemalloc.take_snapshot()
             for i, stat in enumerate(snapshot.statistics('filename')[:5], 1):
                 print(str(stat))
-    camera.Shutdown()
+    camera.shutdownSafely()
     cv.destroyAllWindows()
 
 
 def runCameraArray():
-    cameras = CameraArray(["21565643", "22290932"])
+    cameras = CameraArray([21565643, 22290932])
     testWindow = 'window1'
     cv.namedWindow(testWindow)
     cv.moveWindow(testWindow, 20, 20)
@@ -345,13 +407,13 @@ def runCameraArray():
         now = time.time()
         print("FPS =", 1 / (time.time() - start))
         start = now
-    cameras.Shutdown()
+    cameras.shutdownSafely()
     cv.destroyAllWindows()
 
 
 def runCamerasAlternate():
-    cameraOn = Camera("21565643")
-    cameraOff = Camera("22290932")
+    cameraOn = Camera(21565643)
+    cameraOff = Camera(22290932)
     testWindow = 'window1'
     cv.namedWindow(testWindow)
     cv.moveWindow(testWindow, 20, 20)
@@ -369,17 +431,17 @@ def runCamerasAlternate():
             break
 
         if cv.waitKey(5) & 0xFF == ord('q'):  # Switch cameras
-            cameraOn.Close()
+            cameraOn.close()
             cameraOn, cameraOff = cameraOff, cameraOn
-            cameraOn.Open()
+            cameraOn.open()
             h, w = cameraOn.getShape()
             imageOn = np.zeros((w, h), dtype=np.uint8)
 
         now = time.time()
         print("FPS =", 1 / (time.time() - start))
         start = now
-    cameraOn.Shutdown()
-    cameraOn.Shutdown()
+    cameraOn.shutdownSafely()
+    cameraOn.shutdownSafely()
     cv.destroyAllWindows()
 
 
