@@ -5,13 +5,45 @@ from threading import Thread, Event
 from queue import Queue
 # import winsound
 
-from KinematicsModule.Kinematics import detectCollision, RPY2RotVec  # Slow Python implementation
-from KinematicsLib.KinematicsModule import ForwardKinematics  # Fast c implementation
+from KinematicsModule.Kinematics import RPY2RotVec  # Slow Python implementation
+from KinematicsLib.KinematicsModule import ForwardKinematics, detectCollision  # Fast C and Cython implementation
 
 from Readers import ModBusReader, RobotCCO
 
 
 class Robot:
+    """
+    Class used to represent the UR5 robot, which consists of the ModBusReader to
+    listen to and aqcuire all the robot information, and the RobotCCO, to which
+    we can send commands. This class implements the move commands as a blocking
+    thread, so that we can wait for the target position to be reached while
+    using full concurrency.
+
+    Attributes:
+    -------
+    ModBusReader : ModBusReader
+        The instance of the ModBusReader class to listen to parameters like the
+        current joint angles or tool position.
+    RobotCCO : RobotCCO
+        The instance of the RobotCCO class to send commands via URscript.
+
+    pidiv180 : float
+        The value of pi/180 for conversion between angles in degrees to radians.
+    ToolHoverHeight : float
+        The height of the tool before picking up an object.
+    ToolPickUpHeight : float
+        The height of the tool when picking up an object.
+    JointAngleInit : list of angles in radians
+        The joint angles required for the initial position.
+    JointAngleBrickDrop: list of angles in radians
+        The joint angles required for an item to be dropped in the bucket.
+    ToolPositionBrickDrop : list of tool positions in mm and angles in radians
+        The tool position required for an item to be dropped in the bucket.
+    ToolPositionLightBox : list of tool positions in mm and angles in radians
+        The tool position of the tool positioned at the lower left corner of the
+        light box, with the tool aligned vertically, facing down.
+    """
+
     def __init__(self):
         super(Robot, self).__init__()
         self.ModBusReader = None
@@ -20,17 +52,14 @@ class Robot:
 
         # Save some important positions as attributes:
         self.pidiv180 = 3.14159265359/180
-        self.ToolPickUpHeight = 0.009
         self.ToolHoverHeight = 0.06
+        self.ToolPickUpHeight = 0.009
 
         self.JointAngleInit = [i * self.pidiv180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
         self.JointAngleBrickDrop = [i * self.pidiv180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
 
         self.ToolPositionBrickDrop = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
         self.ToolPositionLightBox = [0.14912, -0.30970, 0.05, 0.000, 3.14159, 0.000]
-
-        self.ToolPositionCollisionStart = [0.08838, -0.46649, 0.24701, -0.3335, 3.11, 0.0202]
-        self.ToolPositionTestCollision = [0.08838, -0.76649, 0.24701, -0.3335, 3.11, 0.0202]
 
         self.StopEvent = Event()
         self.initialise()
@@ -191,7 +220,8 @@ class Robot:
                 self.stop()
                 time.sleep(0.1)
                 self.moveTo(start_position, "movel", stop_event, wait=True, p=p, check_collisions=False)
-            time.sleep(0.075)  # To let momentum fade away
+            finally:
+                time.sleep(0.075)  # To let momentum fade away
 
     @staticmethod
     def spatialDifference(current_position, target_position):

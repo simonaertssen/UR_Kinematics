@@ -28,7 +28,7 @@ class ParameterInfo:
     Method : function handle
         The method or function that should be applied on the parameter value.
     Value : float
-        Numerical value of the parameter.
+        The umerical value of the parameter.
 
     Example:
     -------
@@ -412,7 +412,7 @@ class RobotCCO(Reader):  # RobotChiefCommunicationOfficer
     """
     Class used to represent the UR5 robot arm, with which we can communicate
     through URscript. This makes it possible to send commands like moving or
-    gripper operations, while the listening is handled by the ModbusReader.
+    gripper operations, while the listening is handled by the ModBusReader.
     """
 
     def __init__(self):
