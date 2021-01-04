@@ -223,25 +223,23 @@ def runSingleCamera(camera):
     cv.destroyAllWindows()
 
 
-def debugTopCameraForMemoryLeaks():
+def debugCameraForMemoryLeaks(camera):
     # This works well
-    camera = TopCamera()
     testWindow = 'window1'
     cv.namedWindow(testWindow)
     cv.moveWindow(testWindow, 20, 20)
 
     h, w = camera.getShape()
-    image = np.zeros((h, w), dtype=np.uint8)
     tracemalloc.start(10)
 
     counter = 0
     while True:
         counter += 1
-        output = camera.grabImage()
-        if output[0] is None:
+        image, info, cam_num = camera.grabImage()
+        if image is None:
             continue
 
-        cv.imshow(testWindow, cv.resize(output[0], (int(w/4), int(h/4))))
+        cv.imshow(testWindow, cv.resize(image, (int(w / 4), int(h / 4))))
         if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
             break
         if counter >= 100:
@@ -253,43 +251,36 @@ def debugTopCameraForMemoryLeaks():
     cv.destroyAllWindows()
 
 
-def runCamerasAlternate():
-    cameraOn = TopCamera()
-    cameraOff = DetailCamera()
+def runCamerasAlternate(cameraOn, cameraOff):
     testWindow = 'window1'
     cv.namedWindow(testWindow)
     cv.moveWindow(testWindow, 20, 20)
 
-    w, h = cameraOn.getShape()
-    imageOn = np.zeros((w, h), dtype=np.uint8)
+    h, w = cameraOn.getShape()
 
     start = time.time()
     while True:
-        imageOn = cameraOn.grabImage()
-        print(type(imageOn))
+        image, info, cam_num = cameraOn.grabImage()
+        if image is None:
+            continue
 
-        cv.imshow(testWindow, imageOn)
+        cv.imshow(testWindow, cv.resize(image, (int(w / 4), int(h / 4))))
         if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
             break
 
         if cv.waitKey(5) & 0xFF == ord('q'):  # Switch cameras with q
-            print("Closing")
             cameraOn.close()
-            print("Closed")
             cameraOn, cameraOff = cameraOff, cameraOn
             cameraOn.open()
-            print("Opened")
-            w, h = cameraOn.getShape()
-            imageOn = np.zeros((w, h), dtype=np.uint8)
+            h, w = cameraOn.getShape()
 
-        # now = time.time()
-        # print("FPS =", 1 / (time.time() - start))
-        # start = now
+        now = time.time()
+        print("FPS =", 1 / (time.time() - start))
+        start = now
     cameraOn.shutdownSafely()
     cameraOn.shutdownSafely()
     cv.destroyAllWindows()
 
 
 if __name__ == '__main__':
-    # DetailCamera()
-    runSingleCamera(DetailCamera())
+    runCamerasAlternate(TopCamera(), DetailCamera())
