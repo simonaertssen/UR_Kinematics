@@ -85,6 +85,7 @@ class Reader(socket.socket):
     ThreadLock : Lock
         The threadlock used for atomic access of queues of the child classes.
     """
+    __slots__ = ('ThreadLock',)
 
     def __init__(self, ip, port):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
