@@ -42,7 +42,8 @@ class Robot:
         The tool position of the tool positioned at the lower left corner of the
         light box, with the tool aligned vertically, facing down.
     """
-    
+    StopEvent = Event()
+
     def __init__(self):
         super(Robot, self).__init__()
         self.ModBusReader = None
@@ -60,7 +61,6 @@ class Robot:
         self.ToolPositionBrickDrop = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
         self.ToolPositionLightBox = [0.14912, -0.30970, 0.05, 0.000, 3.14159, 0.000]
 
-        self.StopEvent = Event()
         self.waitForParallelTask(function_handle=self.initialise, arguments=None, information="Initialising")
 
     def tryConnect(self):
