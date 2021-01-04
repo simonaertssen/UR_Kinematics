@@ -112,13 +112,13 @@ class Camera:
         return self.Connected
 
     def open(self):
-        if not self.camera.Isopen():
+        if not self.camera.IsOpen():
             self.camera.Open()
 
     def close(self):
         if self.camera.IsGrabbing():
             self.camera.StopGrabbing()
-        if self.camera.Isopen():
+        if self.camera.IsOpen():
             self.camera.Close()
 
     def shutdownSafely(self):
@@ -447,4 +447,4 @@ def runCamerasAlternate():
 
 
 if __name__ == '__main__':
-    # runSingleCamera()
+    runSingleCamera()
