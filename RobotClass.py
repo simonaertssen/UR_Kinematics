@@ -447,5 +447,6 @@ class Robot:
 
 if __name__ == '__main__':
     robot = Robot()
+    print(robot.getJointAngles())
     # robot.moveToolTo(robot.StopEvent, robot.ToolPositionLightBox.copy(), "movel", wait=False)
     robot.beep()
