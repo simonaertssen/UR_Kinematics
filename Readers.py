@@ -1,10 +1,7 @@
 import socket
 import errno
 
-from sys import exit
 from weakref import ref
-from queue import Queue
-
 from threading import Thread, Event, Lock
 
 
@@ -98,26 +95,12 @@ class Reader(socket.socket):
         self.ThreadLock = Lock()
         self.tryConnect()
 
-    def testHostIP(self):
-        r"""
-        Test whether the given IP is on the right subnet. Connection seems to
-        work on the JLI net with a host IP of 192.168.111.6.
-        My personal computer 'MacBook-Pro-van-Simon.local' was added to make
-        testing at home easier. Delete this condition when using the code.
-        """
-        HOST_NAME = socket.gethostname()
-        print(HOST_NAME)
-        HOST_IP   = socket.gethostbyname(HOST_NAME)
-        if (HOST_NAME != 'MacBook-Pro-van-Simon.local' or HOST_NAME != 'LAPTOP-8M705THD') and HOST_IP != '192.168.111.6':
-            raise ConnectionError("Verify IP of robotarm and cameras are on the same subnet.")
-
     def tryConnect(self):
         r"""
         Shutdown the socket to avoid errors when connecting. Raises an Exception
         when the socket does not simply raise a NotConnectedError. Finally
         connected to the fresh socket.
         """
-        self.testHostIP()
         try:
             self.shutdownSafely(verbose=False)
         except OSError as e:
@@ -139,7 +122,6 @@ class Reader(socket.socket):
         and shutdown the socket before passing a ConnectionError to the parent,
         to inform that a connection was not established.
         """
-        print("{} connecting".format(self.Address))
         try:
             self.connect(self.Address)
             print(self.Address, "is safely connected")
@@ -147,7 +129,12 @@ class Reader(socket.socket):
             self.shutdownSafely()
             raise ConnectionError('{} connection timed out.'.format(self.Address)) from None
 
+    def isClosed(self):
+        r""" Use private methods from the socket to test if it's alive."""
+        return self._closed
+
     def shutdownSafely(self, verbose):
+        r""" Class method to override by any instance. """
         raise NotImplementedError("shutdownSafely() method not implemented")
 
 
@@ -159,16 +146,6 @@ class ModBusReader(Reader):
 
     Attributes:
     -------
-    ToolBitQueue : Queue containing a tuple
-        The queue that contains the newest info about the state of the gripper,
-        which is read directly from the appropriate modbus address.
-    ToolPositionQueue : Queue containing a list
-        The queue that contains the newest info about the tool position, which
-        is read directly from the appropriate modbus address.
-    JointAngleQueue : Queue containing a list
-        The queue that contains the newest info about the robot joint angles,
-        which are read directly from the appropriate modbus addresses.
-
     ToolBitChanged : bool
         The bool that signifies whether the ToolBit changed or not.
     SpikeOccurred : bool
@@ -218,9 +195,8 @@ class ModBusReader(Reader):
     """
 
     def __init__(self):
-        self.ToolBitQueue = Queue()
-        self.ToolPositionQueue = Queue()
-        self.JointAngleQueue = Queue()
+        IP = "192.168.1.17"
+        PORT = 502
 
         self.ToolBitChanged = False
         self.SpikeOccurred = False
@@ -244,15 +220,13 @@ class ModBusReader(Reader):
         self.toolRZ        = ParameterInfo(405, b'\x01\x95', "Cartesian Tool Orientation RZ (milli rad in base frame).", self.extractAngle)
 
         self.StopCommunicatingEvent = Event()
-        self.CommunicationThread = Thread(target=self.readContinuously, args=[self.ToolBitQueue, self.ToolPositionQueue, self.JointAngleQueue, self.StopCommunicatingEvent], daemon=True, name='ModBusReaderThread')
+        self.CommunicationThread = Thread(target=self.readContinuously, args=[self.StopCommunicatingEvent], daemon=True, name='ModBusReaderThread')
 
         # Startup parent after creation of all attributes:
-        IP = "192.168.1.17"
-        PORT = 502
         super(ModBusReader, self).__init__(IP, PORT)
         self.CommunicationThread.start()
 
-    def readContinuously(self, tool_bit_queue, tool_position_queue, joint_angle_queue, stop_communicating_event):
+    def readContinuously(self, stop_communicating_event):
         r"""
         Continuously communicate with the modbus through a loop that is only
         halted if the StopCommunicatingEvent is raised. Catch errors here to
@@ -260,7 +234,7 @@ class ModBusReader(Reader):
         """
         while not stop_communicating_event.is_set():
             try:
-                self.read(tool_bit_queue, tool_position_queue, joint_angle_queue)
+                self.read()
             except OSError as e:
                 print("Error reading. {}".format(e))
                 self.renewSocket()
@@ -272,23 +246,6 @@ class ModBusReader(Reader):
         closed or not.
         """
         return not self.StopCommunicatingEvent.isSet()
-
-    @staticmethod
-    def clearQueue(queue):
-        r"""
-        Clear the given queue until so that it is empty.
-        """
-        while not queue.empty():
-            queue.get()
-
-    def storeSafelyInQueue(self, value, queue):
-        r"""
-        Atomically add the given value to the given queue, which is also emptied.
-        """
-        if value is not None:
-            with self.ThreadLock:
-                self.clearQueue(queue)
-                queue.put(value)
 
     def extractToolBit(self, data):
         r"""
@@ -303,7 +260,7 @@ class ModBusReader(Reader):
             self.ToolBitChanged = True
         return ToolBitValue
 
-    def extractToolCurrent(self, data, tool_bit_queue):
+    def extractToolCurrent(self, data):
         r"""
         The last two digits of the hexadecimal data contain the value of the
         electricalcurrent. Check if a spike occured and signal that to other methods.
@@ -324,9 +281,7 @@ class ModBusReader(Reader):
         if StabilisedCurrent:
             self.SpikeOccurred = False
             self.ToolBitChanged = False
-        # Encode output as: as long as ToolBitChanged == True we haven't settled the current yet!
-        # So as long as the output is False we haven't settled.
-        self.storeSafelyInQueue((self.ToolBit.Value, not self.ToolBitChanged), tool_bit_queue)
+        # Encode output as: until ToolBitChanged == True we haven't settled the current yet!
         return not self.ToolBitChanged
 
     @staticmethod
@@ -351,7 +306,7 @@ class ModBusReader(Reader):
             value = -(65535 + 1 - value)
         return value * 1.0e-4
 
-    def read(self, tool_bit_queue, tool_position_queue, joint_angle_queue):
+    def read(self):
         r"""
         For every instance of ParameterInfo, send a request for more information
         to the modbus given the hexadecimal address of the value we wich to
@@ -375,23 +330,16 @@ class ModBusReader(Reader):
             if len(data) == 0:
                 continue
             if callable(parameter.Method):  # Call custom methods
-                if parameter.Decimal == 770 and parameter.Address == b'\x03\x02':
-                    # Special treatment: add the tool_bit_queue as a Queue for safe storage
-                    parameter.Value = parameter.Method(data, tool_bit_queue)
-                else:
-                    parameter.Value = parameter.Method(data)
-        parameterValues = [parameter.Value for parameter in parameters]
-        self.storeSafelyInQueue(parameterValues[2:8], joint_angle_queue)  # All the robot joint angles
-        self.storeSafelyInQueue(parameterValues[8:], tool_position_queue)   # All the tool info
+                parameter.Value = parameter.Method(data)
 
     def getToolBitInfo(self):
-        return self.ToolBitQueue.get()
+        return self.ToolBit.Value, not self.ToolBitChanged
 
     def getToolPosition(self):
-        return self.ToolPositionQueue.get()
+        return [self.toolX.Value, self.toolY.Value, self.toolZ.Value, self.toolRX.Value, self.toolRY.Value, self.toolRZ.Value]
 
     def getJointAngles(self):
-        return self.JointAngleQueue.get()
+        return [self.BaseAngle.Value, self.ShoulderAngle.Value, self.ElbowAngle.Value, self.Wrist1Angle.Value, self.Wrist2Angle.Value, self.Wrist3Angle.Value]
 
     def shutdownSafely(self, verbose=True):
         r"""
@@ -404,7 +352,7 @@ class ModBusReader(Reader):
         if self.CommunicationThread.is_alive():
             self.CommunicationThread.join()
             self.StopCommunicatingEvent.clear()
-        if not self._closed:  # Use private methods from the socket to test if it's alive
+        if not self.isClosed():
             self.shutdown(socket.SHUT_RDWR)
             self.close()
 
@@ -424,7 +372,7 @@ class RobotCCO(Reader):  # RobotChiefCommunicationOfficer
     def shutdownSafely(self, verbose=True):
         if verbose:
             print(self.Address, "shutting down safely.")
-        if not self._closed:  # Use private methods from the socket to test if it's alive
+        if not self.isClosed():  # Use private methods from the socket to test if it's alive
             self.shutdown(socket.SHUT_RDWR)
             self.close()
 
