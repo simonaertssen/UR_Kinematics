@@ -42,7 +42,7 @@ class Robot:
         The tool position of the tool positioned at the lower left corner of the
         light box, with the tool aligned vertically, facing down.
     """
-
+    
     def __init__(self):
         super(Robot, self).__init__()
         self.ModBusReader = None
