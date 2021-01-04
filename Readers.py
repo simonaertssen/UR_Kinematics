@@ -124,7 +124,8 @@ class Reader(socket.socket):
         """
         try:
             self.connect(self.Address)
-            print(self.Address, "is safely connected")
+            with self.ThreadLock:
+                print(self.Address, "is safely connected")
         except socket.timeout:
             self.shutdownSafely()
             raise ConnectionError('{} connection timed out.'.format(self.Address)) from None
@@ -236,7 +237,8 @@ class ModBusReader(Reader):
             try:
                 self.read()
             except OSError as e:
-                print("Error reading. {}".format(e))
+                with self.ThreadLock:
+                    print("Error reading. {}".format(e))
                 self.renewSocket()
 
     def isConnected(self):
@@ -346,7 +348,8 @@ class ModBusReader(Reader):
         Shutdown the socket and the running processes one by one.
         """
         if verbose:
-            print(self.Address, "shutting down safely.")
+            with self.ThreadLock:
+                print(self.Address, "shutting down safely.")
         if not self.StopCommunicatingEvent.isSet():
             self.StopCommunicatingEvent.set()
         if self.CommunicationThread.is_alive():
@@ -371,7 +374,8 @@ class RobotCCO(Reader):  # RobotChiefCommunicationOfficer
 
     def shutdownSafely(self, verbose=True):
         if verbose:
-            print(self.Address, "shutting down safely.")
+            with self.ThreadLock:
+                print(self.Address, "shutting down safely.")
         if not self.isClosed():  # Use private methods from the socket to test if it's alive
             self.shutdown(socket.SHUT_RDWR)
             self.close()
