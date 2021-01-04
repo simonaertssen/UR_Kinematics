@@ -14,7 +14,7 @@ def findObjectsToPickUp(image_to_extract):
     w, h = image_to_extract.shape
 
     drawonme = cv.cvtColor(image_to_extract.copy(), cv.COLOR_GRAY2RGB)
-    output = list()
+    outputInfo = []
     contournum = 0
     for contour in contours:
         area = cv.contourArea(contour)
@@ -41,7 +41,7 @@ def findObjectsToPickUp(image_to_extract):
         # Find angle:
         pts = np.array([[midX[i], midY[i]] for i in longest_side + [0, 2]])
         angle = sign * np.arccos(np.abs(pts[1] - pts[0]).dot(np.array([1, 0])) / np.linalg.norm(pts[0] - pts[1]))
-        output.append(((w-Y)/w, X/h, np.pi/2 - angle))
+        outputInfo.append(((w-Y)/w, X/h, np.pi/2 - angle))
         # Draw info on the image:
         drawonme = cv.polylines(drawonme, [box], True, (0, 255, 0), thickness=5)
         drawonme = cv.putText(drawonme, str(np.round(angle*180/np.pi, 2)), (X, Y), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv.LINE_AA)
@@ -50,5 +50,4 @@ def findObjectsToPickUp(image_to_extract):
             drawonme = cv.circle(drawonme, (midX[i], midY[i]), 5, (255, 0, 0), -1)
         contournum += 1
 
-    output.insert(0, drawonme)
-    return output
+    return drawonme, outputInfo
