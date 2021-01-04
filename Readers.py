@@ -2,7 +2,7 @@ import socket
 import errno
 
 from weakref import ref
-from threading import Thread, Event, Lock
+from threading import Thread, Event
 
 
 class ParameterInfo(object):
@@ -85,7 +85,6 @@ class Reader(socket.socket):
     ThreadLock : Lock
         The threadlock used for atomic access of queues of the child classes.
     """
-    __slots__ = ('ThreadLock',)
 
     def __init__(self, ip, port):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
@@ -93,7 +92,6 @@ class Reader(socket.socket):
         self.settimeout(3)  # Timeout after one second
         self.Address = (ip, port)
         self.BufferLength = 1116
-        self.ThreadLock = Lock()
         self.tryConnect()
 
     def tryConnect(self):
@@ -125,8 +123,7 @@ class Reader(socket.socket):
         """
         try:
             self.connect(self.Address)
-            with self.ThreadLock:
-                print(self.Address, "is safely connected")
+            print(self.Address, "is safely connected")
         except socket.timeout:
             self.shutdownSafely()
             raise ConnectionError('{} connection timed out.'.format(self.Address)) from None
@@ -238,8 +235,7 @@ class ModBusReader(Reader):
             try:
                 self.read()
             except OSError as e:
-                with self.ThreadLock:
-                    print("Error reading. {}".format(e))
+                print("Error reading. {}".format(e))
                 self.renewSocket()
 
     def isConnected(self):
@@ -349,8 +345,7 @@ class ModBusReader(Reader):
         Shutdown the socket and the running processes one by one.
         """
         if verbose:
-            with self.ThreadLock:
-                print(self.Address, "shutting down safely.")
+            print(self.Address, "shutting down safely.")
         if not self.StopCommunicatingEvent.isSet():
             self.StopCommunicatingEvent.set()
         if self.CommunicationThread.is_alive():
@@ -375,8 +370,7 @@ class RobotCCO(Reader):  # RobotChiefCommunicationOfficer
 
     def shutdownSafely(self, verbose=True):
         if verbose:
-            with self.ThreadLock:
-                print(self.Address, "shutting down safely.")
+            print(self.Address, "shutting down safely.")
         if not self.isClosed():  # Use private methods from the socket to test if it's alive
             self.shutdown(socket.SHUT_RDWR)
             self.close()
