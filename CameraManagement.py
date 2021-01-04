@@ -10,7 +10,7 @@ import tracemalloc
 
 
 class ImageEventHandler(pylon.ImageEventHandler):
-    """
+    r"""
     Class used to represent pylon c class that catches images from the cameras.
 
     Attributes:
@@ -22,7 +22,7 @@ class ImageEventHandler(pylon.ImageEventHandler):
     imageQueue = Queue()
 
     def OnImageGrabbed(self, camera, grab_result):
-        """
+        r"""
         Safely acquire an image from the pylon c buffer. The GetArrayZeroCopy()
         method was shown to be superior in terms of speed.
         """
@@ -41,7 +41,7 @@ class ImageEventHandler(pylon.ImageEventHandler):
 
 
 class Camera:
-    """
+    r"""
     Class used to represent a pylon camera, holding all the required information
     for robust performance. Cameras are initialised using their serial number
     (see the CW serial number). Subclassing a pylon.InstantCamera is not
@@ -83,13 +83,13 @@ class Camera:
         self.camera.close()
 
     def getShape(self):
-        """
+        r"""
         Acquire the dimensions of images taken by the current camera.
         """
         return self.pixelHeight, self.pixelWidth
 
     def setCamera(self):
-        """
+        r"""
         Find the camera with the pylon internals using the serial number. If that
         is not given, use the first camera that pylon finds. An error is raised
         if no cameras could be found.
@@ -128,7 +128,7 @@ class Camera:
         self.camera.DestroyDevice()
 
     def registerGrabbingStrategy(self):
-        """
+        r"""
         Load a strategy for the camera to follow on hw to acquire images. The
         fastest strategy was chosen here.
         """
@@ -141,7 +141,7 @@ class Camera:
         return image_to_gray
 
     def manipulateImage(self, image_to_manipulate):
-        """
+        r"""
         Wrapper which contains all the functions we wish to apply on images
         coming from this camera.
         """
@@ -149,7 +149,7 @@ class Camera:
         return image_to_manipulate
 
     def grabImage(self, image):
-        """
+        r"""
         This is an experimental function, and works slightly faster due to the
         container of the image being recycled. This requires the image to be
         returned to the method, which is not always simply implemented.
@@ -249,7 +249,7 @@ class CameraArray:
 
 
 class TopCamera(Camera):
-    """
+    r"""
     Class used to represent the camera looking down on the light box.
     """
     def __init__(self, serial_number=22290932, grayscale=True):
@@ -288,7 +288,7 @@ class TopCamera(Camera):
 
 
 class DetailCamera(Camera):
-    """
+    r"""
     Class used to represent the camera looking down on the items presented by
     the robot arm.
     """
