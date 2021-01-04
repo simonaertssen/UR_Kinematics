@@ -6,8 +6,8 @@ from threading import Thread, Event
 
 from Readers import ModBusReader, RobotCCO
 
-from KinematicsModule.Kinematics import RPY2RotVec, detectCollision  # Slow Python implementation
-from KinematicsLib.KinematicsModule import ForwardKinematics  # Fast C and Cython implementation
+from KinematicsModule.Kinematics import ForwardKinematics, RPY2RotVec, detectCollision  # Slow Python implementation
+# from KinematicsLib.cKinematics import ForwardKinematics  # Fast C and Cython implementation
 
 
 class Robot:
@@ -93,7 +93,7 @@ class Robot:
         is faster than starting sequentially.
         """
         # self.initialise()  # Only initialise if we want to reset the robot entirely
-        if self.RobotCCO is not None and self.RobotCCO.isConnected():
+        if self.RobotCCO is not None and not self.RobotCCO.isClosed():
             self.halt()
 
         def shutdownAsync(part):

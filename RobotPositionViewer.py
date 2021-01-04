@@ -4,8 +4,8 @@ import numpy as np
 import time
 
 from RobotClass import Robot
-# from KinematicsModule import ForwardKinematics  # Old pure python implementation
-from KinematicsLib.KinematicsModule import ForwardKinematics
+from KinematicsModule.Kinematics import ForwardKinematics  # Old pure python implementation
+# from KinematicsLib.cKinematics import ForwardKinematics
 
 from PyQt5 import QtGui, QtCore, QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
@@ -51,7 +51,6 @@ class RobotJointReader(QtCore.QThread):
 
     def run(self):
         while self.running:
-            # print(np.round(self.readJoints(), 4))
             self.updatePlot(self.readJoints())
 
 
