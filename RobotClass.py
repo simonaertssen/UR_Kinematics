@@ -108,6 +108,9 @@ class Robot:
         [x.start() for x in shutdownThreads]
         [x.join() for x in shutdownThreads]
 
+    def isConnected(self):
+        return self.ModBusReader.isConnected() and not (self.ModBusReader.isClosed() or self.RobotCCO.isClosed())
+
     def send(self, message):
         r"""
         Send a given bytestring through the socket.
