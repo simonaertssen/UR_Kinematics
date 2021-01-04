@@ -169,84 +169,6 @@ class Camera:
             return grabbedImage, info, cam_num
 
 
-class CameraArray:
-    def __init__(self, serial_numbers=(), grayscale=True):
-        super(CameraArray, self).__init__()
-        self.serialNumbers = serial_numbers
-        self.grayScale = grayscale
-        # Parameters for continuous extraction of data:
-        self.numCameras = len(self.serialNumbers)
-        if self.numCameras == 0 or self.numCameras > 4:
-            raise ValueError
-        self.cameraArray = pylon.InstantCameraArray(self.numCameras)
-        self.pixelWidths, self.pixelHeights = [], []
-        self.imageEventHandler = ImageEventHandler()
-        self.setCameras()
-
-        # open cameras briefly to avoid errors.
-        for camera in self.cameraArray:
-            camera.open()
-            self.pixelWidths.append(camera.Width.Value)
-            self.pixelHeights.append(camera.Height.Value)
-            camera.close()
-
-    def getShape(self):
-        return self.pixelHeights, self.pixelWidths
-
-    def registerGrabbingStrategy(self, camera):
-        camera.RegisterConfiguration(pylon.SoftwareTriggerConfiguration(), pylon.RegistrationMode_ReplaceAll, pylon.Cleanup_Delete)
-        camera.RegisterImageEventHandler(self.imageEventHandler, pylon.RegistrationMode_ReplaceAll, pylon.Cleanup_Delete)
-
-    def setCameras(self):
-        try:
-            for serialNumber, camera in zip(self.serialNumbers, self.cameraArray):
-                info = pylon.CDeviceInfo()
-                info.SetSerialNumber(serialNumber)
-                device = pylon.TlFactory.GetInstance().CreateDevice(info)
-                camera.Attach(device)
-                self.registerGrabbingStrategy(camera)
-            print("Cameras", self.serialNumbers, "are connected.")
-        except genicam.GenericException as e:
-            raise SystemExit('Cameras {} could not be found: {}'.format(self.serialNumbers, e))
-
-    def open(self):
-        self.cameraArray.Open()
-
-    def close(self):
-        if self.cameraArray.IsGrabbing():
-            self.cameraArray.StopGrabbing()
-        if self.cameraArray.IsOpen():
-            self.cameraArray.Close()
-
-    def shutdownSafely(self):
-        self.close()
-        self.cameraArray.DestroyDevice()
-
-    def toGrayScale(self, image_to_gray):
-        if len(image_to_gray.shape) == 3 and self.grayScale:
-            image_to_gray = cv.cvtColor(image_to_gray, cv.COLOR_RGB2GRAY)
-        return image_to_gray
-
-    def manipulateImage(self, image_to_manipulate):
-        image_to_manipulate = self.toGrayScale(image_to_manipulate)
-        return image_to_manipulate
-
-    def grabImage(self, images):
-        if not self.cameraArray.IsGrabbing():
-            self.cameraArray.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
-        try:
-            for cam in self.cameraArray:
-                if cam.WaitForFrameTriggerReady(10, pylon.TimeoutHandling_ThrowException):
-                    cam.ExecuteSoftwareTrigger()
-            for _ in range(2):
-                context, grabbedImage = self.imageEventHandler.imageQueue.get()
-                np.copyto(images[context], self.manipulateImage(grabbedImage))
-            return 0
-        except genicam.RuntimeException as e:
-            print('Runtime Exception: {}'.format(e))
-            return -1
-
-
 class TopCamera(Camera):
     r"""
     Class used to represent the camera looking down on the light box.
@@ -328,36 +250,6 @@ def debugTopCameraForMemoryLeaks():
             for i, stat in enumerate(snapshot.statistics('filename')[:5], 1):
                 print(str(stat))
     camera.shutdownSafely()
-    cv.destroyAllWindows()
-
-
-def runCameraArray():
-    cameras = CameraArray([21565643, 22290932])
-    testWindow = 'window1'
-    cv.namedWindow(testWindow)
-    cv.moveWindow(testWindow, 20, 20)
-
-    def hconcat_resize_min(im_list, interpolation=cv.INTER_CUBIC):
-        im_list = [cv.resize(image, (int(image.shape[1] / 4), int(image.shape[0] / 4))) for image in im_list]
-        h_min = min(im.shape[0] for im in im_list)
-        im_list_resize = [cv.resize(im, (int(im.shape[1] * h_min / im.shape[0]), h_min), interpolation=interpolation)
-                          for im in im_list]
-        return cv.hconcat(im_list_resize)
-
-    images = [np.zeros((w, h), dtype=np.uint8) for w, h in cameras.getShape()]
-
-    start = time.time()
-    while True:
-        if cameras.grabImage(images) != 0:
-            continue
-
-        cv.imshow(testWindow, hconcat_resize_min(images))
-        if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
-            break
-        now = time.time()
-        print("FPS =", 1 / (time.time() - start))
-        start = now
-    cameras.shutdownSafely()
     cv.destroyAllWindows()
 
 
