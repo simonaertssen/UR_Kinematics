@@ -1,14 +1,13 @@
 import time
-import sys
+import winsound
 
-from threading import Thread, Event
 from queue import Queue
-# import winsound
-
-from KinematicsModule.Kinematics import RPY2RotVec  # Slow Python implementation
-from KinematicsLib.KinematicsModule import ForwardKinematics, detectCollision  # Fast C and Cython implementation
+from threading import Thread, Event
 
 from Readers import ModBusReader, RobotCCO
+
+from KinematicsModule.Kinematics import RPY2RotVec, detectCollision  # Slow Python implementation
+from KinematicsLib.KinematicsModule import ForwardKinematics  # Fast C and Cython implementation
 
 
 class Robot:
@@ -62,7 +61,7 @@ class Robot:
         self.ToolPositionLightBox = [0.14912, -0.30970, 0.05, 0.000, 3.14159, 0.000]
 
         self.StopEvent = Event()
-        self.initialise()
+        # self.waitForParallelTask(function_handle=self.initialise, arguments=None, information="Initialising")
 
     def tryConnect(self):
         r"""
@@ -74,7 +73,7 @@ class Robot:
 
         def startAsync(error_queue, constructor):
             try:
-                setattr(self, str(constructor), constructor())
+                setattr(self, constructor.__name__, constructor())
             except Exception as e:
                 # Startup of this part has failed and we need to shutdown all parts
                 error_queue.put(e)
@@ -183,15 +182,19 @@ class Robot:
         command = str.encode('set_digital_out({},{}) \n'.format(port_number, on))
         self.send(command)
 
-    def turnWhiteLampON(self):
+    def turnWhiteLampON(self, stop_event):
         r"""
         Preset configuration to set the 0th IO port. Wait for 2 seconds for the
-        light to come on.
+        light to come on. Continue only if stop_event is not set.
         """
+        if stop_event.isSet():
+            return
         self.set_IO_PORT(0, True)
         time.sleep(2)
 
-    def turnWhiteLampOFF(self):
+    def turnWhiteLampOFF(self, stop_event):
+        if stop_event.isSet():
+            return
         self.set_IO_PORT(0, False)
 
     def isGripperOpen(self):
@@ -201,23 +204,23 @@ class Robot:
         tool_bit, _ = self.getToolBitInfo()
         return tool_bit == 0
 
-    def openGripper(self):  # Equals a tool bit of 0
-        print('Open Gripper')
+    def openGripper(self, stop_event):  # Equals a tool bit of 0
+        if stop_event.isSet():
+            return
         if self.isGripperOpen():
             print('Gripper is already open')
             return
         self.send(b'set_digital_out(8, False)' + b"\n")
         self.waitForGripperToRead(0)
-        print("Gripper Opened")
 
-    def closeGripper(self):  # Equals a tool bit of 1
-        print('Close Gripper')
+    def closeGripper(self, stop_event):  # Equals a tool bit of 1
+        if stop_event.isSet():
+            return
         if not self.isGripperOpen():
             print('Gripper is already closed')
             return
         self.send(b'set_digital_out(8, True)' + b"\n")
         self.waitForGripperToRead(1)
-        print("Gripper Closed")
 
     def waitForGripperToRead(self, bit_value):
         while True:
@@ -228,7 +231,7 @@ class Robot:
     def detectCollision(self):
         return detectCollision(self.getJointPositions())
 
-    def moveTo(self, target_position, move, stop_event, p=True, wait=True, check_collisions=True):
+    def moveTo(self, stop_event, target_position, move, p=True, wait=True, check_collisions=True):
         r"""
         Moves the robot to the target, while blocking the thread which calls this
         function until either the target position is reached or until the
@@ -236,12 +239,12 @@ class Robot:
 
         Parameters:
         ----------
+        stop_event: Event
+            The threading event designed to halt the execution of a thread.
         target_position : list
             The target position, given by either joint angles or a tool position.
         move: str
             The motion: movej (find best move) or movel (move in a line).
-        stop_event: Event
-            The threading event designed to halt the execution of a thread.
         p : bool
             The boolean that defines wether the target is a set of joint angles
             (p=False) or a tool position (p=True).
@@ -270,7 +273,7 @@ class Robot:
             except RuntimeError as e:  # Collision raises RuntimeError, so move to startpoition
                 self.stop()
                 time.sleep(0.1)
-                self.moveTo(start_position, "movel", stop_event, wait=True, p=p, check_collisions=False)
+                self.moveTo(stop_event, start_position, "movel", wait=True, p=p, check_collisions=False)
             finally:
                 time.sleep(0.075)  # To let momentum fade away
 
@@ -306,13 +309,13 @@ class Robot:
             if check_collisions and self.detectCollision():
                 raise RuntimeError('Bumping in to stuff!')
 
-    def waitForParallelTask(function, arguments=None, information=None):
+    def waitForParallelTask(self, function_handle, arguments=None, information=None):
         r"""
-        Start a command within a thread and wait for its completion.
+        Start a command within a thread and wait for its completion to achieve concurrency.
 
         Parameters:
         ----------
-        function : function handle
+        function_handle : function handle
             The function we wish to run concurrently. Should accept a single
             argument, the stop event.
         arguments : list
@@ -323,30 +326,17 @@ class Robot:
         """
         if information:
             print('Task received:', information)
-        threadargs = [self.StopEvent]
+        thread_args = (self.StopEvent,)
         if arguments is not None:
-            threadargs.extend(arguments)
-        thread = Thread(target=function, args=threadargs, daemon=True, name=information)
+            thread_args = [thread_args]
+            thread_args.extend(arguments)
+        thread = Thread(target=function_handle, args=thread_args, daemon=True, name=information)
         thread.start()
         thread.join()
         if self.StopEvent.isSet():
             self.StopEvent.clear()
 
-    def wrapInThread(function_handle, stop_event):
-        r"""
-        Allow a method to be run either from within a handle or on its own. In
-        some situations, we want to be able to call moveTo() once. This should
-        occur in a thread to enable concurrency. If a sequence of moves is
-        required, then the stop event is passed to the function handle containing
-        that sequence and the event is passed between moveTo calls. The reason
-        why we need to pass the StopEvent is that it is threadsafe, as a good practice.
-        """
-        if stop_event:
-            function_handle(stop_event)
-        else:
-            self.waitForParallelTask(function=function_handle, arguments=None, information=str(function_handle))
-
-    def moveToolTo(self, target_position, move, wait=True, check_collisions=True, stop_event=None):
+    def moveToolTo(self, stop_event, target_position, move, wait=True, check_collisions=True):
         r"""
         Wrapper for the moveTo command to distinguish clearly between tool and
         joint commands.
@@ -354,11 +344,9 @@ class Robot:
         it is not given, then we want to start a thread. This avoids having two
         different funcions with two different but similar names.
         """
-        def moveToolHandle(stop_event_as_argument):
-            self.moveTo(target_position, move, stop_event_as_argument, wait=wait, p=True, check_collisions=check_collisions)
-        self.wrapInThread(moveToolHandle, stop_event)
+        self.moveTo(stop_event, target_position, move, wait=wait, p=True, check_collisions=check_collisions)
 
-    def moveJointsTo(self, target_position, move, wait=True, check_collisions=True, stop_event=None):
+    def moveJointsTo(self, stop_event, target_position, move, wait=True, check_collisions=True):
         r"""
         Wrapper for the moveTo command to distinguish clearly between tool and
         joint commands.
@@ -366,101 +354,98 @@ class Robot:
         it is not given, then we want to start a thread. This avoids having two
         different funcions with two different but similar names.
         """
-        def moveJointsHandle(stop_event_as_argument):
-            self.moveTo(target_position, move, stop_event_as_argument, wait=wait, p=False, check_collisions=check_collisions)
-        self.wrapInThread(moveJointsHandle, stop_event)
+        self.moveTo(stop_event, target_position, move, wait=wait, p=False, check_collisions=check_collisions)
 
-    def goHome(self, stop_event=None):
-        def goHomeHandle(stop_event_as_argument):
-            self.moveJointsTo(self.JointAngleInit.copy(), "movej", stop_event=stop_event_as_argument)
-        self.wrapInThread(goHomeHandle, stop_event)
+    def goHome(self, stop_event):
+        self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej")
 
-    def dropObject(self, stop_event=None):
-        def dropObjectHandle(stop_event_as_argument):
-            self.moveJointsTo(self.JointAngleBrickDrop.copy(), "movej", stop_event=stop_event_as_argument)
-            self.openGripper()
-        self.wrapInThread(dropObjectHandle, stop_event)
+    def dropObject(self, stop_event):
+        if stop_event.isSet():
+            return
+        self.moveJointsTo(stop_event, self.JointAngleBrickDrop.copy(), "movej")
+        self.openGripper(stop_event)
 
-    def pickUpObject(self, object_position, stop_event=None):
+    def pickUpObject(self, stop_event, object_position):
         r"""
         Sequence of moves that are required to pick up an object that was
         detected by the topCamera.
         """
-        def pickUpObjectHandle(stop_event_as_argument):
-            LIGHTBOX_LENGTH = 0.250  # m
-            LIGHTBOX_WIDTH = 0.176  # m
-            print("object_position: ", object_position)
-            if len(object_position) < 1:
-                return
-            X, Y, angle = object_position
+        if stop_event.isSet():
+            return
 
-            # Adjust position to the object
-            target_position = self.ToolPositionLightBox.copy()
-            target_position[0] += X * LIGHTBOX_WIDTH   # adjust X position
-            target_position[1] -= Y * LIGHTBOX_LENGTH  # adjust Y position
-            target_position[2] = self.ToolHoverHeight
-            # Get right orientation from Rodrigues conversion
-            a, b, c = RPY2RotVec(0, 3.1415926, -angle)
-            target_position[3] = a
-            target_position[4] = b
-            target_position[5] = c
-            self.moveToolTo(target_position, 'movel', stop_event=stop_event_as_argument)
-            # Go down and pickup the object
-            target_position[2] = self.ToolPickUpHeight
-            self.moveToolTo(target_position, 'movel', stop_event=stop_event_as_argument)
-            self.closeGripper()
-            # Go back up
-            target_position[2] = self.ToolPickUpHeight
-            self.moveToolTo(target_position, 'movel', stop_event=stop_event_as_argument)
-        self.wrapInThread(pickUpObjectHandle, stop_event)
+        LIGHTBOX_LENGTH = 0.250  # m
+        LIGHTBOX_WIDTH = 0.176  # m
+        print("object_position: ", object_position)
+        if len(object_position) < 1:
+            return
+        X, Y, angle = object_position
 
-    def initialise(self):
+        # Adjust position to the object
+        target_position = self.ToolPositionLightBox.copy()
+        target_position[0] += X * LIGHTBOX_WIDTH   # adjust X position
+        target_position[1] -= Y * LIGHTBOX_LENGTH  # adjust Y position
+        target_position[2] = self.ToolHoverHeight
+        # Get right orientation from Rodrigues conversion
+        a, b, c = RPY2RotVec(0, 3.1415926, -angle)
+        target_position[3] = a
+        target_position[4] = b
+        target_position[5] = c
+        self.moveToolTo(stop_event, target_position, 'movel')
+        # Go down and pickup the object
+        target_position[2] = self.ToolPickUpHeight
+        self.moveToolTo(stop_event, target_position, 'movel')
+        self.closeGripper(stop_event)
+        # Go back up
+        target_position[2] = self.ToolPickUpHeight
+        self.moveToolTo(stop_event, target_position, 'movel')
+
+    def initialise(self, stop_event):
         r"""
         Sequence of moves that are required to initialise the robot safely, like
         dropping any objects the gripper is still holding onto.
         """
-        def initialiseInThread(stop_event_as_argument):
-            currentJointPosition = self.getJointAngles()
-            distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit.copy())])
-            currentToolPosition = self.getToolPosition()
-            if self.isGripperOpen():
-                if currentToolPosition[2] < 0.300:
-                    targetToolPosition = currentToolPosition.copy()
-                    targetToolPosition[2] = 0.300
-                    # Move towards first location, don't check collisions
-                    # because we might start from a bad position.
-                    self.moveToolTo(targetToolPosition, "movel", check_collisions=False, stop_event=stop_event)
-            else:
-                if self.spatialDifference(currentToolPosition, self.ToolPositionBrickDrop) < 0.5:
-                    if currentToolPosition[2] < 0.07:
-                        targetToolPosition = currentToolPosition.copy()
-                        targetToolPosition[2] = 0.07
-                        self.moveToolTo(targetToolPosition, "movel", stop_event=stop_event_as_argument)
-                else:
-                    if distanceFromAngleInit > 0.05:
-                        self.goHome(stop_event=stop_event_as_argument)
+        if stop_event.isSet():
+            return
 
-                self.dropObject(stop_event=stop_event_as_argument)
-            if distanceFromAngleInit > 0.05:
-                self.goHome(stop_event=stop_event_as_argument)
-            print("Initialisation Done")
-        self.waitForParallelTask(function=initialiseInThread, arguments=None, information="Initialising")
+        currentJointPosition = self.getJointAngles()
+        distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit.copy())])
+        currentToolPosition = self.getToolPosition()
+        if self.isGripperOpen():
+            if currentToolPosition[2] < 0.300:
+                targetToolPosition = currentToolPosition.copy()
+                targetToolPosition[2] = 0.300
+                # Move towards first location, don't check collisions
+                # because we might start from a bad position.
+                self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)
+        else:
+            if self.spatialDifference(currentToolPosition, self.ToolPositionBrickDrop) < 0.5:
+                if currentToolPosition[2] < 0.07:
+                    targetToolPosition = currentToolPosition.copy()
+                    targetToolPosition[2] = 0.07
+                    self.moveToolTo(stop_event, targetToolPosition, "movel")
+            else:
+                if distanceFromAngleInit > 0.05:
+                    self.goHome(stop_event)
+
+            self.dropObject(stop_event)
+        if distanceFromAngleInit > 0.05:
+            self.goHome(stop_event)
+        print("Initialisation Done")
 
     def test(self):
         print('Testing the gripper')
-        self.closeGripper()
-        self.openGripper()
+        self.closeGripper(self.StopEvent)
+        self.openGripper(self.StopEvent)
 
     @staticmethod
     def beep():
         r"""
         Play a sound as confirmation.
         """
-        # winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
-        pass
+        winsound.PlaySound("SystemHand", winsound.SND_NOSTOP)
 
 
 if __name__ == '__main__':
     robot = Robot()
-    robot.moveToolTo(robot.ToolPositionLightBox, "movel", wait=False)
+    # robot.moveToolTo(robot.StopEvent, robot.ToolPositionLightBox.copy(), "movel", wait=False)
     robot.beep()
