@@ -77,10 +77,10 @@ class Camera:
         self.registerGrabbingStrategy()
 
         # Open camera briefly to avoid errors while registering properties.
-        self.camera.open()
+        self.camera.Open()
         self.pixelWidth = self.camera.Width.Value
         self.pixelHeight = self.camera.Height.Value
-        self.camera.close()
+        self.camera.Close()
 
     def getShape(self):
         r"""
@@ -101,7 +101,7 @@ class Camera:
                 self.info.SetSerialNumber(str(self.serialNumber))
                 self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(self.info))
             # Close all connections if they exist:
-            self.close()
+            self.camera.Close()
             self.Connected = True
             print("Camera {} is connected.".format(self.serialNumber))
         except genicam.GenericException as e:
@@ -123,9 +123,10 @@ class Camera:
 
     def shutdownSafely(self):
         self.Connected = False
-        self.close()
-        self.camera.DetachDevice()
-        self.camera.DestroyDevice()
+        if self.camera:
+            self.close()
+            self.camera.DetachDevice()
+            self.camera.DestroyDevice()
 
     def registerGrabbingStrategy(self):
         r"""
@@ -446,4 +447,4 @@ def runCamerasAlternate():
 
 
 if __name__ == '__main__':
-    runSingleCamera()
+    # runSingleCamera()
