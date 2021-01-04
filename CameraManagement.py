@@ -16,7 +16,7 @@ class ImageEventHandler(pylon.ImageEventHandler):
     Attributes:
     -------
     imageQueue : Queue
-        The queue in which taken images are stored fro threadsafe access.
+        The queue in which taken images are stored for threadsafe access.
     """
 
     imageQueue = Queue()
@@ -26,14 +26,13 @@ class ImageEventHandler(pylon.ImageEventHandler):
         Safely acquire an image from the pylon c buffer. The GetArrayZeroCopy()
         method was shown to be superior in terms of speed.
         """
+        while not self.imageQueue.empty():
+            self.imageQueue.get()
         try:
-            while not self.imageQueue.empty():
-                self.imageQueue.get()
             if grab_result.GrabSucceeded():
                 cameraContextValue = grab_result.GetCameraContext()
                 with grab_result.GetArrayZeroCopy() as ZCArray:
-                    grabbedImage = ZCArray
-                self.imageQueue.put((cameraContextValue, grabbedImage.data))
+                    self.imageQueue.put((cameraContextValue, ZCArray.data))
         except genicam.GenericException as e:
             print("ImageEventHandler Exception: {}".format(e))
         finally:
@@ -78,6 +77,7 @@ class Camera:
 
         # Open camera briefly to avoid errors while registering properties.
         self.camera.Open()
+        self.camera.TriggerMode.SetValue('Off')
         self.pixelWidth = self.camera.Width.Value
         self.pixelHeight = self.camera.Height.Value
         self.camera.Close()
@@ -149,26 +149,24 @@ class Camera:
         image_to_manipulate = self.toGrayScale(image_to_manipulate)
         return image_to_manipulate
 
-    def grabImage(self, image):
-        r"""
-        This is an experimental function, and works slightly faster due to the
-        container of the image being recycled. This requires the image to be
-        returned to the method, which is not always simply implemented.
-        """
+    def grabImage(self):
+        if not self.Connected:
+            return None
         self.open()
-        grabbedImage = None
+        grabbedImage, info, cam_num = None, None, None
         if not self.camera.IsGrabbing():
-            self.camera.StartGrabbing(pylon.GrabStrategy_OneByOne, pylon.GrabLoop_ProvidedByInstantCamera)
+            self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
         try:
             if self.camera.WaitForFrameTriggerReady(0, pylon.TimeoutHandling_Return):
                 self.camera.ExecuteSoftwareTrigger()
-            while grabbedImage is None:
-                _, grabbedImage = self.imageEventHandler.imageQueue.get()
-            np.copyto(image, self.manipulateImage(grabbedImage))
-            return 0
+            cam_num, grabbedImage = self.imageEventHandler.imageQueue.get()
+            grabbedImage, info = self.manipulateImage(np.asarray(grabbedImage))
         except genicam.RuntimeException as e:
+            print('genicam Runtime Exception: {}'.format(e))
+        except RuntimeError as e:
             print('Runtime Exception: {}'.format(e))
-            return -1
+        finally:
+            return grabbedImage, info, cam_num
 
 
 class CameraArray:
@@ -212,13 +210,13 @@ class CameraArray:
             raise SystemExit('Cameras {} could not be found: {}'.format(self.serialNumbers, e))
 
     def open(self):
-        self.cameraArray.open()
+        self.cameraArray.Open()
 
     def close(self):
         if self.cameraArray.IsGrabbing():
             self.cameraArray.StopGrabbing()
-        if self.cameraArray.Isopen():
-            self.cameraArray.close()
+        if self.cameraArray.IsOpen():
+            self.cameraArray.Close()
 
     def shutdownSafely(self):
         self.close()
@@ -257,35 +255,11 @@ class TopCamera(Camera):
         super(TopCamera, self).__init__(serial_number, grayscale)
 
     def manipulateImage(self, image_to_manipulate):
+        info = None
         # Overload to deal with images in the right way
         image_to_manipulate = self.toGrayScale(image_to_manipulate)
-        image_to_manipulate = findObjectsToPickUp(image_to_manipulate)
-        return image_to_manipulate
-
-    def grabImage(self):
-        if not self.Connected:
-            return None
-        self.open()
-        grabbedImage = None
-        if not self.camera.IsGrabbing():
-            self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
-        try:
-            if self.camera.WaitForFrameTriggerReady(0, pylon.TimeoutHandling_Return):
-                self.camera.ExecuteSoftwareTrigger()
-            max_tries = 5
-            for i in range(max_tries):
-                cam_num, grabbedImage = self.imageEventHandler.imageQueue.get()
-                if grabbedImage is not None:
-                    break
-                elif i == max_tries-1:
-                    raise RuntimeError('Too many tries on one image.')
-            return manipulateImage(np.asarray(grabbedImage))
-        except genicam.RuntimeException as e:
-            print('Runtime Exception: {}'.format(e))
-            return None
-        except RuntimeError as e:
-            print('{}'.format(e))
-            return None
+        image_to_manipulate, info = findObjectsToPickUp(image_to_manipulate)
+        return image_to_manipulate, info
 
 
 class DetailCamera(Camera):
@@ -297,49 +271,24 @@ class DetailCamera(Camera):
         super(DetailCamera, self).__init__(serial_number, grayscale)
 
     def manipulateImage(self, image_to_manipulate):
+        info = None
         # Overload to deal with images in the right way
         image_to_manipulate = self.toGrayScale(image_to_manipulate)
-        return image_to_manipulate
-
-    def grabImage(self):
-        if not self.Connected:
-            return None
-        self.open()
-        grabbedImage = None
-        if not self.camera.IsGrabbing():
-            self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
-        try:
-            if self.camera.WaitForFrameTriggerReady(0, pylon.TimeoutHandling_Return):
-                self.camera.ExecuteSoftwareTrigger()
-            max_tries = 5
-            for i in range(max_tries):
-                cam_num, grabbedImage = self.imageEventHandler.imageQueue.get()
-                if grabbedImage is not None:
-                    break
-                elif i == max_tries-1:
-                    raise RuntimeError('Too many tries on one image.')
-            return manipulateImage(np.asarray(grabbedImage))
-        except genicam.RuntimeException as e:
-            print('Runtime Exception: {}'.format(e))
-            return None
-        except RuntimeError as e:
-            print('{}'.format(e))
-            return None
+        return image_to_manipulate, info
 
 
-def runSingleCamera():
+def runSingleCamera(camera):
     # This works well
-    camera = Camera(22290932)
     testWindow = 'window1'
     cv.namedWindow(testWindow)
     cv.moveWindow(testWindow, 20, 20)
 
     h, w = camera.getShape()
-    image = np.zeros((h, w), dtype=np.uint8)
 
     start = time.time()
     while True:
-        if camera.grabImage(image) != 0:
+        image, info, cam_num = camera.grabImage()
+        if image is None:
             continue
 
         cv.imshow(testWindow, cv.resize(image, (int(w/4), int(h/4))))
@@ -413,38 +362,42 @@ def runCameraArray():
 
 
 def runCamerasAlternate():
-    cameraOn = Camera(21565643)
-    cameraOff = Camera(22290932)
+    cameraOn = TopCamera()
+    cameraOff = DetailCamera()
     testWindow = 'window1'
     cv.namedWindow(testWindow)
     cv.moveWindow(testWindow, 20, 20)
 
-    h, w = cameraOn.getShape()
-    imageOn = np.zeros((h, w), dtype=np.uint8)
+    w, h = cameraOn.getShape()
+    imageOn = np.zeros((w, h), dtype=np.uint8)
 
     start = time.time()
     while True:
-        if cameraOn.grabImage(imageOn) != 0:
-            continue
+        imageOn = cameraOn.grabImage()
+        print(type(imageOn))
 
-        cv.imshow(testWindow, cv.resize(imageOn, (int(h/4), int(w/4))))
+        cv.imshow(testWindow, imageOn)
         if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
             break
 
-        if cv.waitKey(5) & 0xFF == ord('q'):  # Switch cameras
+        if cv.waitKey(5) & 0xFF == ord('q'):  # Switch cameras with q
+            print("Closing")
             cameraOn.close()
+            print("Closed")
             cameraOn, cameraOff = cameraOff, cameraOn
             cameraOn.open()
-            h, w = cameraOn.getShape()
+            print("Opened")
+            w, h = cameraOn.getShape()
             imageOn = np.zeros((w, h), dtype=np.uint8)
 
-        now = time.time()
-        print("FPS =", 1 / (time.time() - start))
-        start = now
+        # now = time.time()
+        # print("FPS =", 1 / (time.time() - start))
+        # start = now
     cameraOn.shutdownSafely()
     cameraOn.shutdownSafely()
     cv.destroyAllWindows()
 
 
 if __name__ == '__main__':
-    runSingleCamera()
+    # DetailCamera()
+    runSingleCamera(DetailCamera())
