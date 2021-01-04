@@ -273,6 +273,8 @@ class Robot:
                 self.waitUntilTargetReached(current_position, target_position, check_collisions, stop_event)
             except TimeoutError as e:  # Time ran out to test for object position
                 print(e)
+            except InterruptedError as e:  # Robot arm is close to the target but not within tolerance
+                print(e)
             except RuntimeError as e:  # Collision raises RuntimeError, so move to startpoition
                 self.stop()
                 time.sleep(0.1)
@@ -303,14 +305,21 @@ class Robot:
         """
         difference = [1000.0 for _ in target_position]
         start_time = time.time()
+        MAX_TIME = 15.0
 
-        totalDifferenceTolerance = 5e-3
-        while not stop_event.isSet() and sum(difference) >= totalDifferenceTolerance:
+        differenceHistory = [0]*100
+        AVERAGE_DIFFERENCE_TOLERANCE = 1e-2
+        TOTAL_DIFFERENCE_TOLERANCE = 5e-3
+        while not stop_event.isSet() and sum(difference) >= TOTAL_DIFFERENCE_TOLERANCE:
             difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
-            if time.time() - start_time > 15.0:
-                raise TimeoutError('Movement took too long')
+            differenceHistory.pop()
+            differenceHistory.append(sum(difference))
             if check_collisions and self.detectCollision():
                 raise RuntimeError('Bumping in to stuff!')
+            if time.time() - start_time > MAX_TIME:
+                raise TimeoutError('Movement took too long.')
+            if sum(differenceHistory)/100 < AVERAGE_DIFFERENCE_TOLERANCE:
+                raise InterruptedError('Robot is close enough.')
 
     def waitForParallelTask(self, function_handle, arguments=None, information=None):
         r"""
@@ -378,7 +387,6 @@ class Robot:
 
         LIGHTBOX_LENGTH = 0.250  # m
         LIGHTBOX_WIDTH = 0.176  # m
-        print("object_position: ", object_position)
         if len(object_position) < 1:
             return
         X, Y, angle = object_position
