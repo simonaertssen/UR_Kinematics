@@ -25,11 +25,6 @@ class MainManager:
         self.ImageTaskThread.start()
         self.RobotTaskThread.start()
 
-        # self.Actions = dict()
-        # self.ImageInfoList = []
-        #
-        # self.Tasks = Thread(target=self.run, args=[self.StopEvent], daemon=True, name='MainManager tasks')
-
     def tryConnect(self):
         # Start these parts safely before anything else:
         ReturnErrorMessageQueue = Queue()
@@ -104,41 +99,32 @@ class MainManager:
                 answer[i] = False
         return all(answer)
 
-    # def getContinuousImages(self, continuous_image_callback, continuous_info_callback):
-    #     if not callable(continuous_image_callback):
-    #         raise ValueError('Continuous Image Callback not callable')
-    #     if not callable(continuous_info_callback):
-    #         raise ValueError('Continuous Info Callback not callable')
-    #
-    #     def wrap_callback():
-    #         output = self.TopCam.grabImage()
-    #         if output:
-    #             continuous_image_callback(output[0])
-    #         if len(output) > 1:
-    #             self.ImageInfoList = output[1]
-    #             continuous_info_callback(output[1:])
-    #     self.Actions[str(continuous_image_callback)] = wrap_callback
+    def switchActiveCamera(self):
+        if not self.TopCamera.isConnected() or not self.DetailCamera.isConnected():
+            print("Error switching cameras: one is not connected.")
+            return
+        self.TopCamera, self.DetailCamera = self.DetailCamera, self.TopCamera
 
-    def waitForParallelTask(self, function_handle, arguments=None, information=None):
-        self.Robot.waitForParallelTask(function_handle=function_handle, arguments=arguments, information=information)
+    def giveRobotParallelTask(self, function_handle):
+        self.RobotTaskQueue.put(function_handle)
 
     def openGripper(self):
-        self.waitForParallelTask(function_handle=self.Robot.openGripper, information='Opening Gripper')
+        self.giveRobotParallelTask(self.Robot.openGripper)
 
     def closeGripper(self):
-        self.waitForParallelTask(function_handle=self.Robot.closeGripper, information='Closing Gripper')
+        self.giveRobotParallelTask(self.Robot.closeGripper)
 
-    def startRobot(self):
+    def startRobot(self, info):
         def startRobotHandle(stop_event_as_argument):
-            self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfoList)
+            self.Robot.pickUpObject(stop_event_as_argument, info)
             self.Robot.goHome(stop_event_as_argument)
             self.Robot.dropObject(stop_event_as_argument)
             self.Robot.goHome(stop_event_as_argument)
 
-        self.waitForParallelTask(function_handle=startRobotHandle, information='Moving Robot')
+        self.giveRobotParallelTask(startRobotHandle)
 
     def stopRobot(self):
-        self.waitForParallelTask(function_handle=self.Robot.halt, information='Halting Robot')
+        self.giveRobotParallelTask(self.Robot.halt)
 
 
 if __name__ == '__main__':
