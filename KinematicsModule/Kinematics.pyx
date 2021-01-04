@@ -293,7 +293,7 @@ cpdef detectCollision(positions):
     X = X[2:]  # We don't need all the positions
     Y = Y[2:]
     Z = Z[2:]
-    cdef int items = len(X)
+    cdef size_t items = len(X)
 
     # Are we inside of the box?
     cdef double e = 0.05
@@ -303,7 +303,7 @@ cpdef detectCollision(positions):
     cdef double BOX_Y_MAX = 0.265
     cdef double BOX_Z_MIN = 0
 
-    cdef int i
+    cdef int i = 0
     for i in range(items):
       if not (((BOX_X_MIN + e < X[i]) & (X[i] < BOX_X_MAX - e)) and ((BOX_Y_MIN + e < Y[i]) & (Y[i] < BOX_Y_MAX - e)) and (BOX_Z_MIN < Z[i])):
         print("box")

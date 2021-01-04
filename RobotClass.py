@@ -6,8 +6,8 @@ from threading import Thread, Event
 
 from Readers import ModBusReader, RobotCCO
 
-from KinematicsModule.Kinematics import ForwardKinematics, RPY2RotVec, detectCollision  # Slow Python implementation
-# from KinematicsLib.cKinematics import ForwardKinematics  # Fast C and Cython implementation
+from KinematicsModule.Kinematics import RPY2RotVec  # Slow Python implementation
+from KinematicsLib.cKinematics import ForwardKinematics, detectCollision  # Fast C and Cython implementation
 
 
 class Robot:
@@ -61,7 +61,7 @@ class Robot:
         self.ToolPositionLightBox = [0.14912, -0.30970, 0.05, 0.000, 3.14159, 0.000]
 
         self.StopEvent = Event()
-        # self.waitForParallelTask(function_handle=self.initialise, arguments=None, information="Initialising")
+        self.waitForParallelTask(function_handle=self.initialise, arguments=None, information="Initialising")
 
     def tryConnect(self):
         r"""
@@ -447,6 +447,5 @@ class Robot:
 
 if __name__ == '__main__':
     robot = Robot()
-    print(robot.getJointAngles())
     # robot.moveToolTo(robot.StopEvent, robot.ToolPositionLightBox.copy(), "movel", wait=False)
     robot.beep()

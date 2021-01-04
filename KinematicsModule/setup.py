@@ -5,7 +5,7 @@ from Cython.Build import cythonize
 
 def compile_cython():
     extensions = cythonize([Extension(
-            "KinematicsModule",
+            "cKinematics",
             sources=["Kinematics.pyx"],
             extra_compile_args=["-march=native", "-ffast-math", "-O3"])],
             compiler_directives={'language_level': "3"})
