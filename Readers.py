@@ -89,7 +89,7 @@ class Reader(socket.socket):
     def __init__(self, ip, port):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.settimeout(3)  # Timeout after one second
+        self.settimeout(1)  # Timeout after one second
         self.Address = (ip, port)
         self.BufferLength = 1116
         self.tryConnect()
@@ -125,7 +125,6 @@ class Reader(socket.socket):
             self.connect(self.Address)
             print(self.Address, "is safely connected")
         except socket.timeout:
-            self.shutdownSafely()
             raise ConnectionError('{} connection timed out.'.format(self.Address)) from None
 
     def isClosed(self):
