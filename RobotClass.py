@@ -94,7 +94,7 @@ class Robot:
         """
         # self.initialise()  # Only initialise if we want to reset the robot entirely
         if self.RobotCCO is not None and not self.RobotCCO.isClosed():
-            self.halt()
+            self.halt(self.StopEvent)
 
         def shutdownAsync(part):
             if part is None:
@@ -131,14 +131,14 @@ class Robot:
         """
         self.send(b'stop(5)')
 
-    def halt(self):
+    def halt(self, stop_event):
         r"""
         Stop the current concurrent command and stop the robot.
         """
-        if not self.StopEvent.isSet():
-            self.StopEvent.set()
+        if not stop_event.isSet():
+            stop_event.set()
         self.stop()
-        self.StopEvent.clear()
+        stop_event.clear()
 
     def receive(self):
         r"""
