@@ -8,8 +8,8 @@ from queue import Queue
 from threading import Thread, Event, Lock
 
 
-class ParameterInfo:
-    """
+class ParameterInfo(object):
+    r"""
     Class used to represent a parameter of the UR5 robot, with all the necessary
     information to retrieve it from the UR5 modbus. This makes reading joint
     angles, positions, voltages and velocities easier.
@@ -39,6 +39,8 @@ class ParameterInfo:
     No method to apply on this value.
     """
 
+    # Declare __slots__ method for faster attribute access, add __weakref__
+    __slots__ = ('__weakref__', 'Decimal', 'Address', 'Note', 'Method', 'Value')
     Instances = list()
 
     def __init__(self, decimal, address, note, method=None, numerical_value=-1):
@@ -54,7 +56,7 @@ class ParameterInfo:
 
     @classmethod
     def getInstances(cls):
-        """
+        r"""
         Yield a generator of instances of this class for quick recovery. This is
         cleaner than to refer to all instances by name.
 
@@ -62,7 +64,6 @@ class ParameterInfo:
         -------
         A generator of existing instances.
         """
-
         dead = list()
         for reference in cls.Instances:
             obj = reference()
@@ -75,7 +76,7 @@ class ParameterInfo:
 
 
 class Reader(socket.socket):
-    """
+    r"""
     Class used to extend the python socket with custom methods and attributes.
 
     Attributes:
@@ -91,26 +92,27 @@ class Reader(socket.socket):
     def __init__(self, ip, port):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.settimeout(1) # Timeout after one second
+        self.settimeout(3)  # Timeout after one second
         self.Address = (ip, port)
         self.BufferLength = 1116
         self.ThreadLock = Lock()
         self.tryConnect()
 
     def testHostIP(self):
-        """
+        r"""
         Test whether the given IP is on the right subnet. Connection seems to
         work on the JLI net with a host IP of 192.168.111.6.
         My personal computer 'MacBook-Pro-van-Simon.local' was added to make
         testing at home easier. Delete this condition when using the code.
         """
         HOST_NAME = socket.gethostname()
+        print(HOST_NAME)
         HOST_IP   = socket.gethostbyname(HOST_NAME)
-        if HOST_NAME != 'MacBook-Pro-van-Simon.local' and HOST_IP != '192.168.111.6':
+        if (HOST_NAME != 'MacBook-Pro-van-Simon.local' or HOST_NAME != 'LAPTOP-8M705THD') and HOST_IP != '192.168.111.6':
             raise ConnectionError("Verify IP of robotarm and cameras are on the same subnet.")
 
     def tryConnect(self):
-        """
+        r"""
         Shutdown the socket to avoid errors when connecting. Raises an Exception
         when the socket does not simply raise a NotConnectedError. Finally
         connected to the fresh socket.
@@ -125,14 +127,14 @@ class Reader(socket.socket):
             self.connectSafely()
 
     def renewSocket(self):
-        """
+        r"""
         Renew connection to the socket by calling the parent __init__ function
         again through super(). This resets the socket entirely.
         """
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
 
     def connectSafely(self):
-        """
+        r"""
         Connect to the socket via the provided Address. Catch a timeout error
         and shutdown the socket before passing a ConnectionError to the parent,
         to inform that a connection was not established.
@@ -140,10 +142,7 @@ class Reader(socket.socket):
         print("{} connecting".format(self.Address))
         try:
             self.connect(self.Address)
-            def sprint(*args, sep=" ", end="", **kwargs):
-                joined_string = sep.join([str(arg) for arg in args])
-                print(joined_string + "\n", sep=sep, end=end, **kwargs)
-            sprint(self.Address, "is safely connected")
+            print(self.Address, "is safely connected")
         except socket.timeout:
             self.shutdownSafely()
             raise ConnectionError('{} connection timed out.'.format(self.Address)) from None
@@ -153,7 +152,7 @@ class Reader(socket.socket):
 
 
 class ModBusReader(Reader):
-    """
+    r"""
     Class used to communicate with the UR modbus in real-time. This is safer and
     more robust than listening to the robot parameters through URscript, which
     is now reserved only for sending commands through the RobotCCO.
@@ -254,7 +253,7 @@ class ModBusReader(Reader):
         self.CommunicationThread.start()
 
     def readContinuously(self, tool_bit_queue, tool_position_queue, joint_angle_queue, stop_communicating_event):
-        """
+        r"""
         Continuously communicate with the modbus through a loop that is only
         halted if the StopCommunicatingEvent is raised. Catch errors here to
         ensure the CommunicationThread keeps communicating.
@@ -267,7 +266,7 @@ class ModBusReader(Reader):
                 self.renewSocket()
 
     def isConnected(self):
-        """
+        r"""
         Test whether the socket is communicating or not. This is better than the
         fileno() or _closed approaches, as those only measure if the socket is
         closed or not.
@@ -276,14 +275,14 @@ class ModBusReader(Reader):
 
     @staticmethod
     def clearQueue(queue):
-        """
+        r"""
         Clear the given queue until so that it is empty.
         """
         while not queue.empty():
             queue.get()
 
     def storeSafelyInQueue(self, value, queue):
-        """
+        r"""
         Atomically add the given value to the given queue, which is also emptied.
         """
         if value is not None:
@@ -292,7 +291,7 @@ class ModBusReader(Reader):
                 queue.put(value)
 
     def extractToolBit(self, data):
-        """
+        r"""
         Convert the hexadecimal data to a list of bits. Read the bit that
         corresponds to the gripper state (bit 8) and see if it differs from the
         ToolBit value, to check if the state has changed so we can look for a spike.
@@ -305,7 +304,7 @@ class ModBusReader(Reader):
         return ToolBitValue
 
     def extractToolCurrent(self, data, tool_bit_queue):
-        """
+        r"""
         The last two digits of the hexadecimal data contain the value of the
         electricalcurrent. Check if a spike occured and signal that to other methods.
         """
@@ -332,7 +331,7 @@ class ModBusReader(Reader):
 
     @staticmethod
     def extractAngle(data):
-        """
+        r"""
         Convert the hexadecimal data of a joint angle to a floating point value.
         Check for negative values by using 2's complement.
         """
@@ -343,7 +342,7 @@ class ModBusReader(Reader):
 
     @staticmethod
     def extractToolInfo(data):
-        """
+        r"""
         Convert the hexadecimal data of a tool position to a floating point value.
         Check for negative values by using 2's complement.
         """
@@ -353,7 +352,7 @@ class ModBusReader(Reader):
         return value * 1.0e-4
 
     def read(self, tool_bit_queue, tool_position_queue, joint_angle_queue):
-        """
+        r"""
         For every instance of ParameterInfo, send a request for more information
         to the modbus given the hexadecimal address of the value we wich to
         update. Process the values and store them in the appropriate queues for
@@ -395,7 +394,7 @@ class ModBusReader(Reader):
         return self.JointAngleQueue.get()
 
     def shutdownSafely(self, verbose=True):
-        """
+        r"""
         Shutdown the socket and the running processes one by one.
         """
         if verbose:
@@ -411,7 +410,7 @@ class ModBusReader(Reader):
 
 
 class RobotCCO(Reader):  # RobotChiefCommunicationOfficer
-    """
+    r"""
     Class used to represent the UR5 robot arm, with which we can communicate
     through URscript. This makes it possible to send commands like moving or
     gripper operations, while the listening is handled by the ModBusReader.
