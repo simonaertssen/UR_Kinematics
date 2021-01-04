@@ -267,7 +267,7 @@ class ModBusReader(Reader):
     def extractToolCurrent(self, data):
         r"""
         The last two digits of the hexadecimal data contain the value of the
-        electricalcurrent. Check if a spike occured and signal that to other methods.
+        electrical current. Check if a spike occurred and signal that to other methods.
         """
         StabilisedCurrent = False
         self.ListOfCurrents.append(int(data[-2:], 16))
@@ -328,7 +328,7 @@ class ModBusReader(Reader):
         00 01 : the total number of requested registers
         """
         parameters = list(ParameterInfo.getInstances())
-        for index, parameter in enumerate(parameters):
+        for parameter in parameters:
             self.send(b'\x00\x04\x00\x00\x00\x06\x00\x03' + parameter.Address + b'\x00\x01')
             data = self.recv(self.BufferLength).hex()
             if len(data) == 0:

@@ -52,6 +52,9 @@ class RobotJointReader(QtCore.QThread):
     def run(self):
         while self.running:
             self.updatePlot(self.readJoints())
+            # Scripts are so fast that the image buffer is loaded before it can be displayed.
+            # Use maximum 60 frames per second so sleep for that time.
+            time.sleep(1/60)
 
 
 class Viewer(QtWidgets.QMainWindow):
