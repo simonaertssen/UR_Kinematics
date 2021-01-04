@@ -187,7 +187,7 @@ class ModBusReader(Reader):
     toolRZ : ParameterInfo(float)
         The angle at which the tool is rotated about the z-axis.
 
-    StopCommunicatingEvent: Event
+    StopCommunicating: Event
         The event that signals that communication with the modbus should halt.
     CommunicationThread : Thread
         The thread that updates all ParameterInfo instances.
@@ -218,22 +218,27 @@ class ModBusReader(Reader):
         self.toolRY        = ParameterInfo(404, b'\x01\x94', "Cartesian Tool Orientation RY (milli rad in base frame).", self.extractAngle)
         self.toolRZ        = ParameterInfo(405, b'\x01\x95', "Cartesian Tool Orientation RZ (milli rad in base frame).", self.extractAngle)
 
-        self.StopCommunicatingEvent = Event()
-        self.CommunicationThread = Thread(target=self.readContinuously, args=[self.StopCommunicatingEvent], daemon=True, name='ModBusReaderThread')
+        CommunicatingStarted = Event()
+        self.StopCommunicating = Event()
+        self.CommunicationThread = Thread(target=self.readContinuously, args=[CommunicatingStarted, self.StopCommunicating], daemon=True, name='ModBusReaderThread')
 
         # Startup parent after creation of all attributes:
         super(ModBusReader, self).__init__(IP, PORT)
+        # At this moment the stop event is set due to unknown reasons. Clear the event.
+        self.StopCommunicating.clear()
         self.CommunicationThread.start()
+        # Wait for the first value to be read:
+        CommunicatingStarted.wait()
 
-    def readContinuously(self, stop_communicating_event):
+    def readContinuously(self, communicating_started_event, stop_communicating_event):
         r"""
         Continuously communicate with the modbus through a loop that is only
-        halted if the StopCommunicatingEvent is raised. Catch errors here to
+        halted if the StopCommunicating is raised. Catch errors here to
         ensure the CommunicationThread keeps communicating.
         """
         while not stop_communicating_event.is_set():
             try:
-                self.read()
+                self.read(communicating_started_event)
             except OSError as e:
                 print("Error reading. {}".format(e))
                 self.renewSocket()
@@ -244,7 +249,7 @@ class ModBusReader(Reader):
         fileno() or _closed approaches, as those only measure if the socket is
         closed or not.
         """
-        return not self.StopCommunicatingEvent.isSet()
+        return not self.StopCommunicating.isSet()
 
     def extractToolBit(self, data):
         r"""
@@ -305,7 +310,7 @@ class ModBusReader(Reader):
             value = -(65535 + 1 - value)
         return value * 1.0e-4
 
-    def read(self):
+    def read(self, communicating_started_event):
         r"""
         For every instance of ParameterInfo, send a request for more information
         to the modbus given the hexadecimal address of the value we wich to
@@ -330,6 +335,7 @@ class ModBusReader(Reader):
                 continue
             if callable(parameter.Method):  # Call custom methods
                 parameter.Value = parameter.Method(data)
+        communicating_started_event.set()
 
     def getToolBitInfo(self):
         return self.ToolBit.Value, not self.ToolBitChanged
@@ -346,11 +352,11 @@ class ModBusReader(Reader):
         """
         if verbose:
             print(self.Address, "shutting down safely.")
-        if not self.StopCommunicatingEvent.isSet():
-            self.StopCommunicatingEvent.set()
+        if not self.StopCommunicating.isSet():
+            self.StopCommunicating.set()
         if self.CommunicationThread.is_alive():
             self.CommunicationThread.join()
-            self.StopCommunicatingEvent.clear()
+            self.StopCommunicating.clear()
         if not self.isClosed():
             self.shutdown(socket.SHUT_RDWR)
             self.close()
@@ -377,5 +383,5 @@ class RobotCCO(Reader):  # RobotChiefCommunicationOfficer
 
 
 if __name__ == '__main__':
-    ModBusReader()
-    RobotCCO()
+    mb = ModBusReader()
+    rcc = RobotCCO()
