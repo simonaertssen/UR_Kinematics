@@ -55,6 +55,11 @@ def findObjectsToPickUp(image_to_extract):
 
 def markTimeDateOnImage(image):
     message = time.asctime()
-    image = cv.putText(image, message, (0, 0), cv.FONT_HERSHEY_SIMPLEX, 1, 255, 3, cv.LINE_AA)
-    image = cv.putText(image, message, (100, 0), cv.FONT_HERSHEY_SIMPLEX, 1, 0, 3, cv.LINE_AA)
+    im_shape = image.shape
+    if len(im_shape) == 2:
+        image = cv.putText(image, message, (0, 40), cv.FONT_HERSHEY_SIMPLEX, 1, 255, 3, cv.LINE_AA)
+        # image = cv.putText(image, message, (0, 20), cv.FONT_HERSHEY_SIMPLEX, 1, 0, 3, cv.LINE_AA)
+    else:
+        image = cv.putText(image, message, (0, 40), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 3, cv.LINE_AA)
+        image = cv.putText(image, message, (0, 60), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 3, cv.LINE_AA)
     return image
