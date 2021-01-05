@@ -1,12 +1,11 @@
 import time
-from queue import Queue
+from queue import Queue, Empty
+import tracemalloc
 
 import cv2 as cv
 import numpy as np
 from pypylon import pylon, genicam
 from ImageModule import findObjectsToPickUp, markTimeDateOnImage
-
-import tracemalloc
 
 
 class ImageEventHandler(pylon.ImageEventHandler):
@@ -19,20 +18,22 @@ class ImageEventHandler(pylon.ImageEventHandler):
         The queue in which taken images are stored for threadsafe access.
     """
 
-    imageQueue = Queue()
+    imageQueue = Queue(maxsize=1)
 
     def OnImageGrabbed(self, camera, grab_result):
         r"""
         Safely acquire an image from the pylon c buffer. The GetArrayZeroCopy()
         method was shown to be superior in terms of speed.
         """
-        while not self.imageQueue.empty():
-            self.imageQueue.get()
+        try:
+            self.imageQueue.get_nowait()
+        except Empty as e:
+            pass
         try:
             if grab_result.GrabSucceeded():
                 cameraContextValue = grab_result.GetCameraContext()
                 with grab_result.GetArrayZeroCopy() as ZCArray:
-                    self.imageQueue.put((cameraContextValue, ZCArray.data))
+                    self.imageQueue.put((ZCArray.data, cameraContextValue))
         except genicam.GenericException as e:
             print("ImageEventHandler Exception: {}".format(e))
         finally:
@@ -164,9 +165,9 @@ class Camera:
         if not self.camera.IsGrabbing():
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
         try:
-            if self.camera.WaitForFrameTriggerReady(0, pylon.TimeoutHandling_Return):
+            if self.camera.WaitForFrameTriggerReady(10, pylon.TimeoutHandling_Return):
                 self.camera.ExecuteSoftwareTrigger()
-            cam_num, grabbedImage = self.imageEventHandler.imageQueue.get()
+            grabbedImage, cam_num = self.imageEventHandler.imageQueue.get()
             grabbedImage, info = self.manipulateImage(np.asarray(grabbedImage))
         except genicam.RuntimeException as e:
             print('genicam Runtime Exception: {}'.format(e))
@@ -206,10 +207,18 @@ class DetailCamera(Camera):
     def __repr__(self):
         return "DetailCamera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
 
+    # def manipulateImage(self, image_to_manipulate):
+    #     info = None
+    #     # Overload to deal with images in the right way
+    #     image_to_manipulate = self.toGrayScale(image_to_manipulate)
+    #     image_to_manipulate = markTimeDateOnImage(image_to_manipulate)
+    #     return image_to_manipulate, info
+
     def manipulateImage(self, image_to_manipulate):
         info = None
         # Overload to deal with images in the right way
         image_to_manipulate = self.toGrayScale(image_to_manipulate)
+        image_to_manipulate, info = findObjectsToPickUp(image_to_manipulate)
         image_to_manipulate = markTimeDateOnImage(image_to_manipulate)
         return image_to_manipulate, info
 
