@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import cv2 as cv
 
@@ -49,5 +50,11 @@ def findObjectsToPickUp(image_to_extract):
         for i in range(4):
             drawonme = cv.circle(drawonme, (midX[i], midY[i]), 5, (255, 0, 0), -1)
         contournum += 1
-
     return drawonme, outputInfo
+
+
+def markTimeDateOnImage(image):
+    message = time.asctime()
+    image = cv.putText(image, message, (0, 0), cv.FONT_HERSHEY_SIMPLEX, 1, 255, 3, cv.LINE_AA)
+    image = cv.putText(image, message, (100, 0), cv.FONT_HERSHEY_SIMPLEX, 1, 0, 3, cv.LINE_AA)
+    return image
