@@ -323,9 +323,16 @@ class Robot:
         start_time = time.time()
         MAX_TIME = 5.0
 
-        RELATIVE_TOLERANCE = 5e-3
-        ABSOLUTE_TOLERANCE = 1e-2
-        while sum(difference) > ABSOLUTE_TOLERANCE or all(d > RELATIVE_TOLERANCE for d in difference):
+        RELATIVE_TOLERANCE = 5e-4
+        ABSOLUTE_TOLERANCE = 1e-3
+
+        count = 0
+        MAX_COUNT = 10
+        while count < MAX_COUNT:
+            if sum(difference) > ABSOLUTE_TOLERANCE and all(d > RELATIVE_TOLERANCE for d in difference):
+                count += 1
+            else:
+                count = 0
             if stop_event.isSet() is True:
                 InterruptedError("Stop event has been raised.")
             if check_collisions and self.detectCollision():
@@ -421,7 +428,7 @@ class Robot:
         self.moveToolTo(stop_event, target_position, 'movel')
         self.closeGripper(stop_event)
         # Go back up
-        target_position[2] = self.ToolPickUpHeight
+        target_position[2] = self.ToolHoverHeight
         self.moveToolTo(stop_event, target_position, 'movel')
 
     def initialise(self, stop_event):

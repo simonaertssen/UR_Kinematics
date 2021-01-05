@@ -1,7 +1,9 @@
 import time
 
 from threading import Thread, Event, enumerate as list_threads
-from queue import SimpleQueue, Empty, Full
+from multiprocessing import Process
+
+from queue import SimpleQueue, LifoQueue, Empty, Full
 
 from RobotClass import Robot
 from CameraManagement import TopCamera
@@ -22,12 +24,11 @@ class MainManager:
 
         self.StopRobotTaskEvent = Event()
         self.RobotTaskFinishedEvent = Event()
-        self.RobotTaskQueue = SimpleQueue()
+        self.RobotTaskQueue = LifoQueue()
         RobotTaskQueueArguments = [self.RobotTaskQueue, self.StopRobotTaskEvent, self.Robot.StopEvent, self.RobotTaskFinishedEvent]
         self.RobotTaskThread = Thread(target=self.runRobotTasks, args=RobotTaskQueueArguments, daemon=True, name='Async Robot tasks')
 
         self.tryConnect()
-        # self.switchActiveCamera()
         self.ImageTaskThread.start()
         self.RobotTaskThread.start()
 
@@ -53,12 +54,14 @@ class MainManager:
 
     def shutdownSafely(self):
         print("Active threads: ", [t.name for t in list_threads()])
+        # Raise events:
+        self.StopRobotTaskEvent.set()
+        self.Robot.StopEvent.set()
+        self.StopImageTaskEvent.set()
+        # Join threads:
         if self.RobotTaskThread.is_alive():
-            self.StopRobotTaskEvent.set()
-            self.Robot.StopEvent.set()
             self.RobotTaskThread.join()
         if self.ImageTaskThread.is_alive():
-            self.StopImageTaskEvent.set()
             self.ImageTaskThread.join()
 
         def shutdownAsync(part):
@@ -95,6 +98,7 @@ class MainManager:
         while not robot_stop_event.is_set():  # Continue for as long as the robot is running
             try:  # See if there is a new task
                 task_handle = robot_task_queue.get(timeout=0.01)
+                print(task_handle)
             except Empty as e:
                 # Yes, you know that emptying the queue raises an error
                 continue  # To the next iteration of the loop
@@ -143,18 +147,18 @@ class MainManager:
             r"""" Feed the first found object into the pickup function. """
             # Pick up and present:
             # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
-            # self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
-            # self.switchActiveCamera()
-            # time.sleep(10.0)
-            # self.switchActiveCamera()
-            # self.Robot.dropObject(stop_event_as_argument)
-            # self.Robot.goHome(stop_event_as_argument)
+            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+            self.switchActiveCamera()
+            time.sleep(1.0)
+            self.switchActiveCamera()
+            self.Robot.dropObject(stop_event_as_argument)
+            self.Robot.goHome(stop_event_as_argument)
 
             # Move around:
             # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movej')
             # self.Robot.goHome(stop_event_as_argument)
-            self.Robot.dropObject(stop_event_as_argument)
-            self.Robot.goHome(stop_event_as_argument)
+            # self.Robot.dropObject(stop_event_as_argument)
+            # self.Robot.goHome(stop_event_as_argument)
 
             # Stay around the camera:
             # self.Robot.closeGripper(stop_event_as_argument)
@@ -176,7 +180,7 @@ class MainManager:
 
     def stopRobotTask(self):
         self.StopRobotTaskEvent.set()  # Halt the execution of the current task and wait until the robot is stopped
-        self.RobotTaskFinishedEvent.wait(timeout=3.0)
+        self.RobotTaskFinishedEvent.wait(timeout=1.0)
 
         def stopAndReturn(stop_event_as_argument):
             self.Robot.halt(stop_event_as_argument)

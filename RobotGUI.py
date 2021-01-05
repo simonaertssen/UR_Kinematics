@@ -18,6 +18,8 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QSizePo
                              QGridLayout, QVBoxLayout, QSplitter, QPushButton, QLineEdit, QRadioButton, QCheckBox, QShortcut)
 
 from threading import Thread, Event, enumerate as list_threads
+from multiprocessing import Process
+
 from queue import Empty
 
 
@@ -679,11 +681,11 @@ class MainObjectWidget(StandardObjectWidget):
         self.camera_status_text.setStyleSheet('font-size: ' + self.text_size3 + '; color: green')
 
         # Reset the robot stop button when the given task is finished
-        try:
-            self.parent.manager.RobotTaskFinishedEvent.wait()
-            self.stopRobotTaskButtonClicked()
-        except Exception as e:
-            print(e)
+        # try:
+        #     self.parent.manager.RobotTaskFinishedEvent.wait()
+        #     self.stopRobotTaskButtonClicked()
+        # except Exception as e:
+        #     print(e)
 
     def stopRobotTaskButtonClicked(self):
         self.parent.stopRobotTask()
@@ -788,7 +790,6 @@ class MainWindow(StandardMainWindow):
 
                 self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(width/2, height/2, QtCore.Qt.KeepAspectRatio))
                 self.img_src_display.show()
-                QCoreApplication.processEvents()
                 # print("Qsize: {}. FPS: {}".format(image_queue.qsize(), 1/(now-start_time+1.0e-20)))
             except Exception as e:
                 print(e)
