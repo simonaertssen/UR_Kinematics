@@ -34,9 +34,9 @@ class Robot:
         The height of the tool when picking up an object.
     JointAngleInit : list of angles in radians
         The joint angles required for the initial position.
-    JointAngleBrickDrop: list of angles in radians
+    JointAngleDropObject: list of angles in radians
         The joint angles required for an item to be dropped in the bucket.
-    ToolPositionBrickDrop : list of tool positions in mm and angles in radians
+    ToolPositionDropObject : list of tool positions in mm and angles in radians
         The tool position required for an item to be dropped in the bucket.
     ToolPositionLightBox : list of tool positions in mm and angles in radians
         The tool position of the tool positioned at the lower left corner of the
@@ -56,10 +56,12 @@ class Robot:
         self.ToolPickUpHeight = 0.009
 
         self.JointAngleInit = [i * self.pidiv180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
-        self.JointAngleBrickDrop = [i * self.pidiv180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
+        self.JointAngleDropObject = [i * self.pidiv180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
+        self.JointAngleReadObject = [i * self.pidiv180 for i in [-0.068, -91.45, 94.01, -92.59, 87, 180]]
 
-        self.ToolPositionBrickDrop = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
+        self.ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
         self.ToolPositionLightBox = [0.14912, -0.30970, 0.05, 0.000, 3.14159, 0.000]
+        self.ToolPositionReadObject = [-0.47835, -0.17087, 0.070, -1.29, 1.29, 0.00]
 
         self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=False, information="Initialising")
 
@@ -322,8 +324,8 @@ class Robot:
         start_time = time.time()
         MAX_TIME = 5.0
 
-        RELATIVE_TOLERANCE = 1e-3
-        ABSOLUTE_TOLERANCE = 5e-3
+        RELATIVE_TOLERANCE = 5e-3
+        ABSOLUTE_TOLERANCE = 1e-2
         while sum(difference) > ABSOLUTE_TOLERANCE or all(d > RELATIVE_TOLERANCE for d in difference):
             if stop_event.isSet() is True:
                 InterruptedError("Stop event has been raised.")
@@ -387,7 +389,7 @@ class Robot:
     def dropObject(self, stop_event):
         if stop_event.isSet():
             return
-        self.moveJointsTo(stop_event, self.JointAngleBrickDrop.copy(), "movej")
+        self.moveJointsTo(stop_event, self.JointAngleDropObject.copy(), "movej")
         self.openGripper(stop_event)
 
     def pickUpObject(self, stop_event, object_position):
@@ -442,7 +444,7 @@ class Robot:
                 # because we might start from a bad position.
                 self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)
         else:
-            if self.spatialDifference(currentToolPosition, self.ToolPositionBrickDrop) < 0.5:
+            if self.spatialDifference(currentToolPosition, self.ToolPositionDropObject) < 0.5:
                 if currentToolPosition[2] < 0.07:
                     targetToolPosition = currentToolPosition.copy()
                     targetToolPosition[2] = 0.07
