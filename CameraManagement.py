@@ -111,7 +111,6 @@ class Camera:
             self.shutdownSafely()
             raise ConnectionError('Camera {} could not be found: {}'.format(self.serialNumber, e))
         else:
-            print(self.camera)
             self.camera.Open()
 
     def isConnected(self):
