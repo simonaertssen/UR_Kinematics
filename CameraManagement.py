@@ -82,6 +82,9 @@ class Camera:
         self.pixelHeight = self.camera.Height.Value
         self.camera.Close()
 
+    def __repr__(self):
+        return "Camera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
+
     def getShape(self):
         r"""
         Acquire the dimensions of images taken by the current camera.
