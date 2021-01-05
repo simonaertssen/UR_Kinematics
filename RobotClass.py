@@ -296,7 +296,6 @@ class Robot:
                 self.moveTo(stop_event, start_position, "movel", wait=True, p=p, check_collisions=False)
             finally:
                 time.sleep(0.1)  # To let momentum fade away
-        print("Robot in position")
 
     @staticmethod
     def spatialDifference(current_position, target_position):
@@ -326,9 +325,6 @@ class Robot:
         RELATIVE_TOLERANCE = 1e-3
         ABSOLUTE_TOLERANCE = 5e-3
         while sum(difference) > ABSOLUTE_TOLERANCE or all(d > RELATIVE_TOLERANCE for d in difference):
-            printdifference = [round(elem, 3) for elem in difference]
-            print(time.time() - start_time, printdifference)
-            time.sleep(0.1)
             if stop_event.isSet() is True:
                 InterruptedError("Stop event has been raised.")
             if check_collisions and self.detectCollision():
@@ -445,24 +441,18 @@ class Robot:
                 # Move towards first location, don't check collisions
                 # because we might start from a bad position.
                 self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)
-                print("Robot in targetToolPosition")
         else:
             if self.spatialDifference(currentToolPosition, self.ToolPositionBrickDrop) < 0.5:
                 if currentToolPosition[2] < 0.07:
                     targetToolPosition = currentToolPosition.copy()
                     targetToolPosition[2] = 0.07
                     self.moveToolTo(stop_event, targetToolPosition, "movel")
-                    print("Robot in targetToolPosition")
             else:
                 if distanceFromAngleInit > 0.05:
                     self.goHome(stop_event)
 
             self.dropObject(stop_event)
-            print("Robot dropped item")
-        print("Going home")
         self.goHome(stop_event)
-        print(stop_event.isSet())
-        print("Initialisation Done")
 
     @staticmethod
     def beep():
