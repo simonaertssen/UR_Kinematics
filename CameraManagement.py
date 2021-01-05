@@ -110,6 +110,9 @@ class Camera:
         except genicam.GenericException as e:
             self.shutdownSafely()
             raise ConnectionError('Camera {} could not be found: {}'.format(self.serialNumber, e))
+        else:
+            print(self.camera)
+            self.camera.Open()
 
     def isConnected(self):
         return self.Connected
@@ -179,6 +182,9 @@ class TopCamera(Camera):
     def __init__(self, serial_number=22290932, grayscale=True):
         super(TopCamera, self).__init__(serial_number, grayscale)
 
+    def __repr__(self):
+        return "Topcamera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
+
     def manipulateImage(self, image_to_manipulate):
         info = None
         # Overload to deal with images in the right way
@@ -195,6 +201,9 @@ class DetailCamera(Camera):
     """
     def __init__(self, serial_number=21565643, grayscale=True):
         super(DetailCamera, self).__init__(serial_number, grayscale)
+
+    def __repr__(self):
+        return "DetailCamera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
 
     def manipulateImage(self, image_to_manipulate):
         info = None
@@ -222,7 +231,7 @@ def runSingleCamera(camera):
         if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
             break
         now = time.time()
-        print("FPS =", 1 / (time.time() - start))
+        print("{} FPS = {}".format(camera, 1 / (time.time() - start)))
         start = now
     camera.shutdownSafely()
     cv.destroyAllWindows()
@@ -288,4 +297,5 @@ def runCamerasAlternate(cameraOn, cameraOff):
 
 
 if __name__ == '__main__':
-    runCamerasAlternate(TopCamera(), DetailCamera())
+    runSingleCamera(DetailCamera())
+    # runCamerasAlternate(TopCamera(), DetailCamera())
