@@ -269,23 +269,24 @@ class ModBusReader(Reader):
         electrical current. Check if a spike occurred and signal that to other methods.
         """
         StabilisedCurrent = False
-        self.ListOfCurrents.append(int(data[-2:], 16))
+        Current = int(data[-2:], 16)
+        self.ListOfCurrents.append(Current)
         self.ListOfCurrents.pop(0)
         DifferenceInCurrent = 0
-        MaximumStationaryDifference = 4
-        MaximumSpikeDifference = 10
+        MAXIMUM_STATIONARY_DIFFERENCE = 4
+        MINIMUM_SPIKE_DIFFERENCE = 10
         if self.ToolBitChanged:
             DifferenceInCurrent = sum([abs(i - j) for i, j in zip(self.ListOfCurrents[:-1], self.ListOfCurrents[1:])])
             if not self.SpikeOccurred:
-                self.SpikeOccurred = DifferenceInCurrent > MaximumSpikeDifference
+                self.SpikeOccurred = DifferenceInCurrent > MINIMUM_SPIKE_DIFFERENCE
         if self.SpikeOccurred:
             if not StabilisedCurrent:
-                StabilisedCurrent = DifferenceInCurrent < MaximumStationaryDifference
+                StabilisedCurrent = DifferenceInCurrent < MAXIMUM_STATIONARY_DIFFERENCE
         if StabilisedCurrent:
             self.SpikeOccurred = False
             self.ToolBitChanged = False
         # Encode output as: until ToolBitChanged == True we haven't settled the current yet!
-        return not self.ToolBitChanged
+        return Current
 
     @staticmethod
     def extractAngle(data):
