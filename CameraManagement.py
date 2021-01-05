@@ -77,7 +77,9 @@ class Camera:
 
         # Open camera briefly to avoid errors while registering properties.
         self.camera.Open()
+        self.camera.AcquisitionMode.SetValue('Continuous')
         self.camera.TriggerMode.SetValue('Off')
+        self.camera.ExposureAuto.SetValue('Off')
         self.pixelWidth = self.camera.Width.Value
         self.pixelHeight = self.camera.Height.Value
         self.camera.Close()
