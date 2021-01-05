@@ -27,6 +27,7 @@ class MainManager:
         self.RobotTaskThread = Thread(target=self.runRobotTasks, args=RobotTaskQueueArguments, daemon=True, name='Async Robot tasks')
 
         self.tryConnect()
+        # self.switchActiveCamera()
         self.ImageTaskThread.start()
         self.RobotTaskThread.start()
 
@@ -84,15 +85,14 @@ class MainManager:
                     image_queue.put_nowait((image, info, cam_num))
                 except Full as e:
                     # Yes, you know that a full queue raises an error
-                    print("runImageTasks queue was full")
                     continue
             except Exception as e:
                 print('An exception occurred while retrieving images: {}'.format(e))
+        print("runImageTasks stopped")
 
     @staticmethod
     def runRobotTasks(robot_task_queue, task_stop_event, robot_stop_event, robot_task_finished_event):
         while not robot_stop_event.is_set():  # Continue for as long as the robot is running
-
             try:  # See if there is a new task
                 task_handle = robot_task_queue.get(timeout=0.01)
             except Empty as e:
@@ -109,6 +109,7 @@ class MainManager:
                     # If the event was raised, clear it and signal that the task was stopped.
                     # This yields the robot ready for the coming task.
                     task_stop_event.clear()
+        print("runRobotTasks stopped")
 
     def isConnected(self):
         answer = [False]*4
@@ -124,6 +125,7 @@ class MainManager:
             print("Error switching cameras: one is not connected.")
             return
         self.TopCamera, self.DetailCamera = self.DetailCamera, self.TopCamera
+        print("Cameras switched")
 
     def giveRobotParallelTask(self, function_handle):
         # Signal that the given task is not finished yet

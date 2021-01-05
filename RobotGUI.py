@@ -707,6 +707,7 @@ class MainObjectWidget(StandardObjectWidget):
             if debug and now - start_time > 1.0:
                 print("verifyComponentsAreWorking going")
                 start_time = now
+        print("verifyComponentsAreWorking loop finished")
 
 
 class MainWindow(StandardMainWindow):
@@ -747,16 +748,24 @@ class MainWindow(StandardMainWindow):
         start_time = time.time()
         while not stop_event.isSet():
             try:  # See if there is a new image
-                image, info, cam_num = image_queue.get(timeout=0.01)
+                image, info, cam_num = image_queue.get(timeout=0.02)
+                print(type(image), image.shape, type(info), type(cam_num))
             except Empty as e:
                 # Yes, you know that emptying the queue raises an error
-                print("updateImageView queue was empty")
                 continue  # To the next iteration of the loop
 
-            height, width, c = image.shape
-            image = QImage(image, width, height, QImage.Format_RGB888)
-
             try:
+                im_shape = image.shape
+
+                if len(im_shape) == 2:
+                    height, width = im_shape
+                    image = QImage(image, width, height, QImage.Format_Grayscale8)
+                elif len(im_shape) == 3:
+                    height, width, c = im_shape
+                    image = QImage(image, width, height, QImage.Format_RGB888)
+                else:
+                    continue
+
                 self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(width/2, height/2, QtCore.Qt.KeepAspectRatio))
                 self.img_src_display.show()
                 # print("Qsize: {}. FPS: {}".format(image_queue.qsize(), 1/(now-start_time+1.0e-20)))
@@ -789,6 +798,7 @@ class MainWindow(StandardMainWindow):
             self.properties.user_message.setText(exit_message)
             print(exit_message)
             self.manager.shutdownSafely()
+            print(exit_message)
             self.close()
         except Exception as e:
             print("An exception occurred when exiting the application: ", e)
