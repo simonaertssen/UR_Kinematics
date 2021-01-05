@@ -1,7 +1,7 @@
 import time
 import winsound
 
-from queue import Queue
+from queue import SimpleQueue
 from threading import Thread, Event
 
 from Readers import ModBusReader, RobotCCO
@@ -60,7 +60,7 @@ class Robot:
         self.JointAngleReadObject = [i * self.pidiv180 for i in [-0.068, -91.45, 94.01, -92.59, 87, 180]]
 
         self.ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
-        self.ToolPositionLightBox = [0.14912, -0.30970, 0.05, 0.000, 3.14159, 0.000]
+        self.ToolPositionLightBox = [0.14912, -0.31000, 0.05, 0.000, 3.14159, 0.000]
 
         self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=False, information="Initialising")
 
@@ -70,7 +70,7 @@ class Robot:
         is faster than starting sequentially. Any errors that were raised are
         caught, and the RobotClass is destructed before passing on the error.
         """
-        ReturnErrorMessageQueue = Queue()
+        ReturnErrorMessageQueue = SimpleQueue()
 
         def startAsync(error_queue, constructor):
             try:

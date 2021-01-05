@@ -1,7 +1,7 @@
 import time
 
 from threading import Thread, Event, enumerate as list_threads
-from queue import Queue, Empty, Full
+from queue import SimpleQueue, Empty, Full
 
 from RobotClass import Robot
 from CameraManagement import TopCamera
@@ -15,14 +15,14 @@ class MainManager:
         self.DetailCamera = DetailCamera
 
         self.StopImageTaskEvent = Event()
-        self.ImageQueue = Queue(maxsize=1)  # Maximum one image at a time
+        self.ImageQueue = SimpleQueue()  # Maximum one image at a time
         self.ImageInfo = None
         RobotTaskQueueArguments = [self.ImageQueue, self.StopImageTaskEvent]
         self.ImageTaskThread = Thread(target=self.runImageTasks, args=RobotTaskQueueArguments, daemon=True, name='Async Image retrieval')
 
         self.StopRobotTaskEvent = Event()
         self.RobotTaskFinishedEvent = Event()
-        self.RobotTaskQueue = Queue()
+        self.RobotTaskQueue = SimpleQueue()
         RobotTaskQueueArguments = [self.RobotTaskQueue, self.StopRobotTaskEvent, self.Robot.StopEvent, self.RobotTaskFinishedEvent]
         self.RobotTaskThread = Thread(target=self.runRobotTasks, args=RobotTaskQueueArguments, daemon=True, name='Async Robot tasks')
 
@@ -33,7 +33,7 @@ class MainManager:
 
     def tryConnect(self):
         # Start these parts safely before anything else:
-        ReturnErrorMessageQueue = Queue()
+        ReturnErrorMessageQueue = SimpleQueue()
 
         def startAsync(this, error_queue, constructor):
             try:
@@ -141,10 +141,31 @@ class MainManager:
     def startRobotTask(self):
         def startRobotHandle(stop_event_as_argument):
             r"""" Feed the first found object into the pickup function. """
-            self.Robot.closeGripper(stop_event_as_argument)
-            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
-            self.Robot.openGripper(stop_event_as_argument)
+            # Pick up and present:
+            # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
+            # self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+            # self.switchActiveCamera()
+            # time.sleep(10.0)
+            # self.switchActiveCamera()
+            # self.Robot.dropObject(stop_event_as_argument)
+            # self.Robot.goHome(stop_event_as_argument)
+
+            # Move around:
+            # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movej')
+            # self.Robot.goHome(stop_event_as_argument)
+            self.Robot.dropObject(stop_event_as_argument)
             self.Robot.goHome(stop_event_as_argument)
+
+            # Stay around the camera:
+            # self.Robot.closeGripper(stop_event_as_argument)
+            # target = self.Robot.JointAngleReadObject.copy()
+            # self.Robot.moveJointsTo(stop_event_as_argument, target, 'movej')
+            # self.switchActiveCamera()
+            # time.sleep(10.0)
+            # target[0] += 0.1
+            # self.Robot.moveJointsTo(stop_event_as_argument, target, 'movej')
+            # target[0] += 0.1
+            # self.switchActiveCamera()
 
             # Old pickup:
             # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])

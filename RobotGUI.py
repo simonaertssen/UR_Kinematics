@@ -13,12 +13,28 @@ from win32api import GetSystemMetrics
 
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QIcon, QPixmap, QImage, QIntValidator, QPixmap, QPainter, QPen, QImage, QBrush, QKeySequence
-from PyQt5.QtCore import pyqtSignal, Qt, QThreadPool, QRunnable, pyqtSlot, QThread, QRect, QObject
+from PyQt5.QtCore import pyqtSignal, Qt, QThreadPool, QRunnable, pyqtSlot, QThread, QRect, QObject, QCoreApplication
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QSizePolicy, QSpinBox, QComboBox, QStatusBar, QMessageBox,
                              QGridLayout, QVBoxLayout, QSplitter, QPushButton, QLineEdit, QRadioButton, QCheckBox, QShortcut)
 
 from threading import Thread, Event, enumerate as list_threads
 from queue import Empty
+
+
+class AThread(QThread):
+    def __init__(self, target, args, stop_event, name):
+        QtCore.QThread.__init__(self)
+        self.target = target
+        self.args = args
+        self.stop_event = stop_event
+        print(dir(self))
+
+    def run(self):
+        while not self.stop_event.isSet():
+            if self.args:
+                self.target(self.args)
+            else:
+                self.target(self.args)
 
 
 class StandardObjectWidget(QWidget):
@@ -576,6 +592,8 @@ class MainObjectWidget(StandardObjectWidget):
         vbox.addWidget(self.button_exit)
         self.setLayout(vbox)
 
+        # ContinuousConnectionCheck = AThread(target=self.verifyComponentsAreWorking, args=None, stop_event=self.parent.manager.Robot.StopEvent, name='Async Connection check')
+        # ContinuousConnectionCheck.start()
         ImageThreadArgList = [self.parent.manager.Robot.StopEvent]
         ContinuousConnectionCheck = Thread(target=self.verifyComponentsAreWorking, args=ImageThreadArgList, daemon=True, name='Async Connection check')
         ContinuousConnectionCheck.start()
@@ -739,6 +757,8 @@ class MainWindow(StandardMainWindow):
         # self.mousePressEvent = self.MainMousePressEvent
 
         # Make components start:
+        # ContinuousImagesThread = AThread(target=self.updateImageView, args=self.manager.ImageQueue, stop_event=self.manager.StopImageTaskEvent, name='Async Images')
+        # ContinuousImagesThread.start()
         ImageThreadArgList = [self.manager.ImageQueue, self.manager.StopImageTaskEvent]
         ContinuousImagesThread = Thread(target=self.updateImageView, args=ImageThreadArgList, daemon=True, name='Async Images')
         ContinuousImagesThread.start()
@@ -749,7 +769,7 @@ class MainWindow(StandardMainWindow):
         while not stop_event.isSet():
             try:  # See if there is a new image
                 image, info, cam_num = image_queue.get(timeout=0.02)
-                print(type(image), image.shape, type(info), type(cam_num))
+                # print(type(image), image.shape, type(info), type(cam_num))
             except Empty as e:
                 # Yes, you know that emptying the queue raises an error
                 continue  # To the next iteration of the loop
@@ -768,6 +788,7 @@ class MainWindow(StandardMainWindow):
 
                 self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(width/2, height/2, QtCore.Qt.KeepAspectRatio))
                 self.img_src_display.show()
+                QCoreApplication.processEvents()
                 # print("Qsize: {}. FPS: {}".format(image_queue.qsize(), 1/(now-start_time+1.0e-20)))
             except Exception as e:
                 print(e)
