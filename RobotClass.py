@@ -61,7 +61,7 @@ class Robot:
         self.ToolPositionBrickDrop = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
         self.ToolPositionLightBox = [0.14912, -0.30970, 0.05, 0.000, 3.14159, 0.000]
 
-        self.waitForParallelTask(function_handle=self.initialise, arguments=None, information="Initialising")
+        self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=False, information="Initialising")
 
     def tryConnect(self):
         r"""
@@ -92,7 +92,9 @@ class Robot:
         Safely shutdown the ModBusReader and the RobotCCO asynchronously. This
         is faster than starting sequentially.
         """
-        # self.initialise()  # Only initialise if we want to reset the robot entirely
+        # Only initialise if we want to reset the robot entirely
+        self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=True, information="Initialising")
+
         if self.RobotCCO is not None and not self.RobotCCO.isClosed():
             self.halt(self.StopEvent)
 
@@ -273,14 +275,14 @@ class Robot:
                 self.waitUntilTargetReached(current_position, target_position, check_collisions, stop_event)
             except TimeoutError as e:  # Time ran out to test for object position
                 print(e)
-            except InterruptedError as e:  # Robot arm is close to the target but not within tolerance
+            except InterruptedError as e:  # StopEvent is raised
                 print(e)
             except RuntimeError as e:  # Collision raises RuntimeError, so move to startpoition
                 self.stop()
                 time.sleep(0.1)
                 self.moveTo(stop_event, start_position, "movel", wait=True, p=p, check_collisions=False)
             finally:
-                time.sleep(0.075)  # To let momentum fade away
+                time.sleep(0.1)  # To let momentum fade away
 
     @staticmethod
     def spatialDifference(current_position, target_position):
@@ -307,21 +309,18 @@ class Robot:
         start_time = time.time()
         MAX_TIME = 15.0
 
-        differenceHistory = [0]*100
-        AVERAGE_DIFFERENCE_TOLERANCE = 1e-2
-        TOTAL_DIFFERENCE_TOLERANCE = 5e-3
-        while not stop_event.isSet() and sum(difference) >= TOTAL_DIFFERENCE_TOLERANCE:
-            difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
-            differenceHistory.pop()
-            differenceHistory.append(sum(difference))
+        RELATIVE_TOLERANCE = 1e-3
+        ABSOLUTE_TOLERANCE = 5e-3
+        while sum(difference) > ABSOLUTE_TOLERANCE or all(d > RELATIVE_TOLERANCE for d in difference):
+            if stop_event.isSet() is True:
+                InterruptedError("Stop event has been raised.")
             if check_collisions and self.detectCollision():
                 raise RuntimeError('Bumping in to stuff!')
             if time.time() - start_time > MAX_TIME:
-                raise TimeoutError('Movement took too long.')
-            if sum(differenceHistory)/100 < AVERAGE_DIFFERENCE_TOLERANCE:
-                raise InterruptedError('Robot is close enough.')
+                raise TimeoutError('Movement took longer than {} s. Assuming robot is in position and continue.'.format(MAX_TIME))
+            difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
 
-    def waitForParallelTask(self, function_handle, arguments=None, information=None):
+    def waitForParallelTask(self, function_handle, arguments=None, join=True, information=None):
         r"""
         Start a command within a thread and wait for its completion to achieve concurrency.
 
@@ -344,9 +343,11 @@ class Robot:
             thread_args.extend(arguments)
         thread = Thread(target=function_handle, args=thread_args, daemon=True, name=information)
         thread.start()
-        thread.join()
+        if join:
+            thread.join()
         if self.StopEvent.isSet():
             self.StopEvent.clear()
+        print("Task ready")
 
     def moveToolTo(self, stop_event, target_position, move, wait=True, check_collisions=True):
         r"""

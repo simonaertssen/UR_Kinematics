@@ -21,7 +21,7 @@ class MainManager:
 
         self.StopRobotTaskEvent = Event()
         self.RobotTaskQueue = Queue()
-        self.RobotTaskThread = Thread(target=self.runRobotTasks, args=[self.RobotTaskQueue, self.StopRobotTaskEvent], daemon=True, name='Async Robot tasks')
+        self.RobotTaskThread = Thread(target=self.runRobotTasks, args=[self.RobotTaskQueue, self.StopRobotTaskEvent, self.Robot.StopEvent], daemon=True, name='Async Robot tasks')
 
         self.tryConnect()
         self.ImageTaskThread.start()
@@ -84,14 +84,13 @@ class MainManager:
                 print('An exception occurred while retrieving images: {}'.format(e))
 
     @staticmethod
-    def runRobotTasks(robot_task_queue, robot_stop_event):
-        while not robot_stop_event.is_set():
+    def runRobotTasks(robot_task_queue, stop_event, robot_stop_event):
+        while not stop_event.is_set():
             if robot_task_queue.empty():
                 time.sleep(0.001)
                 continue
 
             task_handle = robot_task_queue.get(block=False)
-            print(task_handle, callable(task_handle))
             try:
                 task_handle(robot_stop_event)
             except TypeError as e:
@@ -126,10 +125,11 @@ class MainManager:
     def startRobot(self):
         def startRobotHandle(stop_event_as_argument):
             r"""" Feed the first found object into the pickup function. """
-            self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
-            print("Picked up")
-            self.Robot.goHome(stop_event_as_argument)
-            print("Went Home")
+            # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movel')
+            # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
+            # print("Picked up")
+            # self.Robot.goHome(stop_event_as_argument)
+            # print("Went Home")
             self.Robot.dropObject(stop_event_as_argument)
             self.Robot.goHome(stop_event_as_argument)
         self.giveRobotParallelTask(startRobotHandle)
@@ -141,6 +141,7 @@ class MainManager:
             self.Robot.halt(stop_event_as_argument)
             self.Robot.goHome(stop_event_as_argument)
         self.giveRobotParallelTask(stopAndReturn)
+        self.Robot.StopEvent.clear()
 
 
 if __name__ == '__main__':
