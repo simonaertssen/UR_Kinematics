@@ -61,7 +61,7 @@ class Robot:
         self.ToolPositionBrickDrop = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
         self.ToolPositionLightBox = [0.14912, -0.30970, 0.05, 0.000, 3.14159, 0.000]
 
-        self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=False, information="Initialising")
+        # self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=False, information="Initialising")
 
     def tryConnect(self):
         r"""
@@ -216,7 +216,7 @@ class Robot:
             print('Gripper is already open')
             return
         self.send(b'set_digital_out(8, False)' + b"\n")
-        self.waitForGripperToRead(0)
+        self.waitForGripperToRead(0, stop_event)
 
     def closeGripper(self, stop_event):  # Equals a tool bit of 1
         if stop_event.isSet():
@@ -225,13 +225,26 @@ class Robot:
             print('Gripper is already closed')
             return
         self.send(b'set_digital_out(8, True)' + b"\n")
-        self.waitForGripperToRead(1)
+        self.waitForGripperToRead(1, stop_event)
 
-    def waitForGripperToRead(self, bit_value):
-        while True:
+    def waitForGripperToRead(self, bit_value, stop_event):
+        MAX_TIME = 5.0  # seconds
+        start_time = time.time()
+        while not stop_event.isSet():
             tool_bit, settled = self.getToolBitInfo()
             if tool_bit is bit_value and settled:
                 break
+            if time.time() - start_time > MAX_TIME:
+                break
+
+    def testGripper(self):
+        print('Testing the gripper')
+        if self.isGripperOpen():
+            self.closeGripper(self.StopEvent)
+            self.openGripper(self.StopEvent)
+        else:
+            self.openGripper(self.StopEvent)
+            self.closeGripper(self.StopEvent)
 
     def detectCollision(self):
         return detectCollision(self.getJointPositions())
@@ -283,6 +296,7 @@ class Robot:
                 self.moveTo(stop_event, start_position, "movel", wait=True, p=p, check_collisions=False)
             finally:
                 time.sleep(0.1)  # To let momentum fade away
+        print("Robot in position")
 
     @staticmethod
     def spatialDifference(current_position, target_position):
@@ -307,11 +321,14 @@ class Robot:
         """
         difference = [1000.0 for _ in target_position]
         start_time = time.time()
-        MAX_TIME = 15.0
+        MAX_TIME = 5.0
 
         RELATIVE_TOLERANCE = 1e-3
         ABSOLUTE_TOLERANCE = 5e-3
         while sum(difference) > ABSOLUTE_TOLERANCE or all(d > RELATIVE_TOLERANCE for d in difference):
+            printdifference = [round(elem, 3) for elem in difference]
+            print(time.time() - start_time, printdifference)
+            time.sleep(0.1)
             if stop_event.isSet() is True:
                 InterruptedError("Stop event has been raised.")
             if check_collisions and self.detectCollision():
@@ -345,9 +362,8 @@ class Robot:
         thread.start()
         if join:
             thread.join()
-        if self.StopEvent.isSet():
-            self.StopEvent.clear()
-        print("Task ready")
+            if self.StopEvent.isSet():
+                self.StopEvent.clear()
 
     def moveToolTo(self, stop_event, target_position, move, wait=True, check_collisions=True):
         r"""
@@ -429,25 +445,24 @@ class Robot:
                 # Move towards first location, don't check collisions
                 # because we might start from a bad position.
                 self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)
+                print("Robot in targetToolPosition")
         else:
             if self.spatialDifference(currentToolPosition, self.ToolPositionBrickDrop) < 0.5:
                 if currentToolPosition[2] < 0.07:
                     targetToolPosition = currentToolPosition.copy()
                     targetToolPosition[2] = 0.07
                     self.moveToolTo(stop_event, targetToolPosition, "movel")
+                    print("Robot in targetToolPosition")
             else:
                 if distanceFromAngleInit > 0.05:
                     self.goHome(stop_event)
 
             self.dropObject(stop_event)
-        if distanceFromAngleInit > 0.05:
-            self.goHome(stop_event)
+            print("Robot dropped item")
+        print("Going home")
+        self.goHome(stop_event)
+        print(stop_event.isSet())
         print("Initialisation Done")
-
-    def test(self):
-        print('Testing the gripper')
-        self.closeGripper(self.StopEvent)
-        self.openGripper(self.StopEvent)
 
     @staticmethod
     def beep():
@@ -459,5 +474,4 @@ class Robot:
 
 if __name__ == '__main__':
     robot = Robot()
-    # robot.moveToolTo(robot.StopEvent, robot.ToolPositionLightBox.copy(), "movel", wait=False)
-    robot.beep()
+    robot.testGripper()
