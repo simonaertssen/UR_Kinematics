@@ -61,7 +61,7 @@ class Robot:
         self.ToolPositionBrickDrop = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
         self.ToolPositionLightBox = [0.14912, -0.30970, 0.05, 0.000, 3.14159, 0.000]
 
-        # self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=False, information="Initialising")
+        self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=False, information="Initialising")
 
     def tryConnect(self):
         r"""
@@ -93,8 +93,7 @@ class Robot:
         is faster than starting sequentially.
         """
         # Only initialise if we want to reset the robot entirely
-        self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=True, information="Initialising")
-
+        self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=False, information="Initialising")
         if self.RobotCCO is not None and not self.RobotCCO.isClosed():
             self.halt(self.StopEvent)
 
@@ -228,7 +227,7 @@ class Robot:
         self.waitForGripperToRead(1, stop_event)
 
     def waitForGripperToRead(self, bit_value, stop_event):
-        MAX_TIME = 5.0  # seconds
+        MAX_TIME = 2.0  # seconds
         start_time = time.time()
         while not stop_event.isSet():
             tool_bit, settled = self.getToolBitInfo()
@@ -236,6 +235,7 @@ class Robot:
                 break
             if time.time() - start_time > MAX_TIME:
                 break
+            time.sleep(0.01)  # Sometimes this loop is too fast and the value is read wrongly.
 
     def testGripper(self):
         print('Testing the gripper')
