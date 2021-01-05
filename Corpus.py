@@ -17,11 +17,14 @@ class MainManager:
         self.StopImageTaskEvent = Event()
         self.ImageQueue = Queue()
         self.ImageInfo = None
-        self.ImageTaskThread = Thread(target=self.runImageTasks, args=[self.ImageQueue, self.StopImageTaskEvent], daemon=True, name='Fetch image from camera')
+        RobotTaskQueueArguments = [self.ImageQueue, self.StopImageTaskEvent]
+        self.ImageTaskThread = Thread(target=self.runImageTasks, args=RobotTaskQueueArguments, daemon=True, name='Async Image retrieval')
 
         self.StopRobotTaskEvent = Event()
+        self.RobotTaskEventStopped = Event()
         self.RobotTaskQueue = Queue()
-        self.RobotTaskThread = Thread(target=self.runRobotTasks, args=[self.RobotTaskQueue, self.StopRobotTaskEvent, self.Robot.StopEvent], daemon=True, name='Async Robot tasks')
+        RobotTaskQueueArguments = [self.RobotTaskQueue, self.StopRobotTaskEvent, self.Robot.StopEvent, self.RobotTaskEventStopped]
+        self.RobotTaskThread = Thread(target=self.runRobotTasks, args=RobotTaskQueueArguments, daemon=True, name='Async Robot tasks')
 
         self.tryConnect()
         self.ImageTaskThread.start()
@@ -51,12 +54,12 @@ class MainManager:
         print("Active threads: ", [t.name for t in list_threads()])
         if self.RobotTaskThread.is_alive():
             self.StopRobotTaskEvent.set()
+            self.Robot.StopEvent.set()
             self.RobotTaskThread.join()
-            self.StopRobotTaskEvent.clear()
         if self.ImageTaskThread.is_alive():
             self.StopImageTaskEvent.set()
+            print("self.ImageTaskThread is alive")
             self.ImageTaskThread.join()
-            self.StopImageTaskEvent.clear()
 
         def shutdownAsync(part):
             if part is None:
@@ -84,15 +87,20 @@ class MainManager:
                 print('An exception occurred while retrieving images: {}'.format(e))
 
     @staticmethod
-    def runRobotTasks(robot_task_queue, stop_event, robot_stop_event):
-        while not stop_event.is_set():
+    def runRobotTasks(robot_task_queue, task_stop_event, robot_stop_event, robot_task_stopped_event):
+        while not robot_stop_event.is_set():  # Continue for as long as the robot is running
             if robot_task_queue.empty():
-                time.sleep(0.001)
+                time.sleep(0.01)  # Sometimes this loop is too fast and the value is read wrongly.
                 continue
 
             task_handle = robot_task_queue.get(block=False)
             try:
-                task_handle(robot_stop_event)
+                task_handle(task_stop_event)
+                if task_stop_event.isSet():
+                    # If the event was raised, clear it and signal that the task was stopped.
+                    # This yields the robot ready for the coming task.
+                    robot_task_stopped_event.set()
+                    task_stop_event.clear()
             except TypeError as e:
                 print('An uncallable function was encountered: {}'.format(e))
             finally:
@@ -122,26 +130,29 @@ class MainManager:
     def closeGripper(self):
         self.giveRobotParallelTask(self.Robot.closeGripper)
 
-    def startRobot(self):
+    def startRobotTask(self):
         def startRobotHandle(stop_event_as_argument):
             r"""" Feed the first found object into the pickup function. """
-            # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movel')
+            self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movel')
+            self.Robot.closeGripper(stop_event_as_argument)
             # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
-            # print("Picked up")
-            # self.Robot.goHome(stop_event_as_argument)
-            # print("Went Home")
-            self.Robot.dropObject(stop_event_as_argument)
             self.Robot.goHome(stop_event_as_argument)
+            self.Robot.openGripper(stop_event_as_argument)
+            # self.Robot.dropObject(stop_event_as_argument)
+            # self.Robot.goHome(stop_event_as_argument)
         self.giveRobotParallelTask(startRobotHandle)
 
-    def stopRobot(self):
-        self.Robot.StopEvent.isSet()  # Halt the execution of the current task
+    def stopRobotTask(self):
+        print('Manager stopping the robot')
+        self.StopRobotTaskEvent.set()  # Halt the execution of the current task and wait until the robot is stopped
+        self.RobotTaskEventStopped.wait(timeout=3.0)
 
         def stopAndReturn(stop_event_as_argument):
+            print("Stopping and returning")
             self.Robot.halt(stop_event_as_argument)
             self.Robot.goHome(stop_event_as_argument)
         self.giveRobotParallelTask(stopAndReturn)
-        self.Robot.StopEvent.clear()
+        self.RobotTaskEventStopped.clear()
 
 
 if __name__ == '__main__':

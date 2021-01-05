@@ -17,7 +17,7 @@ from PyQt5.QtCore import pyqtSignal, Qt, QThreadPool, QRunnable, pyqtSlot, QThre
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QSizePolicy, QSpinBox, QComboBox, QStatusBar, QMessageBox,
                              QGridLayout, QVBoxLayout, QSplitter, QPushButton, QLineEdit, QRadioButton, QCheckBox, QShortcut)
 
-import threading
+from threading import Thread, Event, enumerate as list_threads
 
 
 class StandardObjectWidget(QWidget):
@@ -466,9 +466,9 @@ class MainObjectWidget(StandardObjectWidget):
         self.button_grip_close = QPushButton("&Close gripper", self)
         self.button_grip_close.clicked.connect(self.closeGripperButtonClicked)
         self.button_start_robot = QPushButton("&Start Robot", self)
-        self.button_start_robot.clicked.connect(self.startRobotButtonClicked)
+        self.button_start_robot.clicked.connect(self.startRobotTaskButtonClicked)
         self.button_stop_robot = QPushButton("&Stop Robot", self)
-        self.button_stop_robot.clicked.connect(self.stopRobotButtonClicked)
+        self.button_stop_robot.clicked.connect(self.stopRobotTaskButtonClicked)
         robot_status_label = QLabel("Robot status: ")
         self.robot_status_text = QLabel()
 
@@ -579,19 +579,16 @@ class MainObjectWidget(StandardObjectWidget):
 
     def registerSelectedObject(self, index):
         selected_object = self.select_objects.itemText(index)
-        print('Selected object {}'.format(selected_object))
         images_of_selected_object = os.listdir(os.path.join(self.libDir, selected_object, "src"))
         self.image_files = [image.split('.')[0] for image in images_of_selected_object if image.endswith('.png')]
         self.objects_status_label = QLabel("Type " + selected_object + " objects found:")
 
     def registerDetector(self, index):
         selected_detector = self.select_detector.itemText(index)
-        print('Selected detector {}'.format(selected_detector))
         self.detector = self.select_detector_dispatch_table[str(selected_detector)]
 
     def registerDataType(self, index):
         selected_data_type = self.select_detector.itemText(index)
-        print('Selected data type {}'.format(selected_data_type))
         save_images = self.select_detector_dispatch_table[str(selected_data_type)]
         if callable(save_images):
             self.save_images = True
@@ -649,8 +646,7 @@ class MainObjectWidget(StandardObjectWidget):
         self.parent.manager.closeGripper()
         print('Closed gripper')
 
-    def startRobotButtonClicked(self):
-        print('Starting robot')
+    def startRobotTaskButtonClicked(self):
         self.button_start_robot.setEnabled(False)
         self.button_start_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: lightgrey}')
         self.robot_status_text.setText("Running")
@@ -658,18 +654,17 @@ class MainObjectWidget(StandardObjectWidget):
         self.camera_status_text.setText("Running")
         self.camera_status_text.setStyleSheet('font-size: ' + self.text_size3 + '; color: green')
 
-        self.parent.startRobot()
-        print('Robot started')
-        self.stopRobotButtonClicked()
+        self.parent.startRobotTask()
+        # self.stopRobotTaskButtonClicked()
 
-    def stopRobotButtonClicked(self):
+    def stopRobotTaskButtonClicked(self):
         print('Stopping robot')
         self.button_start_robot.setEnabled(True)
         self.button_start_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: green}')
         self.robot_status_text.setText("Not running")
         self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
 
-        self.parent.stopRobot()
+        self.parent.stopRobotTask()
         print('Robot stopped')
 
     def showViewButtonClicked(self):
@@ -682,14 +677,14 @@ class MainObjectWidget(StandardObjectWidget):
 
     def verifyComponentsAreWorking(self):
         print('Testing whether all components are connected')
-        if self.parent.manager.isRobotConnected():
+        if self.parent.manager.Robot.isConnected():
             self.robot_status_text.setText("Connected")
             self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: green")
         else:
             self.robot_status_text.setText("Not connected")
             self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
 
-        if self.parent.manager.isTopCameraConnected() and self.parent.manager.isDetailCameraConnected():
+        if self.parent.manager.TopCamera.isConnected() and self.parent.manager.DetailCamera.isConnected():
             self.camera_status_text.setText("Connected")
             self.camera_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: green")
         else:
@@ -711,8 +706,8 @@ class MainWindow(StandardMainWindow):
         self.splitter.addWidget(self.properties)
         self.splitter.addWidget(self.img_src_display)
 
-        self.properties.signal_start.connect(self.startRobot)
-        self.properties.signal_stop.connect(self.stopRobot)
+        self.properties.signal_start.connect(self.startRobotTask)
+        self.properties.signal_stop.connect(self.stopRobotTask)
         self.properties.signal_exit.connect(self.closeEvent)
         # self.properties.signal_start_capture.connect(self.startCapture)
         # self.properties.signal_stop_capture.connect(self.stopCapture)
@@ -725,28 +720,31 @@ class MainWindow(StandardMainWindow):
         # self.keyReleaseEvent = self.MainKeyReleaseEvent
         # self.mousePressEvent = self.MainMousePressEvent
 
-        self.manageContinuousImagesFromTopcam()
+        self.continuousImagesFromActiveCam()
+        # self.continuousConnectionCheck()
 
-    def manageContinuousImagesFromTopcam(self):
-        self.manager.getContinuousImages(self.updateTopcamView, self.updateTopCamInfo)
+    def continuousImagesFromActiveCam(self):
+        arg_list = [self.manager.ImageQueue, self.manager.StopImageTaskEvent]
+        continuousImagesThread = Thread(target=self.updateImageView, args=arg_list, daemon=True, name='continuousImagesThread')
+        continuousImagesThread.start()
 
-    def updateTopcamView(self, new_image):
-        if new_image is None:
-            return
-        height, width, c = new_image.shape
-        image = QImage(new_image, width, height, QImage.Format_RGB888)
-        self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(width/2, height/2, QtCore.Qt.KeepAspectRatio))
-        self.img_src_display.show()
+    def updateImageView(self, image_queue, stop_event):
+        while not stop_event.isSet():
+            image, info, cam_num = image_queue.get()
+            height, width, c = image.shape
+            image = QImage(image, width, height, QImage.Format_RGB888)
+            self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(width/2, height/2, QtCore.Qt.KeepAspectRatio))
+            self.img_src_display.show()
 
     def updateTopCamInfo(self, new_info):
         old_info = new_info
         # print('Info {}'.format(new_info))
 
-    def startRobot(self):
-        self.manager.startRobot()
+    def startRobotTask(self):
+        self.manager.startRobotTask()
 
-    def stopRobot(self):
-        self.manager.stopRobot()
+    def stopRobotTask(self):
+        self.manager.stopRobotTask()
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
@@ -754,11 +752,13 @@ class MainWindow(StandardMainWindow):
 
     def closeEvent(self, event):
         exit_message = "Safely exiting the application..."
-        self.properties.user_message.setText(exit_message)
-        print(exit_message)
-        print(threading.enumerate())
-        self.manager.shutdownAllComponents()
-        self.close()
+        try:
+            self.properties.user_message.setText(exit_message)
+            print(exit_message)
+            self.manager.shutdownSafely()
+            self.close()
+        except Exception as e:
+            print("An exception occurred when exiting the application: ", e)
 
 
 JLI_logo_bytes = bytearray(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x01\xf4\x00\x00\x01\xf4\x08\x06\x00\x00\x00\xcb\xd6\xdf\x8a\x00\x00\x80\x00IDATx\xda\xec\x9d\x07x\x14U\xd7\xc7\xffw\xb6\xa6w\x92\x90@\x08\x10 \xf4\xde{WAT\x94\x8e(\x08\xf6\xcf\x8a]\x10\xc5\x8e\xbd\xbe\x88\x15\x11DPA\x91\x12\x8a\xd2{\xef\x01\x12BI\x02IHO\xb6\xcd\xfd\x9e\x19\x04I\xd9dw\xb3\xb3\xd9M\xce\xefyx\xde\xd7\xec\xee\xec\xcc\x99\xbb\xf7?\xe7\xdeS\xd4 '

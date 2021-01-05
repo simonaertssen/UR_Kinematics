@@ -93,7 +93,7 @@ class Robot:
         is faster than starting sequentially.
         """
         # Only initialise if we want to reset the robot entirely
-        self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=False, information="Initialising")
+        self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=True, information="Resetting robot")
         if self.RobotCCO is not None and not self.RobotCCO.isClosed():
             self.halt(self.StopEvent)
 
