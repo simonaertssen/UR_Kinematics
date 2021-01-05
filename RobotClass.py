@@ -61,7 +61,6 @@ class Robot:
 
         self.ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
         self.ToolPositionLightBox = [0.14912, -0.30970, 0.05, 0.000, 3.14159, 0.000]
-        self.ToolPositionReadObject = [-0.47835, -0.17087, 0.070, -1.29, 1.29, 0.00]
 
         self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=False, information="Initialising")
 
@@ -454,7 +453,8 @@ class Robot:
                     self.goHome(stop_event)
 
             self.dropObject(stop_event)
-        self.goHome(stop_event)
+        if distanceFromAngleInit > 0.05:
+            self.goHome(stop_event)
 
     @staticmethod
     def beep():

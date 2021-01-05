@@ -18,6 +18,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QSizePo
                              QGridLayout, QVBoxLayout, QSplitter, QPushButton, QLineEdit, QRadioButton, QCheckBox, QShortcut)
 
 from threading import Thread, Event, enumerate as list_threads
+from queue import Empty
 
 
 class StandardObjectWidget(QWidget):
@@ -475,8 +476,8 @@ class MainObjectWidget(StandardObjectWidget):
         # Save and view panel
         label_view_options = QLabel("\nSave & View options")
         label_view_options.setAlignment(Qt.AlignCenter)
-        self.button_show_views = QPushButton("&Show views", self)
-        self.button_show_views.clicked.connect(self.showViewButtonClicked)
+        self.button_switch_cameras = QPushButton("&Switch Camera", self)
+        self.button_switch_cameras.clicked.connect(self.switchActiveCamera)
         self.button_optimize_view = QPushButton("&Optimize view", self)
         self.button_optimize_view.clicked.connect(self.optimizeViewButtonClicked)
         label_detector = QLabel("Surface detector:")
@@ -524,7 +525,7 @@ class MainObjectWidget(StandardObjectWidget):
         robot_status_label.setStyleSheet("font-size: " + self.text_size3 + ";")
 
         label_view_options.setStyleSheet('font-size: ' + self.text_size3 + '; font-weight: bold')
-        self.button_show_views.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; background-color: None}')
+        self.button_switch_cameras.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; background-color: None}')
         self.button_optimize_view.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; background-color: None}')
         label_detector.setStyleSheet('font-size: ' + self.text_size1)
         self.select_detector.setStyleSheet('QComboBox{font-size: ' + self.text_size1 + '}')
@@ -558,7 +559,7 @@ class MainObjectWidget(StandardObjectWidget):
         gbox.addWidget(self.robot_status_text, 7, 1)
 
         gbox.addWidget(label_view_options, 8, 0, 1, 2)
-        gbox.addWidget(self.button_show_views, 9, 0)
+        gbox.addWidget(self.button_switch_cameras, 9, 0)
         gbox.addWidget(self.button_optimize_view, 9, 1)
         gbox.addWidget(label_detector, 10, 0)
         gbox.addWidget(self.select_detector, 10, 1, Qt.AlignBottom)
@@ -575,7 +576,9 @@ class MainObjectWidget(StandardObjectWidget):
         vbox.addWidget(self.button_exit)
         self.setLayout(vbox)
 
-        self.verifyComponentsAreWorking()
+        ImageThreadArgList = [self.parent.manager.Robot.StopEvent]
+        ContinuousConnectionCheck = Thread(target=self.verifyComponentsAreWorking, args=ImageThreadArgList, daemon=True, name='Async Connection check')
+        ContinuousConnectionCheck.start()
 
     def registerSelectedObject(self, index):
         selected_object = self.select_objects.itemText(index)
@@ -647,6 +650,9 @@ class MainObjectWidget(StandardObjectWidget):
         print('Closed gripper')
 
     def startRobotTaskButtonClicked(self):
+        self.parent.startRobotTask()
+
+        # Change the button color and layout
         self.button_start_robot.setEnabled(False)
         self.button_start_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: lightgrey}')
         self.robot_status_text.setText("Running")
@@ -654,42 +660,53 @@ class MainObjectWidget(StandardObjectWidget):
         self.camera_status_text.setText("Running")
         self.camera_status_text.setStyleSheet('font-size: ' + self.text_size3 + '; color: green')
 
-        self.parent.startRobotTask()
-        # self.stopRobotTaskButtonClicked()
+        # Reset the robot stop button when the given task is finished
+        try:
+            self.parent.manager.RobotTaskFinishedEvent.wait()
+            self.stopRobotTaskButtonClicked()
+        except Exception as e:
+            print(e)
 
     def stopRobotTaskButtonClicked(self):
-        print('Stopping robot')
+        self.parent.stopRobotTask()
+
+        # Change the button color and layout
         self.button_start_robot.setEnabled(True)
         self.button_start_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: green}')
         self.robot_status_text.setText("Not running")
         self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
 
-        self.parent.stopRobotTask()
-        print('Robot stopped')
-
-    def showViewButtonClicked(self):
-        print('Showing view')
-        print('View shown')
+    def switchActiveCamera(self):
+        print('Showing other camera')
+        self.parent.manager.switchActiveCamera()
 
     def optimizeViewButtonClicked(self):
         print('Optimizing view')
         print('View optimized')
 
-    def verifyComponentsAreWorking(self):
-        print('Testing whether all components are connected')
-        if self.parent.manager.Robot.isConnected():
-            self.robot_status_text.setText("Connected")
-            self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: green")
-        else:
-            self.robot_status_text.setText("Not connected")
-            self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
+    def verifyComponentsAreWorking(self, stop_event):
+        debug = True
+        start_time = time.time()
+        while not stop_event.isSet():
+            if self.parent.manager.Robot.isConnected():
+                self.robot_status_text.setText("Connected")
+                self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: green")
+            else:
+                self.robot_status_text.setText("Not connected")
+                self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
 
-        if self.parent.manager.TopCamera.isConnected() and self.parent.manager.DetailCamera.isConnected():
-            self.camera_status_text.setText("Connected")
-            self.camera_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: green")
-        else:
-            self.camera_status_text.setText("Not connected")
-            self.camera_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
+            if self.parent.manager.TopCamera.isConnected() and self.parent.manager.DetailCamera.isConnected():
+                self.camera_status_text.setText("Connected")
+                self.camera_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: green")
+            else:
+                self.camera_status_text.setText("Not connected")
+                self.camera_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
+            time.sleep(0.1)  # Only need to run this function a few times per second
+
+            now = time.time()
+            if debug and now - start_time > 1.0:
+                print("verifyComponentsAreWorking going")
+                start_time = now
 
 
 class MainWindow(StandardMainWindow):
@@ -720,21 +737,37 @@ class MainWindow(StandardMainWindow):
         # self.keyReleaseEvent = self.MainKeyReleaseEvent
         # self.mousePressEvent = self.MainMousePressEvent
 
-        self.continuousImagesFromActiveCam()
-        # self.continuousConnectionCheck()
-
-    def continuousImagesFromActiveCam(self):
-        arg_list = [self.manager.ImageQueue, self.manager.StopImageTaskEvent]
-        continuousImagesThread = Thread(target=self.updateImageView, args=arg_list, daemon=True, name='continuousImagesThread')
-        continuousImagesThread.start()
+        # Make components start:
+        ImageThreadArgList = [self.manager.ImageQueue, self.manager.StopImageTaskEvent]
+        ContinuousImagesThread = Thread(target=self.updateImageView, args=ImageThreadArgList, daemon=True, name='Async Images')
+        ContinuousImagesThread.start()
 
     def updateImageView(self, image_queue, stop_event):
+        debug = True
+        start_time = time.time()
         while not stop_event.isSet():
-            image, info, cam_num = image_queue.get()
+            try:  # See if there is a new image
+                image, info, cam_num = image_queue.get(timeout=0.01)
+            except Empty as e:
+                # Yes, you know that emptying the queue raises an error
+                print("updateImageView queue was empty")
+                continue  # To the next iteration of the loop
+
             height, width, c = image.shape
             image = QImage(image, width, height, QImage.Format_RGB888)
-            self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(width/2, height/2, QtCore.Qt.KeepAspectRatio))
-            self.img_src_display.show()
+
+            try:
+                self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(width/2, height/2, QtCore.Qt.KeepAspectRatio))
+                self.img_src_display.show()
+                # print("Qsize: {}. FPS: {}".format(image_queue.qsize(), 1/(now-start_time+1.0e-20)))
+            except Exception as e:
+                print(e)
+
+            now = time.time()
+            if debug and now - start_time > 1.0:
+                print("updateImageView going")
+                start_time = now
+        print("updateImageView loop finished")
 
     def updateTopCamInfo(self, new_info):
         old_info = new_info

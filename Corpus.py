@@ -1,7 +1,7 @@
 import time
 
 from threading import Thread, Event, enumerate as list_threads
-from queue import Queue, Empty
+from queue import Queue, Empty, Full
 
 from RobotClass import Robot
 from CameraManagement import TopCamera
@@ -15,7 +15,7 @@ class MainManager:
         self.DetailCamera = DetailCamera
 
         self.StopImageTaskEvent = Event()
-        self.ImageQueue = Queue()
+        self.ImageQueue = Queue(maxsize=1)  # Maximum one image at a time
         self.ImageInfo = None
         RobotTaskQueueArguments = [self.ImageQueue, self.StopImageTaskEvent]
         self.ImageTaskThread = Thread(target=self.runImageTasks, args=RobotTaskQueueArguments, daemon=True, name='Async Image retrieval')
@@ -78,37 +78,37 @@ class MainManager:
                 image, info, cam_num = self.TopCamera.grabImage()
                 if image is None:
                     continue
-                while not image_queue.empty():
-                    try:
-                        image_queue.get_nowait()
-                    except Empty as e:
-                        # Yes, you know that emptying the queue raises an error
-                        pass
                 self.ImageInfo = info
-                image_queue.put((image, info, cam_num))
+
+                try:
+                    image_queue.put_nowait((image, info, cam_num))
+                except Full as e:
+                    # Yes, you know that a full queue raises an error
+                    print("runImageTasks queue was full")
+                    continue
             except Exception as e:
                 print('An exception occurred while retrieving images: {}'.format(e))
 
     @staticmethod
     def runRobotTasks(robot_task_queue, task_stop_event, robot_stop_event, robot_task_finished_event):
         while not robot_stop_event.is_set():  # Continue for as long as the robot is running
-            if robot_task_queue.empty():
-                time.sleep(0.01)  # Sometimes this loop is too fast and the value is read wrongly.
-                continue
 
-            task_handle = robot_task_queue.get(block=False)
-            try:
+            try:  # See if there is a new task
+                task_handle = robot_task_queue.get(timeout=0.01)
+            except Empty as e:
+                # Yes, you know that emptying the queue raises an error
+                continue  # To the next iteration of the loop
+
+            try:  # See if we can execute the function
                 task_handle(task_stop_event)
+            except TypeError as e:
+                print('An uncallable function was encountered: {}'.format(e))
+            finally:  # Signal that the task was performed in some way
                 robot_task_finished_event.set()
                 if task_stop_event.isSet():
                     # If the event was raised, clear it and signal that the task was stopped.
                     # This yields the robot ready for the coming task.
-                    # robot_task_stopped_event.set()
                     task_stop_event.clear()
-            except TypeError as e:
-                print('An uncallable function was encountered: {}'.format(e))
-            finally:
-                robot_task_queue.task_done()
 
     def isConnected(self):
         answer = [False]*4
@@ -140,9 +140,11 @@ class MainManager:
         def startRobotHandle(stop_event_as_argument):
             r"""" Feed the first found object into the pickup function. """
             self.Robot.closeGripper(stop_event_as_argument)
-            self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionReadObject.copy(), 'movel')
+            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
             self.Robot.openGripper(stop_event_as_argument)
             self.Robot.goHome(stop_event_as_argument)
+
+            # Old pickup:
             # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
             # self.Robot.goHome(stop_event_as_argument)
             # self.Robot.dropObject(stop_event_as_argument)
