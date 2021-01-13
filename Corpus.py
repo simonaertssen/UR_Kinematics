@@ -41,12 +41,6 @@ class MainManager:
 
     def shutdownSafely(self):
         print("Active threads: ", [t.name for t in list_threads()])
-        # Raise events:
-        self.Robot.StopTaskEvent.set()
-        self.Robot.StopEvent.set()
-        # Join threads:
-        if self.Robot.TaskThread.is_alive():
-            self.Robot.TaskThread.join()
 
         def shutdownAsync(part):
             if part is None:
@@ -70,7 +64,9 @@ class MainManager:
         return all(answer)
 
     def grabImage(self):
-        return self.TopCamera.grabImage()
+        # Intercept to be able to use the info for the robot
+        image, self.ImageInfo, cam_num = self.TopCamera.grabImage()
+        return image, self.ImageInfo, cam_num
 
     def switchActiveCamera(self):
         if not self.TopCamera.isConnected() or not self.DetailCamera.isConnected():
@@ -86,49 +82,26 @@ class MainManager:
         self.Robot.giveTask(self.Robot.closeGripper)
 
     def startRobotTask(self):
-        def startRobotHandle(stop_event_as_argument):
-            r"""" Feed the first found object into the pickup function. """
-            # Pick up and present:
-            self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
-            self.switchActiveCamera()
-            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
-            time.sleep(100.0)
-            self.switchActiveCamera()
-            self.Robot.dropObject(stop_event_as_argument)
-            self.Robot.goHome(stop_event_as_argument)
 
-            # Move around:
-            # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movej')
-            # self.Robot.goHome(stop_event_as_argument)
-            # self.Robot.dropObject(stop_event_as_argument)
-            # self.Robot.goHome(stop_event_as_argument)
-
-            # Stay around the camera:
+        def task(stop_event_as_argument):
+            # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionTestCollision.copy(), 'movej')
+            self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movel')
             # self.Robot.closeGripper(stop_event_as_argument)
-            # target = self.Robot.JointAngleReadObject.copy()
-            # self.Robot.moveJointsTo(stop_event_as_argument, target, 'movej')
+            # # self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleDropObject.copy(), 'movej')
+            # # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
             # self.switchActiveCamera()
-            # time.sleep(10.0)
-            # target[0] += 0.1
-            # self.Robot.moveJointsTo(stop_event_as_argument, target, 'movej')
-            # target[0] += 0.1
-            # self.switchActiveCamera()
-
-            # Old pickup:
-            # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
-            # self.Robot.goHome(stop_event_as_argument)
+            # # self.Robot.presentObject(stop_event_as_argument)
+            # self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+            # # time.sleep(10.0)
             # self.Robot.dropObject(stop_event_as_argument)
-            # self.Robot.goHome(stop_event_as_argument)
-        self.Robot.giveTask(startRobotHandle)
+            # self.switchActiveCamera()
+            self.Robot.goHome(stop_event_as_argument)
+        self.Robot.giveTask(task)
 
     def stopRobotTask(self):
-        self.Robot.halt(self.Robot.StopTaskEvent.set())  # Halt the execution of the current task and wait until the robot is stopped
-        self.Robot.TaskFinishedEvent.wait(timeout=1.0)
-
-        def stopAndReturn(stop_event_as_argument):
-            self.Robot.halt(stop_event_as_argument)
-            self.Robot.goHome(stop_event_as_argument)
-        self.Robot.giveTask(stopAndReturn)
+        print("Stopping robot task")
+        self.Robot.halt()
+        # self.Robot.giveTask(self.Robot.goHome)
 
 
 if __name__ == '__main__':

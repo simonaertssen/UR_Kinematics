@@ -53,10 +53,13 @@ class Robot:
     JointAngleInit = [i * 3.141593/180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
     JointAngleDropObject = [i * 3.141593/180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
     # self.JointAngleReadObject = [i * self.pidiv180 for i in [-0.068, -91.45, 94.01, -92.59, 87, 180]]
-    JointAngleReadObject = [i * 3.141593/180 for i in [-0.053, -91.12, 94.04, -94.04, 87.04, 188.24]]
+    # JointAngleReadObjectOld = [i * 3.141593/180 for i in [-0.053, -91.12, 94.04, -94.04, 87.04, 188.24]]
+    JointAngleReadObject = [i * 3.141593 / 180 for i in [0.00, -90.00, 90.00, -90.00, 90.00, 180.00]]
 
     ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
     ToolPositionLightBox = [0.14912, -0.31000, 0.05, 0.000, 3.14159, 0.000]
+    ToolPositionReadObject = [-0.48117, -0.10529, 0.62605, 0.0007, 0.0208, 0.0134]
+    ToolPositionTestCollision = [-0.01860, -0.73475, 0.30999, 0.7750, 3.044, 0.002]
 
     StopEvent = Event()  # Stop the robot class from running
     StopTaskEvent = Event()  # Stop the current task from running
@@ -100,9 +103,14 @@ class Robot:
         Safely shutdown the ModBusReader and the RobotCCO asynchronously. This
         is faster than starting sequentially.
         """
-        if not self.RobotCCO.isClosed():
-            self.halt(self.StopTaskEvent)
+        print("Shutting down safely")
         # Only initialise if we want to reset the robot entirely
+        if not self.StopTaskEvent.isSet():
+            self.StopTaskEvent.set()
+            print("StopTask was set")
+        self.clearTasks()
+        print("Cleared all tasks")
+        self.StopTaskEvent.clear()
         self.giveTask(self.initialise)
         self.TaskFinishedEvent.wait()
         if self.TaskThread.is_alive():
@@ -126,21 +134,30 @@ class Robot:
         while not robot_stop_event.is_set():  # Continue for as long as the robot is running
             try:  # See if there is a new task
                 task_handle = robot_task_queue.get(timeout=0.01)
-                print(task_handle)
             except Empty as e:
                 # Yes, you know that emptying the queue raises an error
                 continue  # To the next iteration of the loop
 
             try:  # See if we can execute the function
+                print("Starting task")
                 task_handle(task_stop_event)
+                print("Task Done")
             except TypeError as e:
                 print('An uncallable function was encountered: {}'.format(e))
             finally:  # Signal that the task was performed in some way
                 robot_task_finished_event.set()
+                print("Signaled task was Done")
                 if task_stop_event.isSet():
                     # If the event was raised, clear it and signal that the task was stopped.
                     # This yields the robot ready for the coming task.
                     task_stop_event.clear()
+
+    def clearTasks(self):
+        while True:
+            try:
+                self.TaskQueue.get_nowait()
+            except Empty:
+                break
 
     def giveTask(self, function_handle):
         # Signal that the given task is not finished yet
@@ -160,24 +177,35 @@ class Robot:
             The message that is sent to URscript.
         """
         try:
+            print(message)
             self.RobotCCO.send(message)
         except Exception as e:
             print("Sending failed due to {}".format(e))
 
-    def stop(self):
+    def stop(self, stop_event):
         r"""
         Signal URscript to stop the robot with an accelleration of 5 m/s^2.
         """
         self.send(b'stop(5)')
 
-    def halt(self, stop_event):
+    def halt(self):
+        print("Halt called")
         r"""
         Stop the current concurrent command and stop the robot.
         """
-        if not stop_event.isSet():
-            stop_event.set()
-        self.stop()
-        stop_event.clear()
+        self.stop(0)
+        self.stop(0)
+        if not self.StopTaskEvent.isSet():
+            self.StopTaskEvent.set()
+        if not self.StopEvent.isSet():
+            self.StopEvent.set()
+        self.clearTasks()
+        self.StopTaskEvent.clear()
+        # self.giveTask(self.stop)
+        # self.TaskFinishedEvent.wait(timeout=1.0)
+        # print("Finished waiting")
+        # self.StopTaskEvent.clear()
+        # self.TaskFinishedEvent.wait(timeout=1.0)
 
     def receive(self):
         r"""
@@ -287,6 +315,22 @@ class Robot:
     def detectCollision(self):
         return detectCollision(self.getJointPositions())
 
+    @staticmethod
+    def spatialDifference(current_position, target_position):
+        r"""
+        Compute the L2 spatial distance between two tool positions.
+
+        Parameters:
+        ----------
+        current_position : list
+            The current position, given by a tool position.
+        target_position : list
+            The target position, given by a tool position.
+        """
+        x1, y1, z1, _, _, _ = current_position
+        x2, y2, z2, _, _, _ = target_position
+        return ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) ** 0.5
+
     def moveTo(self, stop_event, target_position, move, p=True, wait=True, check_collisions=True):
         r"""
         Moves the robot to the target, while blocking the thread which calls this
@@ -306,7 +350,7 @@ class Robot:
             (p=False) or a tool position (p=True).
         wait: bool
             Wait for the program to reach the required position (blocking or not).
-        check_collisions: boole
+        check_collisions: bool
             Check whether a collision occurs during the move.
         """
         if stop_event.isSet():
@@ -317,67 +361,51 @@ class Robot:
         else:
             current_position = self.getJointAngles
 
-        command = str.encode("{}({}{}) \n".format(move, "p" if p is True else "", target_position))
+        command = str.encode("{}({}{}, v={}) \n".format(move, "p" if p is True else "", target_position, 0.1))
         self.send(command)
 
         start_position = current_position()
         if wait:
             try:
-                self.waitUntilTargetReached(current_position, target_position, check_collisions, stop_event)
+                self.waitUntilTargetReached(current_position, target_position, p, check_collisions, stop_event)
             except TimeoutError as e:  # Time ran out to test for object position
                 print(e)
             except InterruptedError as e:  # StopEvent is raised
                 print(e)
-            except RuntimeError as e:  # Collision raises RuntimeError, so move to startpoition
-                self.stop()
+            except RuntimeError as e:  # Collision raises RuntimeError, so move to startposition
+                self.halt()
                 time.sleep(0.1)
                 self.moveTo(stop_event, start_position, "movel", wait=True, p=p, check_collisions=False)
             finally:
                 time.sleep(0.1)  # To let momentum fade away
 
-    @staticmethod
-    def spatialDifference(current_position, target_position):
-        r"""
-        Compute the L2 spatial distance between two tool positions.
-
-        Parameters:
-        ----------
-        current_position : list
-            The current position, given by a tool position.
-        target_position : list
-            The target position, given by a tool position.
-        """
-        x1, y1, z1, _, _, _ = current_position
-        x2, y2, z2, _, _, _ = target_position
-        return ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) ** 0.5
-
-    def waitUntilTargetReached(self, current_position, target_position, check_collisions, stop_event):
+    def waitUntilTargetReached(self, current_position, target_position, p, check_collisions, stop_event):
         r"""
         Block the moveTo command until either the target position is reached or
         until the stop event is set or until a collision is detected.
         """
         difference = [1000.0 for _ in target_position]
         start_time = time.time()
-        MAX_TIME = 5.0
+        MAX_TIME = 15.0
 
-        RELATIVE_TOLERANCE = 5e-4
-        ABSOLUTE_TOLERANCE = 1e-3
+        # if p:  # Constrain on position
+        RELATIVE_TOLERANCE = 1e-3  # Robot arm should be accurate up to 1mm
+        ABSOLUTE_TOLERANCE = 6e-3  # Total difference should not exceed 6*tolerance on each joint
+        # else:
+        #     RELATIVE_TOLERANCE = 2e-3
+        #     ABSOLUTE_TOLERANCE = 8e-3  # Robot arm should be accurate up to 1mrad
 
-        count = 0
-        MAX_COUNT = 10
-        while count < MAX_COUNT:
-            if sum(difference) < ABSOLUTE_TOLERANCE or all(d < RELATIVE_TOLERANCE for d in difference):
-                count += 1
-            else:
-                count = 0
+        while sum(difference) > ABSOLUTE_TOLERANCE or all(d > RELATIVE_TOLERANCE for d in difference):
             if stop_event.isSet() is True:
                 InterruptedError("Stop event has been raised.")
             if check_collisions and self.detectCollision():
+                print('Bumping in to stuff!')
                 raise RuntimeError('Bumping in to stuff!')
             if time.time() - start_time > MAX_TIME:
                 raise TimeoutError('Movement took longer than {} s. Assuming robot is in position and continue.'.format(MAX_TIME))
-            difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
-
+            difference = [abs((joint - pos + 3.14159) % 6.2831 - 3.14159) for joint, pos in zip(current_position(), target_position)]
+            # print(sum(difference), difference)
+        print("Target reached")
 
     def waitForParallelTask(self, function_handle, arguments=None, join=True, information=None):
         r"""
@@ -427,14 +455,26 @@ class Robot:
         """
         self.moveTo(stop_event, target_position, move, wait=wait, p=False, check_collisions=check_collisions)
 
-    def goHome(self, stop_event):
-        self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej")
+    def goHome(self, stop_event, wait=True):
+        self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej", wait=wait)
 
     def dropObject(self, stop_event):
         if stop_event.isSet():
             return
         self.moveJointsTo(stop_event, self.JointAngleDropObject.copy(), "movej")
         self.openGripper(stop_event)
+
+    def presentObject(self, stop_event):
+        # self.moveToolTo(stop_event, self.ToolPositionLightBox.copy(), 'movej')
+        # Adjust position to the object
+        target_position = self.ToolPositionReadObject.copy()
+        # Get right orientation from Rodrigues conversion
+        a, b, c = RPY2RotVec(0, 0, 0)
+        target_position[3] = a
+        target_position[4] = b
+        target_position[5] = c
+        print(target_position)
+        self.moveToolTo(stop_event, target_position, 'movej')
 
     def pickUpObject(self, stop_event, object_position):
         r"""
@@ -481,9 +521,9 @@ class Robot:
         distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit.copy())])
         currentToolPosition = self.getToolPosition()
         if self.isGripperOpen():
-            if currentToolPosition[2] < 0.300:
+            if currentToolPosition[2] <= 0.300:
                 targetToolPosition = currentToolPosition.copy()
-                targetToolPosition[2] = 0.300
+                targetToolPosition[2] = 0.310
                 # Move towards first location, don't check collisions
                 # because we might start from a bad position.
                 self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)

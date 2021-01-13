@@ -238,7 +238,7 @@ def runSingleCamera(camera):
         if image is None:
             continue
 
-        cv.imshow(testWindow, cv.resize(image, (int(w/2), int(h/2))))
+        cv.imshow(testWindow, cv.resize(image, (int(w/1.5), int(h/1.5))))
         if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
             break
         now = time.time()
