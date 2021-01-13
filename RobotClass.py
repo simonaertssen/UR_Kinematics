@@ -42,31 +42,32 @@ class Robot:
         The tool position of the tool positioned at the lower left corner of the
         light box, with the tool aligned vertically, facing down.
     """
+
+    ModBusReader = ModBusReader
+    RobotCCO = RobotCCO
+
+    # Save some important positions as attributes:
+    ToolHoverHeight = 0.06
+    ToolPickUpHeight = 0.009
+
+    JointAngleInit = [i * 3.141593/180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
+    JointAngleDropObject = [i * 3.141593/180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
+    # self.JointAngleReadObject = [i * self.pidiv180 for i in [-0.068, -91.45, 94.01, -92.59, 87, 180]]
+    JointAngleReadObject = [i * 3.141593/180 for i in [-0.053, -91.12, 94.04, -94.04, 87.04, 188.24]]
+
+    ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
+    ToolPositionLightBox = [0.14912, -0.31000, 0.05, 0.000, 3.14159, 0.000]
+
+    StopEvent = Event()  # Stop the robot class from running
+    StopTaskEvent = Event()  # Stop the current task from running
+    TaskFinishedEvent = Event()  # Signal the current task is finished
+    TaskQueue = LifoQueue()
+    TaskThread = Thread(args=[TaskQueue, StopTaskEvent, StopEvent, TaskFinishedEvent], daemon=True, name='Async Robot tasks')
+
     def __init__(self):
         super(Robot, self).__init__()
-        self.ModBusReader = None
-        self.RobotCCO = None
         self.tryConnect()
-
-        # Save some important positions as attributes:
-        self.pidiv180 = 3.14159265359/180
-        self.ToolHoverHeight = 0.06
-        self.ToolPickUpHeight = 0.009
-
-        self.JointAngleInit = [i * self.pidiv180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
-        self.JointAngleDropObject = [i * self.pidiv180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
-        # self.JointAngleReadObject = [i * self.pidiv180 for i in [-0.068, -91.45, 94.01, -92.59, 87, 180]]
-        self.JointAngleReadObject = [i * self.pidiv180 for i in [-0.053, -91.12, 94.04, -94.04, 87.04, 188.24]]
-
-        self.ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
-        self.ToolPositionLightBox = [0.14912, -0.31000, 0.05, 0.000, 3.14159, 0.000]
-
-        self.StopEvent = Event()  # Stop the robot class from running
-        self.StopTaskEvent = Event()  # Stop the current task from running
-        self.TaskFinishedEvent = Event()  # Signal the current task is finished
-        self.TaskQueue = LifoQueue()
-        TaskQueueArguments = [self.TaskQueue, self.StopTaskEvent, self.StopEvent, self.TaskFinishedEvent]
-        self.TaskThread = Thread(target=self.runTasks, args=TaskQueueArguments, daemon=True, name='Async Robot tasks')
+        self.TaskThread._target = self.runTasks
         self.giveTask(self.initialise)
         self.TaskThread.start()
 
@@ -99,10 +100,11 @@ class Robot:
         Safely shutdown the ModBusReader and the RobotCCO asynchronously. This
         is faster than starting sequentially.
         """
+        if not self.RobotCCO.isClosed():
+            self.halt(self.StopEvent)
         # Only initialise if we want to reset the robot entirely
         self.giveTask(self.initialise)
-        if self.RobotCCO is not None and not self.RobotCCO.isClosed():
-            self.halt(self.StopEvent)
+        self.TaskFinishedEvent.wait()
 
         def shutdownAsync(part):
             if part is None:
