@@ -101,10 +101,13 @@ class Robot:
         is faster than starting sequentially.
         """
         if not self.RobotCCO.isClosed():
-            self.halt(self.StopEvent)
+            self.halt(self.StopTaskEvent)
         # Only initialise if we want to reset the robot entirely
         self.giveTask(self.initialise)
         self.TaskFinishedEvent.wait()
+        if self.TaskThread.is_alive():
+            self.StopEvent.set()
+            self.TaskThread.join()
 
         def shutdownAsync(part):
             if part is None:
@@ -123,13 +126,13 @@ class Robot:
         while not robot_stop_event.is_set():  # Continue for as long as the robot is running
             try:  # See if there is a new task
                 task_handle = robot_task_queue.get(timeout=0.01)
+                print(task_handle)
             except Empty as e:
                 # Yes, you know that emptying the queue raises an error
                 continue  # To the next iteration of the loop
 
             try:  # See if we can execute the function
                 task_handle(task_stop_event)
-                print(task_handle)
             except TypeError as e:
                 print('An uncallable function was encountered: {}'.format(e))
             finally:  # Signal that the task was performed in some way
