@@ -85,13 +85,14 @@ class Reader(socket.socket):
     ThreadLock : Lock
         The threadlock used for atomic access of queues of the child classes.
     """
+    BufferLength = 1116
 
     def __init__(self, ip, port):
         super(Reader, self).__init__(socket.AF_INET, socket.SOCK_STREAM)
         self.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.settimeout(1)  # Timeout after one second
         self.Address = (ip, port)
-        self.BufferLength = 1116
+
         self.tryConnect()
 
     def tryConnect(self):
