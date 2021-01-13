@@ -1,5 +1,5 @@
 import time
-from queue import Queue, Empty
+from queue import Queue, Empty, Full
 import tracemalloc
 
 import cv2 as cv
@@ -26,14 +26,13 @@ class ImageEventHandler(pylon.ImageEventHandler):
         method was shown to be superior in terms of speed.
         """
         try:
-            self.imageQueue.get_nowait()
-        except Empty as e:
-            pass
-        try:
             if grab_result.GrabSucceeded():
                 cameraContextValue = grab_result.GetCameraContext()
                 with grab_result.GetArrayZeroCopy() as ZCArray:
-                    self.imageQueue.put((ZCArray.data, cameraContextValue))
+                    try:
+                        self.imageQueue.get_nowait()
+                    except Empty:
+                        self.imageQueue.put_nowait((ZCArray.data, cameraContextValue))
         except genicam.GenericException as e:
             print("ImageEventHandler Exception: {}".format(e))
         finally:
@@ -74,16 +73,28 @@ class Camera:
         self.imageEventHandler = ImageEventHandler()
         self.Connected = False
         self.setCamera()
-        self.registerGrabbingStrategy()
 
         # Open camera briefly to avoid errors while registering properties.
-        self.camera.Open()
+        # try:
+        #     self.open()
+        # except genicam.RuntimeException as e:
+        #     print("Runtime exception")
+        #     self.close()
+        #     self.shutdownSafely()
+        #     self.camera = None
+        #     super(Camera, self).__init__()
+        #     print(self.camera)
+        #     self.setCamera()
+        #     self.open()
+
+        self.open()
         self.camera.AcquisitionMode.SetValue('Continuous')
         self.camera.TriggerMode.SetValue('Off')
         self.camera.ExposureAuto.SetValue('Off')
         self.pixelWidth = self.camera.Width.Value
         self.pixelHeight = self.camera.Height.Value
-        self.camera.Close()
+        self.close()
+        self.registerGrabbingStrategy()
 
     def __repr__(self):
         return "Camera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
@@ -107,14 +118,12 @@ class Camera:
                 self.info.SetSerialNumber(str(self.serialNumber))
                 self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(self.info))
             # Close all connections if they exist:
-            self.camera.Close()
+            self.close()
             self.Connected = True
             print("Camera {} is connected.".format(self.serialNumber))
         except genicam.GenericException as e:
             self.shutdownSafely()
             raise ConnectionError('Camera {} could not be found: {}'.format(self.serialNumber, e))
-        else:
-            self.camera.Open()
 
     def isConnected(self):
         return self.Connected
@@ -165,14 +174,16 @@ class Camera:
         if not self.camera.IsGrabbing():
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
         try:
-            if self.camera.WaitForFrameTriggerReady(10, pylon.TimeoutHandling_Return):
+            if self.camera.WaitForFrameTriggerReady(0, pylon.TimeoutHandling_Return):
                 self.camera.ExecuteSoftwareTrigger()
-            grabbedImage, cam_num = self.imageEventHandler.imageQueue.get()
+            grabbedImage, cam_num = self.imageEventHandler.imageQueue.get(timeout=0.03)
             grabbedImage, info = self.manipulateImage(np.asarray(grabbedImage))
         except genicam.RuntimeException as e:
             print('genicam Runtime Exception: {}'.format(e))
         except RuntimeError as e:
             print('Runtime Exception: {}'.format(e))
+        except Empty as e:
+            pass  # Yes, you know that emptying the queue raises an error
         finally:
             return grabbedImage, info, cam_num
 
@@ -299,5 +310,5 @@ def runCamerasAlternate(cameraOn, cameraOff):
 
 
 if __name__ == '__main__':
-    runSingleCamera(DetailCamera())
+    runSingleCamera(TopCamera())
     # runCamerasAlternate(TopCamera(), DetailCamera())
