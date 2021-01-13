@@ -1,7 +1,7 @@
 import time
 import winsound
 
-from queue import SimpleQueue
+from queue import SimpleQueue, LifoQueue, Empty, Full
 from threading import Thread, Event
 
 from Readers import ModBusReader, RobotCCO
@@ -42,8 +42,6 @@ class Robot:
         The tool position of the tool positioned at the lower left corner of the
         light box, with the tool aligned vertically, facing down.
     """
-    StopEvent = Event()
-
     def __init__(self):
         super(Robot, self).__init__()
         self.ModBusReader = None
@@ -57,12 +55,20 @@ class Robot:
 
         self.JointAngleInit = [i * self.pidiv180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
         self.JointAngleDropObject = [i * self.pidiv180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
-        self.JointAngleReadObject = [i * self.pidiv180 for i in [-0.068, -91.45, 94.01, -92.59, 87, 180]]
+        # self.JointAngleReadObject = [i * self.pidiv180 for i in [-0.068, -91.45, 94.01, -92.59, 87, 180]]
+        self.JointAngleReadObject = [i * self.pidiv180 for i in [-0.053, -91.12, 94.04, -94.04, 87.04, 188.24]]
 
         self.ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
         self.ToolPositionLightBox = [0.14912, -0.31000, 0.05, 0.000, 3.14159, 0.000]
 
-        self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=False, information="Initialising")
+        self.StopEvent = Event()  # Stop the robot class from running
+        self.StopTaskEvent = Event()  # Stop the current task from running
+        self.TaskFinishedEvent = Event()  # Signal the current task is finished
+        self.TaskQueue = LifoQueue()
+        TaskQueueArguments = [self.TaskQueue, self.StopTaskEvent, self.StopEvent, self.TaskFinishedEvent]
+        self.TaskThread = Thread(target=self.runTasks, args=TaskQueueArguments, daemon=True, name='Async Robot tasks')
+        self.giveTask(self.initialise)
+        self.TaskThread.start()
 
     def tryConnect(self):
         r"""
@@ -94,7 +100,7 @@ class Robot:
         is faster than starting sequentially.
         """
         # Only initialise if we want to reset the robot entirely
-        self.waitForParallelTask(function_handle=self.initialise, arguments=None, join=True, information="Resetting robot")
+        self.giveTask(self.initialise)
         if self.RobotCCO is not None and not self.RobotCCO.isClosed():
             self.halt(self.StopEvent)
 
@@ -109,6 +115,32 @@ class Robot:
         shutdownThreads = [Thread(target=shutdownAsync, args=[part], name='{} shutdownSafely'.format(part)) for part in [self.ModBusReader, self.RobotCCO]]
         [x.start() for x in shutdownThreads]
         [x.join() for x in shutdownThreads]
+
+    @staticmethod
+    def runTasks(robot_task_queue, task_stop_event, robot_stop_event, robot_task_finished_event):
+        while not robot_stop_event.is_set():  # Continue for as long as the robot is running
+            try:  # See if there is a new task
+                task_handle = robot_task_queue.get(timeout=0.01)
+            except Empty as e:
+                # Yes, you know that emptying the queue raises an error
+                continue  # To the next iteration of the loop
+
+            try:  # See if we can execute the function
+                task_handle(task_stop_event)
+                print(task_handle)
+            except TypeError as e:
+                print('An uncallable function was encountered: {}'.format(e))
+            finally:  # Signal that the task was performed in some way
+                robot_task_finished_event.set()
+                if task_stop_event.isSet():
+                    # If the event was raised, clear it and signal that the task was stopped.
+                    # This yields the robot ready for the coming task.
+                    task_stop_event.clear()
+
+    def giveTask(self, function_handle):
+        # Signal that the given task is not finished yet
+        self.TaskFinishedEvent.clear()
+        self.TaskQueue.put(function_handle)
 
     def isConnected(self):
         return self.ModBusReader.isConnected() and not (self.ModBusReader.isClosed() or self.RobotCCO.isClosed())
@@ -329,7 +361,7 @@ class Robot:
         count = 0
         MAX_COUNT = 10
         while count < MAX_COUNT:
-            if sum(difference) > ABSOLUTE_TOLERANCE and all(d > RELATIVE_TOLERANCE for d in difference):
+            if sum(difference) < ABSOLUTE_TOLERANCE or all(d < RELATIVE_TOLERANCE for d in difference):
                 count += 1
             else:
                 count = 0
@@ -340,6 +372,7 @@ class Robot:
             if time.time() - start_time > MAX_TIME:
                 raise TimeoutError('Movement took longer than {} s. Assuming robot is in position and continue.'.format(MAX_TIME))
             difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
+
 
     def waitForParallelTask(self, function_handle, arguments=None, join=True, information=None):
         r"""
@@ -473,4 +506,3 @@ class Robot:
 
 if __name__ == '__main__':
     robot = Robot()
-    robot.testGripper()
