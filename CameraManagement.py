@@ -75,19 +75,18 @@ class Camera:
         self.setCamera()
 
         # Open camera briefly to avoid errors while registering properties.
-        # try:
-        #     self.open()
-        # except genicam.RuntimeException as e:
-        #     print("Runtime exception")
-        #     self.close()
-        #     self.shutdownSafely()
-        #     self.camera = None
-        #     super(Camera, self).__init__()
-        #     print(self.camera)
-        #     self.setCamera()
-        #     self.open()
+        try:
+            self.open()
+        except genicam.RuntimeException as e:
+            print("Runtime exception: pause before opening the camera again")
+            self.close()
+            self.shutdownSafely()
+            time.sleep(1)
+            super(Camera, self).__init__()
+            self.setCamera()
+            self.open()
 
-        self.open()
+        # self.open()
         self.camera.AcquisitionMode.SetValue('Continuous')
         self.camera.TriggerMode.SetValue('Off')
         self.camera.ExposureAuto.SetValue('Off')
