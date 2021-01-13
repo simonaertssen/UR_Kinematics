@@ -89,7 +89,6 @@ class Camera:
         # self.open()
         self.camera.AcquisitionMode.SetValue('Continuous')
         self.camera.TriggerMode.SetValue('Off')
-        self.camera.ExposureAuto.SetValue('Off')
         self.pixelWidth = self.camera.Width.Value
         self.pixelHeight = self.camera.Height.Value
         self.close()
@@ -239,7 +238,7 @@ def runSingleCamera(camera):
         if image is None:
             continue
 
-        cv.imshow(testWindow, cv.resize(image, (int(w/4), int(h/4))))
+        cv.imshow(testWindow, cv.resize(image, (int(w/2), int(h/2))))
         if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
             break
         now = time.time()
@@ -309,5 +308,5 @@ def runCamerasAlternate(cameraOn, cameraOff):
 
 
 if __name__ == '__main__':
-    runSingleCamera(TopCamera())
+    runSingleCamera(DetailCamera())
     # runCamerasAlternate(TopCamera(), DetailCamera())
