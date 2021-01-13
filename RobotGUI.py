@@ -18,25 +18,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QSizePo
                              QGridLayout, QVBoxLayout, QSplitter, QPushButton, QLineEdit, QRadioButton, QCheckBox, QShortcut)
 
 from threading import Thread, Event, enumerate as list_threads
-from multiprocessing import Process
-
 from queue import Empty
-
-
-class AThread(QThread):
-    def __init__(self, target, args, stop_event, name):
-        QtCore.QThread.__init__(self)
-        self.target = target
-        self.args = args
-        self.stop_event = stop_event
-        print(dir(self))
-
-    def run(self):
-        while not self.stop_event.isSet():
-            if self.args:
-                self.target(self.args)
-            else:
-                self.target(self.args)
 
 
 class StandardObjectWidget(QWidget):
@@ -594,8 +576,6 @@ class MainObjectWidget(StandardObjectWidget):
         vbox.addWidget(self.button_exit)
         self.setLayout(vbox)
 
-        # ContinuousConnectionCheck = AThread(target=self.verifyComponentsAreWorking, args=None, stop_event=self.parent.manager.Robot.StopEvent, name='Async Connection check')
-        # ContinuousConnectionCheck.start()
         ImageThreadArgList = [self.parent.manager.Robot.StopEvent]
         ContinuousConnectionCheck = Thread(target=self.verifyComponentsAreWorking, args=ImageThreadArgList, daemon=True, name='Async Connection check')
         ContinuousConnectionCheck.start()
@@ -680,13 +660,6 @@ class MainObjectWidget(StandardObjectWidget):
         self.camera_status_text.setText("Running")
         self.camera_status_text.setStyleSheet('font-size: ' + self.text_size3 + '; color: green')
 
-        # Reset the robot stop button when the given task is finished
-        # try:
-        #     self.parent.manager.RobotTaskFinishedEvent.wait()
-        #     self.stopRobotTaskButtonClicked()
-        # except Exception as e:
-        #     print(e)
-
     def stopRobotTaskButtonClicked(self):
         self.parent.stopRobotTask()
 
@@ -721,11 +694,18 @@ class MainObjectWidget(StandardObjectWidget):
             else:
                 self.camera_status_text.setText("Not connected")
                 self.camera_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
+
+            if self.parent.manager.Robot.TaskFinishedEvent.isSet():
+                self.button_start_robot.setEnabled(True)
+                self.button_start_robot.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; font-weight: bold; background-color: green}')
+                self.robot_status_text.setText("Not running")
+                self.robot_status_text.setStyleSheet("font-size: " + self.text_size3 + "; color: red")
+
             time.sleep(0.1)  # Only need to run this function a few times per second
 
             now = time.time()
             if debug and now - start_time > 1.0:
-                print("verifyComponentsAreWorking going")
+                # print("verifyComponentsAreWorking going")
                 start_time = now
         print("verifyComponentsAreWorking loop finished")
 
@@ -796,7 +776,7 @@ class MainWindow(StandardMainWindow):
 
             now = time.time()
             if debug and now - start_time > 1.0:
-                print("updateImageView going")
+                # print("updateImageView going")
                 start_time = now
         print("updateImageView loop finished")
 
