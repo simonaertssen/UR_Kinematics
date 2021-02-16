@@ -40,7 +40,10 @@ class MainManager:
             raise ReturnErrorMessageQueue.get()
 
     def shutdownSafely(self):
-        print("Active threads: ", [t.name for t in list_threads()])
+        def printActiveThreadsContinuously():  # Continuously print which threads are still active
+            print("Active threads: ", [t.name for t in list_threads()])
+            time.sleep(1.0)
+        Thread(target=printActiveThreadsContinuously, args=[], name="Print Active Threads Continuously", daemon=True).start()
 
         def shutdownAsync(part):
             if part is None:

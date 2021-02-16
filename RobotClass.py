@@ -59,7 +59,7 @@ class Robot:
     ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
     ToolPositionLightBox = [0.14912, -0.31000, 0.05, 0.000, 3.14159, 0.000]
     ToolPositionReadObject = [-0.48117, -0.10529, 0.62605, 0.0007, 0.0208, 0.0134]
-    ToolPositionTestCollision = [-0.01860, -0.73475, 0.30999, 0.7750, 3.044, 0.002]
+    ToolPositionTestCollision = [0.04860, -0.73475, 0.30999, 0.7750, 3.044, 0.002]
 
     StopEvent = Event()  # Stop the robot class from running
     StopTaskEvent = Event()  # Stop the current task from running
@@ -361,7 +361,8 @@ class Robot:
         else:
             current_position = self.getJointAngles
 
-        command = str.encode("{}({}{}, v={}) \n".format(move, "p" if p is True else "", target_position, 0.1))
+        MAX_SPEED = 0.25  # m/s
+        command = str.encode("{}({}{}, v={}) \n".format(move, "p" if p is True else "", target_position, MAX_SPEED))
         self.send(command)
 
         start_position = current_position()
@@ -404,36 +405,7 @@ class Robot:
             if time.time() - start_time > MAX_TIME:
                 raise TimeoutError('Movement took longer than {} s. Assuming robot is in position and continue.'.format(MAX_TIME))
             difference = [abs((joint - pos + 3.14159) % 6.2831 - 3.14159) for joint, pos in zip(current_position(), target_position)]
-            # print(sum(difference), difference)
         print("Target reached")
-
-    def waitForParallelTask(self, function_handle, arguments=None, join=True, information=None):
-        r"""
-        Start a command within a thread and wait for its completion to achieve concurrency.
-
-        Parameters:
-        ----------
-        function_handle : function handle
-            The function we wish to run concurrently. Should accept a single
-            argument, the stop event.
-        arguments : list
-            The additional arguments a function could need. Included if such
-            situations would emerge in future development.
-        information : str
-            The information we wish to display as the name of the thread.
-        """
-        if information:
-            print('Task received:', information)
-        thread_args = (self.StopEvent,)
-        if arguments is not None:
-            thread_args = [thread_args]
-            thread_args.extend(arguments)
-        thread = Thread(target=function_handle, args=thread_args, daemon=True, name=information)
-        thread.start()
-        if join:
-            thread.join()
-            if self.StopEvent.isSet():
-                self.StopEvent.clear()
 
     def moveToolTo(self, stop_event, target_position, move, wait=True, check_collisions=True):
         r"""
