@@ -401,8 +401,7 @@ class Robot:
         self.moveTo(stop_event, target_position, move, wait=wait, p=False, check_collisions=check_collisions)
 
     def goHome(self, stop_event, wait=True, check_collisions=True):
-        if sum(jointAngleDifference(self.getJointAngles(), self.JointAngleInit.copy())) > 0.1:
-            self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej", wait=wait, check_collisions=check_collisions)
+        self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej", wait=wait, check_collisions=check_collisions)
 
     def dropObject(self, stop_event):
         if stop_event.isSet():
@@ -484,7 +483,8 @@ class Robot:
                     self.goHome(stop_event, check_collisions=False)
 
             self.dropObject(stop_event)
-        self.goHome(stop_event)
+        if sum(jointAngleDifference(self.getJointAngles(), self.JointAngleInit.copy())) > 0.1:
+            self.goHome(stop_event)
 
     @staticmethod
     def beep():

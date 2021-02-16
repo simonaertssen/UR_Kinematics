@@ -7,13 +7,15 @@ from queue import SimpleQueue, LifoQueue, Empty, Full
 from RobotClass import Robot
 from CameraManagement import TopCamera
 from CameraManagement import DetailCamera
-from Functionalities import sleep, pi
+from Functionalities import sleep
+from ImageModule import saveImage
 
 
 class MainManager:
     Robot = Robot
     TopCamera = TopCamera
     DetailCamera = DetailCamera
+    Image = None
     ImageInfo = []
 
     def __init__(self):
@@ -72,8 +74,8 @@ class MainManager:
 
     def grabImage(self):
         # Intercept to be able to use the info for the robot
-        image, self.ImageInfo, cam_num = self.TopCamera.grabImage()
-        return image, self.ImageInfo, cam_num
+        self.Image, self.ImageInfo, cam_num = self.TopCamera.grabImage()
+        return self.Image, self.ImageInfo, cam_num
 
     def switchActiveCamera(self):
         if not self.TopCamera.isConnected() or not self.DetailCamera.isConnected():
@@ -96,9 +98,9 @@ class MainManager:
             # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionTestCollision.copy(), 'movej')
             # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movel')
 
-            self.Robot.closeGripper(stop_event_as_argument)
+            # self.Robot.closeGripper(stop_event_as_argument)
 
-            # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
+            self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
             # self.Robot.presentObject(stop_event_as_argument)
 
             # Get intermediate position to not bump into the screen:
@@ -110,12 +112,13 @@ class MainManager:
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
 
             self.switchActiveCamera()
-            sleep(10.0, stop_event_as_argument)
+            saveImage(self.Image)
+            print("Image saved")
             self.switchActiveCamera()
 
             self.Robot.moveJointsTo(stop_event_as_argument, inter_joint_position, 'movej')
 
-            # self.Robot.dropObject(stop_event_as_argument)
+            self.Robot.dropObject(stop_event_as_argument)
             self.Robot.goHome(stop_event_as_argument)
         self.Robot.giveTask(task)
 
