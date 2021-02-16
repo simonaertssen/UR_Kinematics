@@ -1,14 +1,13 @@
 import time
 
 from threading import Thread, Event, enumerate as list_threads
-from multiprocessing import Process
 
 from queue import SimpleQueue, LifoQueue, Empty, Full
 
 from RobotClass import Robot
 from CameraManagement import TopCamera
 from CameraManagement import DetailCamera
-from Functionalities import sleep
+from Functionalities import sleep, pi
 
 
 class MainManager:
@@ -98,11 +97,16 @@ class MainManager:
             # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movel')
 
             self.Robot.closeGripper(stop_event_as_argument)
-            # self.switchActiveCamera()
+
+            # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
+            # self.Robot.presentObject(stop_event_as_argument)
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+            # print(self.Robot.getToolPosition())
+            self.switchActiveCamera()
             sleep(10.0, stop_event_as_argument)
+            self.switchActiveCamera()
             self.Robot.openGripper(stop_event_as_argument)
-            # self.switchActiveCamera()
+            # self.Robot.dropObject(stop_event_as_argument)
             self.Robot.goHome(stop_event_as_argument)
         self.Robot.giveTask(task)
 

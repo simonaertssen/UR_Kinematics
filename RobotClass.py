@@ -1,11 +1,11 @@
 import time
 import winsound
 
-from queue import SimpleQueue, LifoQueue, Empty, Full
+from queue import SimpleQueue, LifoQueue, Empty
 from threading import Thread, Event
 
 from Readers import ModBusReader, RobotCCO
-from Functionalities import sleep
+from Functionalities import sleep, pi
 
 from KinematicsModule.Kinematics import RPY2RotVec  # Slow Python implementation
 from KinematicsLib.cKinematics import ForwardKinematics, detectCollision  # Fast C and Cython implementation
@@ -51,15 +51,16 @@ class Robot:
     ToolHoverHeight = 0.06
     ToolPickUpHeight = 0.009
 
-    JointAngleInit = [i * 3.141593/180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
-    JointAngleDropObject = [i * 3.141593/180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
+    JointAngleInit = [i * pi/180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
+    JointAngleDropObject = [i * pi/180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
     # self.JointAngleReadObject = [i * self.pidiv180 for i in [-0.068, -91.45, 94.01, -92.59, 87, 180]]
-    # JointAngleReadObjectOld = [i * 3.141593/180 for i in [-0.053, -91.12, 94.04, -94.04, 87.04, 188.24]]
-    JointAngleReadObject = [i * 3.141593 / 180 for i in [0.00, -90.00, 90.00, -90.00, 90.00, 180.00]]
+    # JointAngleReadObjectOlder = [i * pi/180 for i in [-0.053, -91.12, 94.04, -94.04, 87.04, 188.24]]
+    # JointAngleReadObjectOld = [i * pi / 180 for i in [0.00, -90.00, 90.00, -90.00, 90.00, 180.00]]
+    JointAngleReadObject = [i * pi / 180 for i in [-0.11, -65.61, 56.72, 98.89, -90.00, 0.11]]
 
     ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
-    ToolPositionLightBox = [0.14912, -0.31000, 0.05, 0.000, 3.14159, 0.000]
-    ToolPositionReadObject = [-0.48117, -0.10529, 0.62605, 0.0007, 0.0208, 0.0134]
+    ToolPositionLightBox = [0.14912, -0.31000, 0.05, 0.000, pi, 0.000]
+    ToolPositionReadObject = [-0.46864, -0.10824, 0.74611, 0.0000, 0.000, pi/2.0]
     ToolPositionTestCollision = [0.04860, -0.73475, 0.30999, 0.7750, 3.044, 0.002]
 
     StopEvent = Event()  # Stop the robot class from running
@@ -336,7 +337,7 @@ class Robot:
         move: str
             The motion: movej (find best move) or movel (move in a line).
         p : bool
-            The boolean that defines wether the target is a set of joint angles
+            The boolean that defines whether the target is a set of joint angles
             (p=False) or a tool position (p=True).
         wait: bool
             Wait for the program to reach the required position (blocking or not).
@@ -377,6 +378,7 @@ class Robot:
         """
         difference = [1000.0 for _ in target_position]
         start_time = time.time()
+        print_time = start_time
         MAX_TIME = 5.0
 
         # if p:  # Constrain on position
@@ -392,7 +394,16 @@ class Robot:
                 raise RuntimeError('Bumping in to stuff!')
             if time.time() - start_time > MAX_TIME:
                 raise TimeoutError('Movement took longer than {} s. Assuming robot is in position and continue.'.format(MAX_TIME))
-            difference = [abs((joint - pos + 3.14159) % 6.2831 - 3.14159) for joint, pos in zip(current_position(), target_position)]
+
+            if p:
+                difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
+            else:
+                difference = [pi - abs(abs(joint - pos) - pi) for joint, pos in zip(current_position(), target_position)]
+            # now = time.time()
+            # if print_time - now > 1.0:
+            #     print_time = now
+            # print(sum(difference))
+        print("Target reached, p =", p)
 
     def moveToolTo(self, stop_event, target_position, move, wait=True, check_collisions=True):
         r"""
@@ -414,8 +425,8 @@ class Robot:
         """
         self.moveTo(stop_event, target_position, move, wait=wait, p=False, check_collisions=check_collisions)
 
-    def goHome(self, stop_event, wait=True):
-        self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej", wait=wait)
+    def goHome(self, stop_event, wait=True, check_collisions=True):
+        self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej", wait=wait, check_collisions=check_collisions)
 
     def dropObject(self, stop_event):
         if stop_event.isSet():
@@ -426,7 +437,8 @@ class Robot:
     def presentObject(self, stop_event):
         # self.moveToolTo(stop_event, self.ToolPositionLightBox.copy(), 'movej')
         # Adjust position to the object
-        target_position = self.ToolPositionReadObject.copy()
+        # target_position = self.ToolPositionReadObject.copy()
+        target_position = self.getToolPosition()
         # Get right orientation from Rodrigues conversion
         a, b, c = RPY2RotVec(0, 0, 0)
         target_position[3] = a
@@ -455,7 +467,7 @@ class Robot:
         target_position[1] -= Y * LIGHTBOX_LENGTH  # adjust Y position
         target_position[2] = self.ToolHoverHeight
         # Get right orientation from Rodrigues conversion
-        a, b, c = RPY2RotVec(0, 3.1415926, -angle)
+        a, b, c = RPY2RotVec(0, pi, -angle)
         target_position[3] = a
         target_position[4] = b
         target_position[5] = c
@@ -490,14 +502,13 @@ class Robot:
                 if currentToolPosition[2] < 0.07:
                     targetToolPosition = currentToolPosition.copy()
                     targetToolPosition[2] = 0.07
-                    self.moveToolTo(stop_event, targetToolPosition, "movel")
+                    self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)
             else:
                 if distanceFromAngleInit > 0.05:
-                    self.goHome(stop_event)
+                    self.goHome(stop_event, check_collisions=False)
 
             self.dropObject(stop_event)
-        if distanceFromAngleInit > 0.1:
-            self.goHome(stop_event)
+        self.goHome(stop_event)
 
     @staticmethod
     def beep():
