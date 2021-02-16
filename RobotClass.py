@@ -5,6 +5,7 @@ from queue import SimpleQueue, LifoQueue, Empty, Full
 from threading import Thread, Event
 
 from Readers import ModBusReader, RobotCCO
+from Functionalities import sleep
 
 from KinematicsModule.Kinematics import RPY2RotVec  # Slow Python implementation
 from KinematicsLib.cKinematics import ForwardKinematics, detectCollision  # Fast C and Cython implementation
@@ -69,6 +70,9 @@ class Robot:
     TaskQueue = LifoQueue()
     TaskThread = Thread(args=[TaskQueue, StopTaskEvent, StopEvent, TaskFinishedEvent], daemon=True, name='Async Robot tasks')
 
+    def __repr__(self):
+        return "Robot"
+
     def __init__(self):
         super(Robot, self).__init__()
         self.tryConnect()
@@ -107,7 +111,7 @@ class Robot:
         commands immediately, we need to send an IO command. Don't kow why but it works.
         """
         self.send(b'set_digital_out(7, False)')  # Necessary to give the robot another command first
-        self.send(b'stop(0.001)')
+        self.send(b'stopl(0.00001)')
         self.send(b'set_digital_out(7, False)')
 
     def halt(self):
@@ -129,6 +133,7 @@ class Robot:
         """
         self.halt()
         self.giveTask(self.initialise)
+        print("Waiting to go back")
         self.TaskFinishedEvent.wait()
         if self.TaskThread.is_alive():
             self.StopEvent.set()
@@ -248,7 +253,7 @@ class Robot:
         if stop_event.isSet():
             return
         self.set_IO_PORT(0, True)
-        time.sleep(2)
+        sleep(2.0, stop_event)
 
     def turnWhiteLampOFF(self, stop_event):
         if stop_event.isSet():
@@ -349,7 +354,7 @@ class Robot:
         else:
             current_position = self.getJointAngles
 
-        MAX_SPEED = 0.1  # m/s
+        MAX_SPEED = 1.0  # m/s
         command = str.encode("{}({}{}, v={})".format(move, "p" if p is True else "", target_position, MAX_SPEED))
         self.send(command)
 

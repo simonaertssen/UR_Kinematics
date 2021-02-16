@@ -8,6 +8,7 @@ from queue import SimpleQueue, LifoQueue, Empty, Full
 from RobotClass import Robot
 from CameraManagement import TopCamera
 from CameraManagement import DetailCamera
+from Functionalities import sleep
 
 
 class MainManager:
@@ -45,7 +46,7 @@ class MainManager:
         def printActiveThreadsContinuously(stop_printing_event):  # Continuously print which threads are still active
             while not stop_printing_event.is_set():
                 print("Active threads: ", [t.name for t in list_threads()])
-                time.sleep(1.0)
+                sleep(1.0, stop_printing_event)
         Thread(target=printActiveThreadsContinuously, args=[stopPrintingEvent], name="Print Active Threads Continuously", daemon=True).start()
 
         def shutdownAsync(part):
@@ -93,17 +94,18 @@ class MainManager:
 
     def startRobotTask(self):
         def task(stop_event_as_argument):
-            self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionTestCollision.copy(), 'movej')
+            # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionTestCollision.copy(), 'movej')
             # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movel')
-            # self.Robot.closeGripper(stop_event_as_argument)
+            self.Robot.closeGripper(stop_event_as_argument)
             # # self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleDropObject.copy(), 'movej')
             # # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
-            # self.switchActiveCamera()
+            self.switchActiveCamera()
             # # self.Robot.presentObject(stop_event_as_argument)
-            # self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
-            # # time.sleep(10.0)
+            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+            sleep(10.0, stop_event_as_argument)
+            self.Robot.openGripper(stop_event_as_argument)
             # self.Robot.dropObject(stop_event_as_argument)
-            # self.switchActiveCamera()
+            self.switchActiveCamera()
             self.Robot.goHome(stop_event_as_argument)
         self.Robot.giveTask(task)
 
