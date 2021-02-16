@@ -102,10 +102,13 @@ class Robot:
 
     def stop(self):
         r"""
-        Signal URscript to stop the robot with an accelleration of 5 m/s^2.
+        Signal URscript to stop the robot with an accelleration of 0.001 m/s^2.
+        For the robot to receive this message immediately and for the robot to respond to future
+        commands immediately, we need to send an IO command. Don't kow why but it works.
         """
-        self.send(b'set_digital_out(8, False)' + b"\n")  # Necessary to give the robot another command first
+        self.send(b'set_digital_out(7, False)')  # Necessary to give the robot another command first
         self.send(b'stop(0.001)')
+        self.send(b'set_digital_out(7, False)')
 
     def halt(self):
         r"""
@@ -165,6 +168,7 @@ class Robot:
                     # If the event was raised, clear it and signal that the task was stopped.
                     # This yields the robot ready for the coming task.
                     task_stop_event.clear()
+                    print("Task Event cleared")
 
     def clearTasks(self):
         while True:
@@ -191,7 +195,7 @@ class Robot:
             The message that is sent to URscript.
         """
         try:
-            self.RobotCCO.send(message)
+            self.RobotCCO.send(message + b'\n')
         except Exception as e:
             print("Sending failed due to {}".format(e))
 
@@ -237,7 +241,7 @@ class Robot:
         if not isinstance(on, bool):
             print("set_IO_PORT: boolean value error")
             return
-        command = str.encode('set_digital_out({},{}) \n'.format(port_number, on))
+        command = str.encode('set_digital_out({},{})'.format(port_number, on))
         self.send(command)
 
     def turnWhiteLampON(self, stop_event):
@@ -268,7 +272,7 @@ class Robot:
         if self.isGripperOpen():
             print('Gripper is already open')
             return
-        self.send(b'set_digital_out(8, False)' + b"\n")
+        self.send(b'set_digital_out(8, False)')
         self.waitForGripperToRead(0, stop_event)
 
     def closeGripper(self, stop_event):  # Equals a tool bit of 1
@@ -277,7 +281,7 @@ class Robot:
         if not self.isGripperOpen():
             print('Gripper is already closed')
             return
-        self.send(b'set_digital_out(8, True)' + b"\n")
+        self.send(b'set_digital_out(8, True)')
         self.waitForGripperToRead(1, stop_event)
 
     def waitForGripperToRead(self, bit_value, stop_event):
@@ -350,7 +354,7 @@ class Robot:
             current_position = self.getJointAngles
 
         MAX_SPEED = 0.1  # m/s
-        command = str.encode("{}({}{}, v={}) \n".format(move, "p" if p is True else "", target_position, MAX_SPEED))
+        command = str.encode("{}({}{}, v={})".format(move, "p" if p is True else "", target_position, MAX_SPEED))
         self.send(command)
 
         start_position = current_position()
@@ -376,7 +380,7 @@ class Robot:
         difference = [1000.0 for _ in target_position]
         start_time = time.time()
         print_time = start_time
-        MAX_TIME = 10.0
+        MAX_TIME = 5.0
 
         # if p:  # Constrain on position
         RELATIVE_TOLERANCE = 1e-3  # Robot arm should be accurate up to 1mm
@@ -385,7 +389,6 @@ class Robot:
         #     RELATIVE_TOLERANCE = 2e-3
         #     ABSOLUTE_TOLERANCE = 8e-3  # Robot arm should be accurate up to 1 mrad
 
-        print("Started waiting for target")
         while sum(difference) > ABSOLUTE_TOLERANCE or all(d > RELATIVE_TOLERANCE for d in difference):
             if stop_event.isSet() is True:
                 raise InterruptedError("Stop event has been raised.")
