@@ -62,7 +62,9 @@ class Robot:
     ToolPositionTestCollision = [0.04860, -0.73475, 0.30999, 0.7750, 3.044, 0.002]
 
     StopEvent = Event()  # Stop the robot class from running
+    # print(StopEvent)
     StopTaskEvent = Event()  # Stop the current task from running
+    # print(StopTaskEvent)
     TaskFinishedEvent = Event()  # Signal the current task is finished
     TaskQueue = LifoQueue()
     TaskThread = Thread(args=[TaskQueue, StopTaskEvent, StopEvent, TaskFinishedEvent], daemon=True, name='Async Robot tasks')
@@ -73,7 +75,6 @@ class Robot:
         self.TaskThread._target = self.runTasks
         self.giveTask(self.initialise)
         self.TaskThread.start()
-        print("Started")
 
     def tryConnect(self):
         r"""
@@ -99,19 +100,31 @@ class Robot:
             self.shutdownSafely()
             raise ReturnErrorMessageQueue.get()
 
-    def shutdownSafely(self):
+    def stop(self):
         r"""
-        Safely shutdown the ModBusReader and the RobotCCO asynchronously. This
-        is faster than starting sequentially.
+        Signal URscript to stop the robot with an accelleration of 5 m/s^2.
         """
-        print("Shutting down safely")
-        # Only initialise if we want to reset the robot entirely
+        self.send(b'set_digital_out(8, False)' + b"\n")  # Necessary to give the robot another command first
+        self.send(b'stop(0.001)')
+
+    def halt(self):
+        r"""
+        Stop the current concurrent command and stop the robot.
+        """
+        self.stop()
         if not self.StopTaskEvent.isSet():
             self.StopTaskEvent.set()
-            print("StopTask was set")
         self.clearTasks()
-        print("Cleared all tasks")
-        self.StopTaskEvent.clear()
+        self.TaskFinishedEvent.wait()  # Wait for current task to finish before going home
+
+    def shutdownSafely(self):
+        r"""
+        Safely shutdown the ModBusReader and the RobotCCO asynchronously. This is faster than
+        starting sequentially. Only initialise again if we wish to reset the robot entirely.
+        The current Robot task will be halted with the StopTaskEvent, upon which
+        self.runTasks will signal that the task is finished and will clear StopTaskEvent.
+        """
+        self.halt()
         self.giveTask(self.initialise)
         self.TaskFinishedEvent.wait()
         if self.TaskThread.is_alive():
@@ -140,14 +153,14 @@ class Robot:
                 continue  # To the next iteration of the loop
 
             try:  # See if we can execute the function
-                print("Starting task")
+                print("runTasks(): Starting task")
                 task_handle(task_stop_event)
-                print("Task Done")
+                print("runTasks(): Task Done")
             except TypeError as e:
                 print('An uncallable function was encountered: {}'.format(e))
             finally:  # Signal that the task was performed in some way
                 robot_task_finished_event.set()
-                print("Signaled task was Done")
+                print("runTasks(): Signaled task was Done")
                 if task_stop_event.isSet():
                     # If the event was raised, clear it and signal that the task was stopped.
                     # This yields the robot ready for the coming task.
@@ -181,31 +194,6 @@ class Robot:
             self.RobotCCO.send(message)
         except Exception as e:
             print("Sending failed due to {}".format(e))
-
-    def stop(self, stop_event):
-        r"""
-        Signal URscript to stop the robot with an accelleration of 5 m/s^2.
-        """
-        self.send(b'stop(5)')
-
-    def halt(self):
-        print("Halt called")
-        r"""
-        Stop the current concurrent command and stop the robot.
-        """
-        self.stop(0)
-        self.stop(0)
-        if not self.StopTaskEvent.isSet():
-            self.StopTaskEvent.set()
-        if not self.StopEvent.isSet():
-            self.StopEvent.set()
-        self.clearTasks()
-        self.StopTaskEvent.clear()
-        # self.giveTask(self.stop)
-        # self.TaskFinishedEvent.wait(timeout=1.0)
-        # print("Finished waiting")
-        # self.StopTaskEvent.clear()
-        # self.TaskFinishedEvent.wait(timeout=1.0)
 
     def receive(self):
         r"""
@@ -361,7 +349,7 @@ class Robot:
         else:
             current_position = self.getJointAngles
 
-        MAX_SPEED = 0.25  # m/s
+        MAX_SPEED = 0.1  # m/s
         command = str.encode("{}({}{}, v={}) \n".format(move, "p" if p is True else "", target_position, MAX_SPEED))
         self.send(command)
 
@@ -387,23 +375,27 @@ class Robot:
         """
         difference = [1000.0 for _ in target_position]
         start_time = time.time()
-        MAX_TIME = 15.0
+        print_time = start_time
+        MAX_TIME = 10.0
 
         # if p:  # Constrain on position
         RELATIVE_TOLERANCE = 1e-3  # Robot arm should be accurate up to 1mm
         ABSOLUTE_TOLERANCE = 6e-3  # Total difference should not exceed 6*tolerance on each joint
         # else:
         #     RELATIVE_TOLERANCE = 2e-3
-        #     ABSOLUTE_TOLERANCE = 8e-3  # Robot arm should be accurate up to 1mrad
+        #     ABSOLUTE_TOLERANCE = 8e-3  # Robot arm should be accurate up to 1 mrad
 
+        print("Started waiting for target")
         while sum(difference) > ABSOLUTE_TOLERANCE or all(d > RELATIVE_TOLERANCE for d in difference):
             if stop_event.isSet() is True:
-                InterruptedError("Stop event has been raised.")
+                raise InterruptedError("Stop event has been raised.")
             if check_collisions and self.detectCollision():
-                print('Bumping in to stuff!')
                 raise RuntimeError('Bumping in to stuff!')
             if time.time() - start_time > MAX_TIME:
                 raise TimeoutError('Movement took longer than {} s. Assuming robot is in position and continue.'.format(MAX_TIME))
+            if time.time() - print_time >= 1.0:
+                print_time = time.time()
+                print("Time is running. stop_event =", stop_event, ", stop_event.isSet() =", stop_event.isSet())
             difference = [abs((joint - pos + 3.14159) % 6.2831 - 3.14159) for joint, pos in zip(current_position(), target_position)]
         print("Target reached")
 
