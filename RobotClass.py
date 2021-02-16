@@ -73,6 +73,7 @@ class Robot:
         self.TaskThread._target = self.runTasks
         self.giveTask(self.initialise)
         self.TaskThread.start()
+        print("Started")
 
     def tryConnect(self):
         r"""
@@ -177,7 +178,6 @@ class Robot:
             The message that is sent to URscript.
         """
         try:
-            print(message)
             self.RobotCCO.send(message)
         except Exception as e:
             print("Sending failed due to {}".format(e))
@@ -516,7 +516,6 @@ class Robot:
         """
         if stop_event.isSet():
             return
-
         currentJointPosition = self.getJointAngles()
         distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit.copy())])
         currentToolPosition = self.getToolPosition()
@@ -538,7 +537,7 @@ class Robot:
                     self.goHome(stop_event)
 
             self.dropObject(stop_event)
-        if distanceFromAngleInit > 0.05:
+        if distanceFromAngleInit > 0.1:
             self.goHome(stop_event)
 
     @staticmethod
