@@ -306,7 +306,7 @@ cpdef detectCollision(positions):
     cdef int i = 0
     for i in range(items):
       if not (((BOX_X_MIN + e < X[i]) & (X[i] < BOX_X_MAX - e)) and ((BOX_Y_MIN + e < Y[i]) & (Y[i] < BOX_Y_MAX - e)) and (BOX_Z_MIN < Z[i])):
-        print("box")
+        print("Kinematics.pyx: you are about to hit the box")
         return True
     # Are we bumping into the camera and the light?
     CAM_X_MIN = -0.568
@@ -316,7 +316,7 @@ cpdef detectCollision(positions):
     CAM_Z_MIN = 0.790
     for i in range(items):
       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):
-        print("camera")
+        print("Kinematics.pyx: you are about to hit the camera")
         return True
     # Are we bumping into the screen?
     e = 0.01
@@ -325,6 +325,6 @@ cpdef detectCollision(positions):
     SCR_Z_MIN = 0.375
     for i in range(items):
       if (X[i] < SCR_X_MAX + e) and (Y[i] < SCR_Y_MAX + e) and (Z[i] < SCR_Z_MIN + e):
-        print("screen")
+        print("Kinematics.pyx: you are about to hit the screen")
         return True
     return False

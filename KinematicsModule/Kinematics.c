@@ -1170,26 +1170,26 @@ int __pyx_module_is_main_cKinematics = 0;
 /* Implementation of 'cKinematics' */
 static PyObject *__pyx_builtin_range;
 static PyObject *__pyx_builtin_print;
-static const char __pyx_k_box[] = "box";
 static const char __pyx_k_main[] = "__main__";
 static const char __pyx_k_name[] = "__name__";
 static const char __pyx_k_test[] = "__test__";
 static const char __pyx_k_print[] = "print";
 static const char __pyx_k_range[] = "range";
-static const char __pyx_k_camera[] = "camera";
-static const char __pyx_k_screen[] = "screen";
 static const char __pyx_k_joint_angles[] = "joint_angles";
 static const char __pyx_k_tool_position[] = "tool_position";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
-static PyObject *__pyx_n_u_box;
-static PyObject *__pyx_n_u_camera;
+static const char __pyx_k_Kinematics_pyx_you_are_about_to[] = "Kinematics.pyx: you are about to hit the box";
+static const char __pyx_k_Kinematics_pyx_you_are_about_to_2[] = "Kinematics.pyx: you are about to hit the camera";
+static const char __pyx_k_Kinematics_pyx_you_are_about_to_3[] = "Kinematics.pyx: you are about to hit the screen";
+static PyObject *__pyx_kp_u_Kinematics_pyx_you_are_about_to;
+static PyObject *__pyx_kp_u_Kinematics_pyx_you_are_about_to_2;
+static PyObject *__pyx_kp_u_Kinematics_pyx_you_are_about_to_3;
 static PyObject *__pyx_n_s_cline_in_traceback;
 static PyObject *__pyx_n_s_joint_angles;
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_name;
 static PyObject *__pyx_n_s_print;
 static PyObject *__pyx_n_s_range;
-static PyObject *__pyx_n_u_screen;
 static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_n_s_tool_position;
 static PyObject *__pyx_pf_11cKinematics_ForwardKinematics(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_joint_angles, PyObject *__pyx_v_tool_position); /* proto */
@@ -3646,7 +3646,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
  *     cdef int i = 0
  *     for i in range(items):             # <<<<<<<<<<<<<<
  *       if not (((BOX_X_MIN + e < X[i]) & (X[i] < BOX_X_MAX - e)) and ((BOX_Y_MIN + e < Y[i]) & (Y[i] < BOX_Y_MAX - e)) and (BOX_Z_MIN < Z[i])):
- *         print("box")
+ *         print("Kinematics.pyx: you are about to hit the box")
  */
   __pyx_t_7 = __pyx_v_items;
   __pyx_t_8 = __pyx_t_7;
@@ -3657,7 +3657,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
  *     cdef int i = 0
  *     for i in range(items):
  *       if not (((BOX_X_MIN + e < X[i]) & (X[i] < BOX_X_MAX - e)) and ((BOX_Y_MIN + e < Y[i]) & (Y[i] < BOX_Y_MAX - e)) and (BOX_Z_MIN < Z[i])):             # <<<<<<<<<<<<<<
- *         print("box")
+ *         print("Kinematics.pyx: you are about to hit the box")
  *         return True
  */
     __pyx_t_3 = PyFloat_FromDouble((__pyx_v_BOX_X_MIN + __pyx_v_e)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 308, __pyx_L1_error)
@@ -3727,7 +3727,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
       /* "Kinematics.pyx":309
  *     for i in range(items):
  *       if not (((BOX_X_MIN + e < X[i]) & (X[i] < BOX_X_MAX - e)) and ((BOX_Y_MIN + e < Y[i]) & (Y[i] < BOX_Y_MAX - e)) and (BOX_Z_MIN < Z[i])):
- *         print("box")             # <<<<<<<<<<<<<<
+ *         print("Kinematics.pyx: you are about to hit the box")             # <<<<<<<<<<<<<<
  *         return True
  *     # Are we bumping into the camera and the light?
  */
@@ -3737,7 +3737,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
 
       /* "Kinematics.pyx":310
  *       if not (((BOX_X_MIN + e < X[i]) & (X[i] < BOX_X_MAX - e)) and ((BOX_Y_MIN + e < Y[i]) & (Y[i] < BOX_Y_MAX - e)) and (BOX_Z_MIN < Z[i])):
- *         print("box")
+ *         print("Kinematics.pyx: you are about to hit the box")
  *         return True             # <<<<<<<<<<<<<<
  *     # Are we bumping into the camera and the light?
  *     CAM_X_MIN = -0.568
@@ -3751,7 +3751,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
  *     cdef int i = 0
  *     for i in range(items):
  *       if not (((BOX_X_MIN + e < X[i]) & (X[i] < BOX_X_MAX - e)) and ((BOX_Y_MIN + e < Y[i]) & (Y[i] < BOX_Y_MAX - e)) and (BOX_Z_MIN < Z[i])):             # <<<<<<<<<<<<<<
- *         print("box")
+ *         print("Kinematics.pyx: you are about to hit the box")
  *         return True
  */
     }
@@ -3807,7 +3807,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
  *     CAM_Z_MIN = 0.790
  *     for i in range(items):             # <<<<<<<<<<<<<<
  *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):
- *         print("camera")
+ *         print("Kinematics.pyx: you are about to hit the camera")
  */
   __pyx_t_7 = __pyx_v_items;
   __pyx_t_8 = __pyx_t_7;
@@ -3818,7 +3818,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
  *     CAM_Z_MIN = 0.790
  *     for i in range(items):
  *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):             # <<<<<<<<<<<<<<
- *         print("camera")
+ *         print("Kinematics.pyx: you are about to hit the camera")
  *         return True
  */
     __pyx_t_1 = PyFloat_FromDouble((__pyx_v_CAM_X_MIN + __pyx_v_e)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 318, __pyx_L1_error)
@@ -3887,7 +3887,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
       /* "Kinematics.pyx":319
  *     for i in range(items):
  *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):
- *         print("camera")             # <<<<<<<<<<<<<<
+ *         print("Kinematics.pyx: you are about to hit the camera")             # <<<<<<<<<<<<<<
  *         return True
  *     # Are we bumping into the screen?
  */
@@ -3897,7 +3897,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
 
       /* "Kinematics.pyx":320
  *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):
- *         print("camera")
+ *         print("Kinematics.pyx: you are about to hit the camera")
  *         return True             # <<<<<<<<<<<<<<
  *     # Are we bumping into the screen?
  *     e = 0.01
@@ -3911,7 +3911,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
  *     CAM_Z_MIN = 0.790
  *     for i in range(items):
  *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):             # <<<<<<<<<<<<<<
- *         print("camera")
+ *         print("Kinematics.pyx: you are about to hit the camera")
  *         return True
  */
     }
@@ -3958,7 +3958,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
  *     SCR_Z_MIN = 0.375
  *     for i in range(items):             # <<<<<<<<<<<<<<
  *       if (X[i] < SCR_X_MAX + e) and (Y[i] < SCR_Y_MAX + e) and (Z[i] < SCR_Z_MIN + e):
- *         print("screen")
+ *         print("Kinematics.pyx: you are about to hit the screen")
  */
   __pyx_t_7 = __pyx_v_items;
   __pyx_t_8 = __pyx_t_7;
@@ -3969,7 +3969,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
  *     SCR_Z_MIN = 0.375
  *     for i in range(items):
  *       if (X[i] < SCR_X_MAX + e) and (Y[i] < SCR_Y_MAX + e) and (Z[i] < SCR_Z_MIN + e):             # <<<<<<<<<<<<<<
- *         print("screen")
+ *         print("Kinematics.pyx: you are about to hit the screen")
  *         return True
  */
     __pyx_t_3 = __Pyx_GetItemInt_List(__pyx_v_X, __pyx_v_i, int, 1, __Pyx_PyInt_From_int, 1, 1, 1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 327, __pyx_L1_error)
@@ -4016,7 +4016,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
       /* "Kinematics.pyx":328
  *     for i in range(items):
  *       if (X[i] < SCR_X_MAX + e) and (Y[i] < SCR_Y_MAX + e) and (Z[i] < SCR_Z_MIN + e):
- *         print("screen")             # <<<<<<<<<<<<<<
+ *         print("Kinematics.pyx: you are about to hit the screen")             # <<<<<<<<<<<<<<
  *         return True
  *     return False
  */
@@ -4026,7 +4026,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
 
       /* "Kinematics.pyx":329
  *       if (X[i] < SCR_X_MAX + e) and (Y[i] < SCR_Y_MAX + e) and (Z[i] < SCR_Z_MIN + e):
- *         print("screen")
+ *         print("Kinematics.pyx: you are about to hit the screen")
  *         return True             # <<<<<<<<<<<<<<
  *     return False
  */
@@ -4039,14 +4039,14 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
  *     SCR_Z_MIN = 0.375
  *     for i in range(items):
  *       if (X[i] < SCR_X_MAX + e) and (Y[i] < SCR_Y_MAX + e) and (Z[i] < SCR_Z_MIN + e):             # <<<<<<<<<<<<<<
- *         print("screen")
+ *         print("Kinematics.pyx: you are about to hit the screen")
  *         return True
  */
     }
   }
 
   /* "Kinematics.pyx":330
- *         print("screen")
+ *         print("Kinematics.pyx: you are about to hit the screen")
  *         return True
  *     return False             # <<<<<<<<<<<<<<
  */
@@ -4165,15 +4165,15 @@ static struct PyModuleDef __pyx_moduledef = {
 #endif
 
 static __Pyx_StringTabEntry __pyx_string_tab[] = {
-  {&__pyx_n_u_box, __pyx_k_box, sizeof(__pyx_k_box), 0, 1, 0, 1},
-  {&__pyx_n_u_camera, __pyx_k_camera, sizeof(__pyx_k_camera), 0, 1, 0, 1},
+  {&__pyx_kp_u_Kinematics_pyx_you_are_about_to, __pyx_k_Kinematics_pyx_you_are_about_to, sizeof(__pyx_k_Kinematics_pyx_you_are_about_to), 0, 1, 0, 0},
+  {&__pyx_kp_u_Kinematics_pyx_you_are_about_to_2, __pyx_k_Kinematics_pyx_you_are_about_to_2, sizeof(__pyx_k_Kinematics_pyx_you_are_about_to_2), 0, 1, 0, 0},
+  {&__pyx_kp_u_Kinematics_pyx_you_are_about_to_3, __pyx_k_Kinematics_pyx_you_are_about_to_3, sizeof(__pyx_k_Kinematics_pyx_you_are_about_to_3), 0, 1, 0, 0},
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
   {&__pyx_n_s_joint_angles, __pyx_k_joint_angles, sizeof(__pyx_k_joint_angles), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
   {&__pyx_n_s_name, __pyx_k_name, sizeof(__pyx_k_name), 0, 0, 1, 1},
   {&__pyx_n_s_print, __pyx_k_print, sizeof(__pyx_k_print), 0, 0, 1, 1},
   {&__pyx_n_s_range, __pyx_k_range, sizeof(__pyx_k_range), 0, 0, 1, 1},
-  {&__pyx_n_u_screen, __pyx_k_screen, sizeof(__pyx_k_screen), 0, 1, 0, 1},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
   {&__pyx_n_s_tool_position, __pyx_k_tool_position, sizeof(__pyx_k_tool_position), 0, 0, 1, 1},
   {0, 0, 0, 0, 0, 0, 0}
@@ -4193,33 +4193,33 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   /* "Kinematics.pyx":309
  *     for i in range(items):
  *       if not (((BOX_X_MIN + e < X[i]) & (X[i] < BOX_X_MAX - e)) and ((BOX_Y_MIN + e < Y[i]) & (Y[i] < BOX_Y_MAX - e)) and (BOX_Z_MIN < Z[i])):
- *         print("box")             # <<<<<<<<<<<<<<
+ *         print("Kinematics.pyx: you are about to hit the box")             # <<<<<<<<<<<<<<
  *         return True
  *     # Are we bumping into the camera and the light?
  */
-  __pyx_tuple_ = PyTuple_Pack(1, __pyx_n_u_box); if (unlikely(!__pyx_tuple_)) __PYX_ERR(0, 309, __pyx_L1_error)
+  __pyx_tuple_ = PyTuple_Pack(1, __pyx_kp_u_Kinematics_pyx_you_are_about_to); if (unlikely(!__pyx_tuple_)) __PYX_ERR(0, 309, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple_);
   __Pyx_GIVEREF(__pyx_tuple_);
 
   /* "Kinematics.pyx":319
  *     for i in range(items):
  *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):
- *         print("camera")             # <<<<<<<<<<<<<<
+ *         print("Kinematics.pyx: you are about to hit the camera")             # <<<<<<<<<<<<<<
  *         return True
  *     # Are we bumping into the screen?
  */
-  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_n_u_camera); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(0, 319, __pyx_L1_error)
+  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_u_Kinematics_pyx_you_are_about_to_2); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(0, 319, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__2);
   __Pyx_GIVEREF(__pyx_tuple__2);
 
   /* "Kinematics.pyx":328
  *     for i in range(items):
  *       if (X[i] < SCR_X_MAX + e) and (Y[i] < SCR_Y_MAX + e) and (Z[i] < SCR_Z_MIN + e):
- *         print("screen")             # <<<<<<<<<<<<<<
+ *         print("Kinematics.pyx: you are about to hit the screen")             # <<<<<<<<<<<<<<
  *         return True
  *     return False
  */
-  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_n_u_screen); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 328, __pyx_L1_error)
+  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_u_Kinematics_pyx_you_are_about_to_3); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 328, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__3);
   __Pyx_GIVEREF(__pyx_tuple__3);
   __Pyx_RefNannyFinishContext();
