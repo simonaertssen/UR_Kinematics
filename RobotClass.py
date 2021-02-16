@@ -5,7 +5,7 @@ from queue import SimpleQueue, LifoQueue, Empty
 from threading import Thread, Event
 
 from Readers import ModBusReader, RobotCCO
-from Functionalities import sleep, pi
+from Functionalities import sleep, pi, toolPositionDifference, jointAngleDifference, spatialDifference
 
 from KinematicsModule.Kinematics import RPY2RotVec  # Slow Python implementation
 from KinematicsLib.cKinematics import ForwardKinematics, detectCollision  # Fast C and Cython implementation
@@ -306,22 +306,6 @@ class Robot:
     def detectCollision(self):
         return detectCollision(self.getJointPositions())
 
-    @staticmethod
-    def spatialDifference(current_position, target_position):
-        r"""
-        Compute the L2 spatial distance between two tool positions.
-
-        Parameters:
-        ----------
-        current_position : list
-            The current position, given by a tool position.
-        target_position : list
-            The target position, given by a tool position.
-        """
-        x1, y1, z1, _, _, _ = current_position
-        x2, y2, z2, _, _, _ = target_position
-        return ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) ** 0.5
-
     def moveTo(self, stop_event, target_position, move, p=True, wait=True, check_collisions=True):
         r"""
         Moves the robot to the target, while blocking the thread which calls this
@@ -378,15 +362,10 @@ class Robot:
         """
         difference = [1000.0 for _ in target_position]
         start_time = time.time()
-        print_time = start_time
-        MAX_TIME = 5.0
+        MAX_TIME = 15.0
 
-        # if p:  # Constrain on position
         RELATIVE_TOLERANCE = 1e-3  # Robot arm should be accurate up to 1mm
         ABSOLUTE_TOLERANCE = 6e-3  # Total difference should not exceed 6*tolerance on each joint
-        # else:
-        #     RELATIVE_TOLERANCE = 2e-3
-        #     ABSOLUTE_TOLERANCE = 8e-3  # Robot arm should be accurate up to 1 mrad
         while sum(difference) > ABSOLUTE_TOLERANCE or all(d > RELATIVE_TOLERANCE for d in difference):
             if stop_event.isSet() is True:
                 raise InterruptedError("Stop event has been raised.")
@@ -396,13 +375,9 @@ class Robot:
                 raise TimeoutError('Movement took longer than {} s. Assuming robot is in position and continue.'.format(MAX_TIME))
 
             if p:
-                difference = [abs(joint - pos) for joint, pos in zip(current_position(), target_position)]
+                difference = toolPositionDifference(current_position(), target_position)
             else:
-                difference = [pi - abs(abs(joint - pos) - pi) for joint, pos in zip(current_position(), target_position)]
-            # now = time.time()
-            # if print_time - now > 1.0:
-            #     print_time = now
-            # print(sum(difference))
+                difference = jointAngleDifference(current_position(), target_position)
         print("Target reached, p =", p)
 
     def moveToolTo(self, stop_event, target_position, move, wait=True, check_collisions=True):
@@ -426,7 +401,8 @@ class Robot:
         self.moveTo(stop_event, target_position, move, wait=wait, p=False, check_collisions=check_collisions)
 
     def goHome(self, stop_event, wait=True, check_collisions=True):
-        self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej", wait=wait, check_collisions=check_collisions)
+        if spatialDifference(self.getToolPosition(), self.ToolPositionDropObject) < 0.5:
+            self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej", wait=wait, check_collisions=check_collisions)
 
     def dropObject(self, stop_event):
         if stop_event.isSet():
@@ -498,7 +474,7 @@ class Robot:
                 # because we might start from a bad position.
                 self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)
         else:
-            if self.spatialDifference(currentToolPosition, self.ToolPositionDropObject) < 0.5:
+            if spatialDifference(currentToolPosition, self.ToolPositionDropObject) < 0.5:
                 if currentToolPosition[2] < 0.07:
                     targetToolPosition = currentToolPosition.copy()
                     targetToolPosition[2] = 0.07
