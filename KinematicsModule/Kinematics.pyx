@@ -320,9 +320,9 @@ cpdef detectCollision(positions):
         return True
     # Are we bumping into the screen?
     e = 0.01
-    SCR_X_MAX = -0.182
-    SCR_Y_MAX = -0.520
-    SCR_Z_MIN = 0.375
+    SCR_X_MAX = -0.258
+    SCR_Y_MAX = -0.525
+    SCR_Z_MIN = 0.400
     for i in range(items):
       if (X[i] < SCR_X_MAX + e) and (Y[i] < SCR_Y_MAX + e) and (Z[i] < SCR_Z_MIN + e):
         print("Kinematics.pyx: you are about to hit the screen")

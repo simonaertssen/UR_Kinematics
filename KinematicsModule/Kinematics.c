@@ -3921,41 +3921,41 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
  *         return True
  *     # Are we bumping into the screen?
  *     e = 0.01             # <<<<<<<<<<<<<<
- *     SCR_X_MAX = -0.182
- *     SCR_Y_MAX = -0.520
+ *     SCR_X_MAX = -0.258
+ *     SCR_Y_MAX = -0.525
  */
   __pyx_v_e = 0.01;
 
   /* "Kinematics.pyx":323
  *     # Are we bumping into the screen?
  *     e = 0.01
- *     SCR_X_MAX = -0.182             # <<<<<<<<<<<<<<
- *     SCR_Y_MAX = -0.520
- *     SCR_Z_MIN = 0.375
+ *     SCR_X_MAX = -0.258             # <<<<<<<<<<<<<<
+ *     SCR_Y_MAX = -0.525
+ *     SCR_Z_MIN = 0.400
  */
-  __pyx_v_SCR_X_MAX = -0.182;
+  __pyx_v_SCR_X_MAX = -0.258;
 
   /* "Kinematics.pyx":324
  *     e = 0.01
- *     SCR_X_MAX = -0.182
- *     SCR_Y_MAX = -0.520             # <<<<<<<<<<<<<<
- *     SCR_Z_MIN = 0.375
+ *     SCR_X_MAX = -0.258
+ *     SCR_Y_MAX = -0.525             # <<<<<<<<<<<<<<
+ *     SCR_Z_MIN = 0.400
  *     for i in range(items):
  */
-  __pyx_v_SCR_Y_MAX = -0.520;
+  __pyx_v_SCR_Y_MAX = -0.525;
 
   /* "Kinematics.pyx":325
- *     SCR_X_MAX = -0.182
- *     SCR_Y_MAX = -0.520
- *     SCR_Z_MIN = 0.375             # <<<<<<<<<<<<<<
+ *     SCR_X_MAX = -0.258
+ *     SCR_Y_MAX = -0.525
+ *     SCR_Z_MIN = 0.400             # <<<<<<<<<<<<<<
  *     for i in range(items):
  *       if (X[i] < SCR_X_MAX + e) and (Y[i] < SCR_Y_MAX + e) and (Z[i] < SCR_Z_MIN + e):
  */
-  __pyx_v_SCR_Z_MIN = 0.375;
+  __pyx_v_SCR_Z_MIN = 0.400;
 
   /* "Kinematics.pyx":326
- *     SCR_Y_MAX = -0.520
- *     SCR_Z_MIN = 0.375
+ *     SCR_Y_MAX = -0.525
+ *     SCR_Z_MIN = 0.400
  *     for i in range(items):             # <<<<<<<<<<<<<<
  *       if (X[i] < SCR_X_MAX + e) and (Y[i] < SCR_Y_MAX + e) and (Z[i] < SCR_Z_MIN + e):
  *         print("Kinematics.pyx: you are about to hit the screen")
@@ -3966,7 +3966,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
     __pyx_v_i = __pyx_t_9;
 
     /* "Kinematics.pyx":327
- *     SCR_Z_MIN = 0.375
+ *     SCR_Z_MIN = 0.400
  *     for i in range(items):
  *       if (X[i] < SCR_X_MAX + e) and (Y[i] < SCR_Y_MAX + e) and (Z[i] < SCR_Z_MIN + e):             # <<<<<<<<<<<<<<
  *         print("Kinematics.pyx: you are about to hit the screen")
@@ -4036,7 +4036,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
       goto __pyx_L0;
 
       /* "Kinematics.pyx":327
- *     SCR_Z_MIN = 0.375
+ *     SCR_Z_MIN = 0.400
  *     for i in range(items):
  *       if (X[i] < SCR_X_MAX + e) and (Y[i] < SCR_Y_MAX + e) and (Z[i] < SCR_Z_MIN + e):             # <<<<<<<<<<<<<<
  *         print("Kinematics.pyx: you are about to hit the screen")
