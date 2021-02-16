@@ -100,12 +100,21 @@ class MainManager:
 
             # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
             # self.Robot.presentObject(stop_event_as_argument)
+
+            # Get intermediate position to not bump into the screen:
+            inter_tool_position = self.Robot.getToolPosition()
+            inter_tool_position[1] += 0.2
+            self.Robot.moveToolTo(stop_event_as_argument, inter_tool_position, 'movel')
+            inter_joint_position = self.Robot.getJointAngles()
+
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
-            # print(self.Robot.getToolPosition())
+
             self.switchActiveCamera()
             sleep(10.0, stop_event_as_argument)
             self.switchActiveCamera()
-            self.Robot.openGripper(stop_event_as_argument)
+
+            self.Robot.moveJointsTo(stop_event_as_argument, inter_joint_position, 'movej')
+
             # self.Robot.dropObject(stop_event_as_argument)
             self.Robot.goHome(stop_event_as_argument)
         self.Robot.giveTask(task)
@@ -113,7 +122,6 @@ class MainManager:
     def stopRobotTask(self):
         print("Stopping robot task")
         self.Robot.halt()
-        # self.Robot.giveTask(self.Robot.goHome)
 
 
 if __name__ == '__main__':

@@ -56,7 +56,7 @@ class Robot:
     # self.JointAngleReadObject = [i * self.pidiv180 for i in [-0.068, -91.45, 94.01, -92.59, 87, 180]]
     # JointAngleReadObjectOlder = [i * pi/180 for i in [-0.053, -91.12, 94.04, -94.04, 87.04, 188.24]]
     # JointAngleReadObjectOld = [i * pi / 180 for i in [0.00, -90.00, 90.00, -90.00, 90.00, 180.00]]
-    JointAngleReadObject = [i * pi / 180 for i in [-0.11, -65.61, 56.72, 98.89, -90.00, 0.11]]
+    JointAngleReadObject = [i * pi / 180 for i in [3.81, -64.97, 70.83, -276.25, -96.85, -88.73]]
 
     ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
     ToolPositionLightBox = [0.14912, -0.31000, 0.05, 0.000, pi, 0.000]
@@ -401,7 +401,7 @@ class Robot:
         self.moveTo(stop_event, target_position, move, wait=wait, p=False, check_collisions=check_collisions)
 
     def goHome(self, stop_event, wait=True, check_collisions=True):
-        if spatialDifference(self.getToolPosition(), self.ToolPositionDropObject) < 0.5:
+        if sum(jointAngleDifference(self.getJointAngles(), self.JointAngleInit.copy())) > 0.1:
             self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej", wait=wait, check_collisions=check_collisions)
 
     def dropObject(self, stop_event):
