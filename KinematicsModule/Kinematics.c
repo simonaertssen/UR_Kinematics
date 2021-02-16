@@ -3780,7 +3780,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
  *     CAM_X_MAX = -0.364
  *     CAM_Y_MIN = -0.266             # <<<<<<<<<<<<<<
  *     CAM_Y_MAX = 0.031
- *     CAM_Z_MIN = 0.765
+ *     CAM_Z_MIN = 0.790
  */
   __pyx_v_CAM_Y_MIN = -0.266;
 
@@ -3788,7 +3788,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
  *     CAM_X_MAX = -0.364
  *     CAM_Y_MIN = -0.266
  *     CAM_Y_MAX = 0.031             # <<<<<<<<<<<<<<
- *     CAM_Z_MIN = 0.765
+ *     CAM_Z_MIN = 0.790
  *     for i in range(items):
  */
   __pyx_v_CAM_Y_MAX = 0.031;
@@ -3796,17 +3796,17 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
   /* "Kinematics.pyx":316
  *     CAM_Y_MIN = -0.266
  *     CAM_Y_MAX = 0.031
- *     CAM_Z_MIN = 0.765             # <<<<<<<<<<<<<<
+ *     CAM_Z_MIN = 0.790             # <<<<<<<<<<<<<<
  *     for i in range(items):
- *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e > Z[i]):
+ *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):
  */
-  __pyx_v_CAM_Z_MIN = 0.765;
+  __pyx_v_CAM_Z_MIN = 0.790;
 
   /* "Kinematics.pyx":317
  *     CAM_Y_MAX = 0.031
- *     CAM_Z_MIN = 0.765
+ *     CAM_Z_MIN = 0.790
  *     for i in range(items):             # <<<<<<<<<<<<<<
- *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e > Z[i]):
+ *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):
  *         print("camera")
  */
   __pyx_t_7 = __pyx_v_items;
@@ -3815,9 +3815,9 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
     __pyx_v_i = __pyx_t_9;
 
     /* "Kinematics.pyx":318
- *     CAM_Z_MIN = 0.765
+ *     CAM_Z_MIN = 0.790
  *     for i in range(items):
- *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e > Z[i]):             # <<<<<<<<<<<<<<
+ *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):             # <<<<<<<<<<<<<<
  *         print("camera")
  *         return True
  */
@@ -3875,7 +3875,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_t_2 = __Pyx_GetItemInt_List(__pyx_v_Z, __pyx_v_i, int, 1, __Pyx_PyInt_From_int, 1, 1, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 318, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_3 = PyObject_RichCompare(__pyx_t_1, __pyx_t_2, Py_GT); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 318, __pyx_L1_error)
+    __pyx_t_3 = PyObject_RichCompare(__pyx_t_1, __pyx_t_2, Py_LT); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 318, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_t_10 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_10 < 0)) __PYX_ERR(0, 318, __pyx_L1_error)
@@ -3886,7 +3886,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
 
       /* "Kinematics.pyx":319
  *     for i in range(items):
- *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e > Z[i]):
+ *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):
  *         print("camera")             # <<<<<<<<<<<<<<
  *         return True
  *     # Are we bumping into the screen?
@@ -3896,7 +3896,7 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
       /* "Kinematics.pyx":320
- *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e > Z[i]):
+ *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):
  *         print("camera")
  *         return True             # <<<<<<<<<<<<<<
  *     # Are we bumping into the screen?
@@ -3908,9 +3908,9 @@ static PyObject *__pyx_f_11cKinematics_detectCollision(PyObject *__pyx_v_positio
       goto __pyx_L0;
 
       /* "Kinematics.pyx":318
- *     CAM_Z_MIN = 0.765
+ *     CAM_Z_MIN = 0.790
  *     for i in range(items):
- *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e > Z[i]):             # <<<<<<<<<<<<<<
+ *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):             # <<<<<<<<<<<<<<
  *         print("camera")
  *         return True
  */
@@ -4203,7 +4203,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
 
   /* "Kinematics.pyx":319
  *     for i in range(items):
- *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e > Z[i]):
+ *       if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):
  *         print("camera")             # <<<<<<<<<<<<<<
  *         return True
  *     # Are we bumping into the screen?

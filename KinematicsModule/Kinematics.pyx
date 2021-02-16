@@ -313,9 +313,9 @@ cpdef detectCollision(positions):
     CAM_X_MAX = -0.364
     CAM_Y_MIN = -0.266
     CAM_Y_MAX = 0.031
-    CAM_Z_MIN = 0.765
+    CAM_Z_MIN = 0.790
     for i in range(items):
-      if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e > Z[i]):
+      if ((CAM_X_MIN + e < X[i]) & (X[i] < CAM_X_MAX - e)) and ((CAM_Y_MIN + e < Y[i]) & (Y[i] < CAM_Y_MAX - e)) and (CAM_Z_MIN + e < Z[i]):
         print("camera")
         return True
     # Are we bumping into the screen?
