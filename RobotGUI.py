@@ -458,8 +458,8 @@ class MainObjectWidget(StandardObjectWidget):
         # Robot control panel
         robot_panel_label = QLabel("\nRobot control panel")
         robot_panel_label.setAlignment(Qt.AlignCenter)
-        self.button_auto_pick = QPushButton("&Auto pick", self)
-        self.button_auto_pick.clicked.connect(self.autoPickButtonClicked)
+        self.button_home_position = QPushButton("&Home position", self)
+        self.button_home_position.clicked.connect(self.homePositionButtonClicked)
         self.button_replace = QPushButton("&Replace")
         self.button_replace.clicked.connect(self.replaceButtonClicked)
         self.button_grip_open = QPushButton("&Open gripper", self)
@@ -516,7 +516,7 @@ class MainObjectWidget(StandardObjectWidget):
         self.button_open_library.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '}')
 
         robot_panel_label.setStyleSheet("font-size: " + self.text_size3 + '; font-weight: bold')
-        self.button_auto_pick.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; background-color: None}')
+        self.button_home_position.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; background-color: None}')
         self.button_replace.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '; background-color: None}')
         self.button_grip_open.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '}')
         self.button_grip_close.setStyleSheet('QPushButton{font-size: ' + self.text_size1 + '}')
@@ -549,10 +549,10 @@ class MainObjectWidget(StandardObjectWidget):
         gbox.addWidget(self.button_open_library, 2, 1)
 
         gbox.addWidget(robot_panel_label, 3, 0, 1, 2)
-        gbox.addWidget(self.button_auto_pick, 4, 0)
-        gbox.addWidget(self.button_replace, 4, 1)
-        gbox.addWidget(self.button_grip_open, 5, 1)
-        gbox.addWidget(self.button_grip_close, 5, 0)
+        gbox.addWidget(self.button_grip_open, 4, 1)
+        gbox.addWidget(self.button_grip_close, 4, 0)
+        gbox.addWidget(self.button_home_position, 5, 0)
+        gbox.addWidget(self.button_replace, 5, 1)
         gbox.addWidget(self.button_start_robot, 6, 1)
         gbox.addWidget(self.button_stop_robot, 6, 0)
         gbox.addWidget(robot_status_label, 7, 0)
@@ -631,9 +631,8 @@ class MainObjectWidget(StandardObjectWidget):
             self.select_objects.setCurrentIndex(index)
         print("Parameters updated")
 
-    def autoPickButtonClicked(self):
-        print('Starting automised picking')
-        print('Automised picking started')
+    def homePositionButtonClicked(self):
+        self.parent.manager.goHome()
 
     def replaceButtonClicked(self):
         print('Starting replacement')

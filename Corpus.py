@@ -40,10 +40,13 @@ class MainManager:
             raise ReturnErrorMessageQueue.get()
 
     def shutdownSafely(self):
-        def printActiveThreadsContinuously():  # Continuously print which threads are still active
-            print("Active threads: ", [t.name for t in list_threads()])
-            time.sleep(1.0)
-        Thread(target=printActiveThreadsContinuously, args=[], name="Print Active Threads Continuously", daemon=True).start()
+        stopPrintingEvent = Event()
+
+        def printActiveThreadsContinuously(stop_printing_event):  # Continuously print which threads are still active
+            while not stop_printing_event.is_set():
+                print("Active threads: ", [t.name for t in list_threads()])
+                time.sleep(1.0)
+        Thread(target=printActiveThreadsContinuously, args=[stopPrintingEvent], name="Print Active Threads Continuously", daemon=True).start()
 
         def shutdownAsync(part):
             if part is None:
@@ -56,6 +59,7 @@ class MainManager:
         shutdownThreads = [Thread(target=shutdownAsync, args=[part], name='{} shutdownSafely'.format(part)) for part in [self.Robot, self.TopCamera, self.DetailCamera]]
         [x.start() for x in shutdownThreads]
         [x.join() for x in shutdownThreads]
+        stopPrintingEvent.set()
 
     def isConnected(self):
         answer = [False]*4
@@ -84,8 +88,10 @@ class MainManager:
     def closeGripper(self):
         self.Robot.giveTask(self.Robot.closeGripper)
 
-    def startRobotTask(self):
+    def goHome(self):
+        self.Robot.giveTask(self.Robot.goHome)
 
+    def startRobotTask(self):
         def task(stop_event_as_argument):
             # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionTestCollision.copy(), 'movej')
             self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movel')
