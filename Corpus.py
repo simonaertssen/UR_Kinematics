@@ -96,16 +96,13 @@ class MainManager:
         def task(stop_event_as_argument):
             # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionTestCollision.copy(), 'movej')
             # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movel')
+
             self.Robot.closeGripper(stop_event_as_argument)
-            # # self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleDropObject.copy(), 'movej')
-            # # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
-            self.switchActiveCamera()
-            # # self.Robot.presentObject(stop_event_as_argument)
+            # self.switchActiveCamera()
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
             sleep(10.0, stop_event_as_argument)
             self.Robot.openGripper(stop_event_as_argument)
-            # self.Robot.dropObject(stop_event_as_argument)
-            self.switchActiveCamera()
+            # self.switchActiveCamera()
             self.Robot.goHome(stop_event_as_argument)
         self.Robot.giveTask(task)
 

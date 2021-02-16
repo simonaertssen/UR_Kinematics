@@ -63,9 +63,7 @@ class Robot:
     ToolPositionTestCollision = [0.04860, -0.73475, 0.30999, 0.7750, 3.044, 0.002]
 
     StopEvent = Event()  # Stop the robot class from running
-    # print(StopEvent)
     StopTaskEvent = Event()  # Stop the current task from running
-    # print(StopTaskEvent)
     TaskFinishedEvent = Event()  # Signal the current task is finished
     TaskQueue = LifoQueue()
     TaskThread = Thread(args=[TaskQueue, StopTaskEvent, StopEvent, TaskFinishedEvent], daemon=True, name='Async Robot tasks')
@@ -133,7 +131,6 @@ class Robot:
         """
         self.halt()
         self.giveTask(self.initialise)
-        print("Waiting to go back")
         self.TaskFinishedEvent.wait()
         if self.TaskThread.is_alive():
             self.StopEvent.set()
