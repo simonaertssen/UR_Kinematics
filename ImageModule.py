@@ -1,6 +1,7 @@
 import time
 import numpy as np
 import cv2 as cv
+import os
 
 
 def findObjectsToPickUp(image_to_extract):
@@ -63,3 +64,13 @@ def markTimeDateOnImage(image):
         image = cv.putText(image, message, (5, 40), cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 3, cv.LINE_AA)
         image = cv.putText(image, message, (5, 80), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 3, cv.LINE_AA)
     return image
+
+
+def saveImage(image_to_save):
+    dir = os.path.join(os.getcwd(), 'Images')
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+    date_time = time.asctime()
+    image_name = os.path.join(dir, date_time.replace(" ", "_"))
+    cv.imwrite(image_name, image_to_save)
+
