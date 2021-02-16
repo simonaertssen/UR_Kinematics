@@ -93,8 +93,8 @@ class MainManager:
 
     def startRobotTask(self):
         def task(stop_event_as_argument):
-            # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionTestCollision.copy(), 'movej')
-            self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movel')
+            self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionTestCollision.copy(), 'movej')
+            # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movel')
             # self.Robot.closeGripper(stop_event_as_argument)
             # # self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleDropObject.copy(), 'movej')
             # # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])

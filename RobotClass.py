@@ -156,19 +156,15 @@ class Robot:
                 continue  # To the next iteration of the loop
 
             try:  # See if we can execute the function
-                print("runTasks(): Starting task")
                 task_handle(task_stop_event)
-                print("runTasks(): Task Done")
             except TypeError as e:
                 print('An uncallable function was encountered: {}'.format(e))
             finally:  # Signal that the task was performed in some way
                 robot_task_finished_event.set()
-                print("runTasks(): Signaled task was Done")
                 if task_stop_event.isSet():
                     # If the event was raised, clear it and signal that the task was stopped.
                     # This yields the robot ready for the coming task.
                     task_stop_event.clear()
-                    print("Task Event cleared")
 
     def clearTasks(self):
         while True:
@@ -379,7 +375,6 @@ class Robot:
         """
         difference = [1000.0 for _ in target_position]
         start_time = time.time()
-        print_time = start_time
         MAX_TIME = 5.0
 
         # if p:  # Constrain on position
@@ -388,7 +383,6 @@ class Robot:
         # else:
         #     RELATIVE_TOLERANCE = 2e-3
         #     ABSOLUTE_TOLERANCE = 8e-3  # Robot arm should be accurate up to 1 mrad
-
         while sum(difference) > ABSOLUTE_TOLERANCE or all(d > RELATIVE_TOLERANCE for d in difference):
             if stop_event.isSet() is True:
                 raise InterruptedError("Stop event has been raised.")
@@ -396,11 +390,7 @@ class Robot:
                 raise RuntimeError('Bumping in to stuff!')
             if time.time() - start_time > MAX_TIME:
                 raise TimeoutError('Movement took longer than {} s. Assuming robot is in position and continue.'.format(MAX_TIME))
-            if time.time() - print_time >= 1.0:
-                print_time = time.time()
-                print("Time is running. stop_event =", stop_event, ", stop_event.isSet() =", stop_event.isSet())
             difference = [abs((joint - pos + 3.14159) % 6.2831 - 3.14159) for joint, pos in zip(current_position(), target_position)]
-        print("Target reached")
 
     def moveToolTo(self, stop_event, target_position, move, wait=True, check_collisions=True):
         r"""
