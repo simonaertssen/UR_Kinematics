@@ -1,5 +1,5 @@
 import time
-from queue import Queue, Empty, Full
+from queue import Queue, Empty
 import tracemalloc
 
 import cv2 as cv
