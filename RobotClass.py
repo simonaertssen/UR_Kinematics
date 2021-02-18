@@ -53,10 +53,7 @@ class Robot:
 
     JointAngleInit = [i * pi/180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
     JointAngleDropObject = [i * pi/180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
-    # self.JointAngleReadObject = [i * self.pidiv180 for i in [-0.068, -91.45, 94.01, -92.59, 87, 180]]
-    # JointAngleReadObjectOlder = [i * pi/180 for i in [-0.053, -91.12, 94.04, -94.04, 87.04, 188.24]]
-    # JointAngleReadObjectOld = [i * pi / 180 for i in [0.00, -90.00, 90.00, -90.00, 90.00, 180.00]]
-    JointAngleReadObject = [i * pi / 180 for i in [3.81, -64.97, 70.83, -276.25, -96.85, -88.73]]
+    JointAngleReadObject = [i * pi / 180 for i in [1.96, -90.65, 102.96, -102.31, 91.71, 91.73]]
 
     ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
     # ToolPositionLightBox = [0.146, -0.306, 0.05, 0.000, pi, 0.000]  # Calibrated
