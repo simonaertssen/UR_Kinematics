@@ -17,6 +17,7 @@ class MainManager:
     DetailCamera = DetailCamera
     Image = None
     ImageInfo = []
+    ImageAvailable = Event()
 
     def __init__(self):
         self.tryConnect()
@@ -75,22 +76,32 @@ class MainManager:
     def grabImage(self):
         # Intercept to be able to use the info for the robot
         self.Image, self.ImageInfo, cam_num = self.TopCamera.grabImage()
+        if not self.ImageAvailable.isSet():
+            self.ImageAvailable.set()
         return self.Image, self.ImageInfo, cam_num
 
-    def switchActiveCamera(self):
+    def switchActiveCamera(self, stop_event):
         r"""
         Switch the active camera. Because items are initialised using their correct class name,
-        the TopCamera will always be the active camera instance. That means when we swuitch
+        the TopCamera will always be the active camera instance. That means when we switch
         reference between cameras, we can run another camera without having to change names.
         """
+        if stop_event.isSet():
+            return
+
         if not self.TopCamera.isConnected() or not self.DetailCamera.isConnected():
             print("Error switching cameras: one is not connected.")
             return
-        self.TopCamera.camera.StopGrabbing()
+        self.TopCamera.close()
         self.TopCamera, self.DetailCamera = self.DetailCamera, self.TopCamera
-        while not self.TopCamera.camera.IsGrabbing():
-            print("Camera not ready yet")
-        print("Cameras switched")
+        # Wait for the new camera to start grabbing
+        while not stop_event.isSet() and not self.TopCamera.camera.IsGrabbing():
+            time.sleep(0.01)
+        # Wait for the new image to become available. We do not want to use the .wait() method
+        # on the event, because we need to interrupt execution at any time.
+        self.ImageAvailable.clear()
+        while not stop_event.isSet() and not self.ImageAvailable.isSet():
+            time.sleep(0.01)
 
     def openGripper(self):
         self.Robot.giveTask(self.Robot.openGripper)
@@ -113,9 +124,9 @@ class MainManager:
             #
             # self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
 
-            self.switchActiveCamera()
+            self.switchActiveCamera(stop_event_as_argument)
             saveImage(self.Image)
-            self.switchActiveCamera()
+            self.switchActiveCamera(stop_event_as_argument)
 
             # self.Robot.moveJointsTo(stop_event_as_argument, inter_joint_position, 'movej')
             #

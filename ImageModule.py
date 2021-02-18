@@ -67,11 +67,14 @@ def markTimeDateOnImage(image):
 
 
 def saveImage(image_to_save):
+    w, h = image_to_save.shape[0:2]
+    if image_to_save is None or w == 0 or h == 0:
+        print("Image does not contain information")
+        return
     here = os.path.join(os.getcwd(), 'Images')
     if not os.path.exists(here):
         os.makedirs(here)
-    date_time = time.asctime()
-    image_name = os.path.join(here, date_time.replace(" ", "_"), ".png")
-    print(image_name)
+    date_time_string = time.asctime().replace(" ", "_").replace(":", "_")
+    image_name = os.path.join(here, date_time_string + ".png")
     cv.imwrite(image_name, image_to_save)
 
