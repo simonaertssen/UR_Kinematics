@@ -409,25 +409,14 @@ class Robot:
         self.moveJointsTo(stop_event, self.JointAngleDropObject.copy(), "movej")
         self.openGripper(stop_event)
 
-    def presentObject(self, stop_event):
-        # self.moveToolTo(stop_event, self.ToolPositionLightBox.copy(), 'movej')
-        # Adjust position to the object
-        # target_position = self.ToolPositionReadObject.copy()
-        target_position = self.getToolPosition()
-        # Get right orientation from Rodrigues conversion
-        a, b, c = RPY2RotVec(0, 0, 0)
-        target_position[3] = a
-        target_position[4] = b
-        target_position[5] = c
-        print(target_position)
-        self.moveToolTo(stop_event, target_position, 'movej')
-
     def pickUpObject(self, stop_event, object_position):
         r"""
         Sequence of moves that are required to pick up an object that was
         detected by the topCamera.
         """
         if stop_event.isSet():
+            return
+        if object_position is None:
             return
 
         LIGHTBOX_LENGTH = 0.250  # m
@@ -454,6 +443,7 @@ class Robot:
         # Go back up
         target_position[2] = self.ToolHoverHeight
         self.moveToolTo(stop_event, target_position, 'movel')
+        self.goHome(stop_event)
 
     def initialise(self, stop_event):
         r"""

@@ -113,7 +113,6 @@ class MainManager:
 
             self.switchActiveCamera()
             saveImage(self.Image)
-            print("Image saved")
             self.switchActiveCamera()
 
             self.Robot.moveJointsTo(stop_event_as_argument, inter_joint_position, 'movej')
