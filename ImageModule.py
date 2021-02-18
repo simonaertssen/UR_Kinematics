@@ -67,7 +67,7 @@ def findObjectsToPickUp(image_to_extract):
 
         # Draw info on the image:
         draw_on_me = cv.polylines(draw_on_me, [box], True, (0, 255, 0), thickness=5)
-        # draw_on_me = cv.putText(draw_on_me, str(np.round(angle*180/np.pi, 2)), (X, Y), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv.LINE_AA)
+        draw_on_me = cv.putText(draw_on_me, str(np.round(angle*180/np.pi, 2)), contour_centre, cv.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 2, cv.LINE_AA)
         draw_on_me = cv.circle(draw_on_me, contour_centre, 5, (0, 0, 255), -1)
         # for i in range(4):
         #     draw_on_me = cv.circle(draw_on_me, (middle_X[i], middle_Y[i]), 5, (255, 0, 0), -1)
