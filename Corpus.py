@@ -78,10 +78,18 @@ class MainManager:
         return self.Image, self.ImageInfo, cam_num
 
     def switchActiveCamera(self):
+        r"""
+        Switch the active camera. Because items are initialised using their correct class name,
+        the TopCamera will always be the active camera instance. That means when we swuitch
+        reference between cameras, we can run another camera without having to change names.
+        """
         if not self.TopCamera.isConnected() or not self.DetailCamera.isConnected():
             print("Error switching cameras: one is not connected.")
             return
+        self.TopCamera.camera.StopGrabbing()
         self.TopCamera, self.DetailCamera = self.DetailCamera, self.TopCamera
+        while not self.TopCamera.camera.IsGrabbing():
+            print("Camera not ready yet")
         print("Cameras switched")
 
     def openGripper(self):
@@ -95,30 +103,24 @@ class MainManager:
 
     def startRobotTask(self):
         def task(stop_event_as_argument):
-            # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionTestCollision.copy(), 'movej')
-            # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movel')
-
-            # self.Robot.closeGripper(stop_event_as_argument)
-
-            self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
-            # self.Robot.presentObject(stop_event_as_argument)
-
-            # Get intermediate position to not bump into the screen:
-            inter_tool_position = self.Robot.getToolPosition()
-            inter_tool_position[1] += 0.2
-            self.Robot.moveToolTo(stop_event_as_argument, inter_tool_position, 'movel')
-            inter_joint_position = self.Robot.getJointAngles()
-
-            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+            # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
+            #
+            # # Get intermediate position to not bump into the screen:
+            # inter_tool_position = self.Robot.getToolPosition()
+            # inter_tool_position[1] += 0.2
+            # self.Robot.moveToolTo(stop_event_as_argument, inter_tool_position, 'movel')
+            # inter_joint_position = self.Robot.getJointAngles()
+            #
+            # self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
 
             self.switchActiveCamera()
             saveImage(self.Image)
             self.switchActiveCamera()
 
-            self.Robot.moveJointsTo(stop_event_as_argument, inter_joint_position, 'movej')
-
-            self.Robot.dropObject(stop_event_as_argument)
-            self.Robot.goHome(stop_event_as_argument)
+            # self.Robot.moveJointsTo(stop_event_as_argument, inter_joint_position, 'movej')
+            #
+            # self.Robot.dropObject(stop_event_as_argument)
+            # self.Robot.goHome(stop_event_as_argument)
         self.Robot.giveTask(task)
 
     def stopRobotTask(self):
