@@ -6,30 +6,33 @@ import os
 
 def findObjectsToPickUp(image_to_extract):
     # Lightbox dimensions:
-    LIGHTBOX_LENGTH = 0.250  # m
-    LIGHTBOX_WIDTH = 0.176  # m
+    LIGHTBOX_LENGTH = 0.252  # m
+    LIGHTBOX_WIDTH = 0.177  # m
 
     # Extract image in a brute way
-    image_to_extract = image_to_extract[50:-53, 154:-198].copy()  # Calibrated
+    # image_to_extract = image_to_extract[50:-53, 158:-198].copy()  # Calibrated
+    image_to_extract = image_to_extract[47:-65, 158:-198].copy()  # Calibrated
+
     image_to_extract = image_to_extract[::-1, ::-1]  # Flip completely to assign origin
     _, image_to_analyse = cv.threshold(image_to_extract, 70, 255, cv.THRESH_BINARY_INV)
 
     kernel = np.ones((9, 9), np.uint8)
     image_to_analyse = cv.dilate(image_to_analyse, kernel, iterations=1)
     _, contours, hierarchy = cv.findContours(image_to_analyse, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    w, h = image_to_extract.shape
+    image_width, image_height = image_to_extract.shape
 
-    drawonme = cv.cvtColor(image_to_extract.copy(), cv.COLOR_GRAY2RGB)
+    draw_on_me = cv.cvtColor(image_to_extract.copy(), cv.COLOR_GRAY2RGB)
     outputInfo = []
-    contournum = 0
+    contour_num = 0
     for contour in contours:
         area = cv.contourArea(contour)
-        if area/image_to_extract.size*100 < 0.1:  # Do not proceed if less than 0.1 percent of the image
+        area_percentage = area/image_to_extract.size*100
+        if area_percentage < 0.05:  # Do not proceed if less than 5 percent of the image
             continue
-        if area / image_to_extract.size * 100 > 10:  # Do not proceed if more than 10 percent of the image
+        if area_percentage > 0.5:  # Do not proceed if more than 50 percent of the image
             continue
-        x, y, w, h = cv.boundingRect(contour)
-        if w/h > 10 or h/w > 10:
+        _x, _y, _w, _h = cv.boundingRect(contour)
+        if _w/_h > 10 or _h/_w > 10:
             continue
         M = cv.moments(contour)
         if M['m00'] == 0:
@@ -50,15 +53,16 @@ def findObjectsToPickUp(image_to_extract):
         # Find angle:
         pts = np.array([[midX[i], midY[i]] for i in longest_side + [0, 2]])
         angle = sign * np.arccos(np.abs(pts[1] - pts[0]).dot(np.array([1, 0])) / np.linalg.norm(pts[0] - pts[1]))
-        outputInfo.append(((w-Y)/w, X/h, np.pi/2 - angle))
+        outputInfo.append(((image_width-Y)/image_width*LIGHTBOX_WIDTH, X/image_height*LIGHTBOX_LENGTH, np.pi/2 - angle))
+
         # Draw info on the image:
-        drawonme = cv.polylines(drawonme, [box], True, (0, 255, 0), thickness=5)
-        # drawonme = cv.putText(drawonme, str(np.round(angle*180/np.pi, 2)), (X, Y), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv.LINE_AA)
-        drawonme = cv.circle(drawonme, (X, Y), 5, (0, 0, 255), -1)
+        draw_on_me = cv.polylines(draw_on_me, [box], True, (0, 255, 0), thickness=5)
+        # draw_on_me = cv.putText(draw_on_me, str(np.round(angle*180/np.pi, 2)), (X, Y), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv.LINE_AA)
+        draw_on_me = cv.circle(draw_on_me, (X, Y), 5, (0, 0, 255), -1)
         for i in range(4):
-            drawonme = cv.circle(drawonme, (midX[i], midY[i]), 5, (255, 0, 0), -1)
-        contournum += 1
-    return drawonme, outputInfo
+            draw_on_me = cv.circle(draw_on_me, (midX[i], midY[i]), 5, (255, 0, 0), -1)
+        contour_num += 1
+    return draw_on_me, outputInfo
 
 
 def markTimeDateOnImage(image):
@@ -66,12 +70,12 @@ def markTimeDateOnImage(image):
     im_shape = image.shape
     TEXT_THICKNESS = 0.75
     TEXT_SIZE = 3
-    # if len(im_shape) == 2:
-    #     image = cv.putText(image, message, (5, int(40*TEXT_THICKNESS)), cv.FONT_HERSHEY_SIMPLEX, TEXT_THICKNESS, 255, TEXT_SIZE, cv.LINE_AA)
-    #     image = cv.putText(image, message, (5, int(80*TEXT_THICKNESS)), cv.FONT_HERSHEY_SIMPLEX, TEXT_THICKNESS,   0, TEXT_SIZE, cv.LINE_AA)
-    # else:
-    #     image = cv.putText(image, message, (5, int(40*TEXT_THICKNESS)), cv.FONT_HERSHEY_SIMPLEX, TEXT_THICKNESS, (255, 255, 255), TEXT_SIZE, cv.LINE_AA)
-    #     image = cv.putText(image, message, (5, int(80*TEXT_THICKNESS)), cv.FONT_HERSHEY_SIMPLEX, TEXT_THICKNESS, (  0,   0,   0), TEXT_SIZE, cv.LINE_AA)
+    if len(im_shape) == 2:
+        image = cv.putText(image, message, (5, int(40*TEXT_THICKNESS)), cv.FONT_HERSHEY_SIMPLEX, TEXT_THICKNESS, 255, TEXT_SIZE, cv.LINE_AA)
+        image = cv.putText(image, message, (5, int(80*TEXT_THICKNESS)), cv.FONT_HERSHEY_SIMPLEX, TEXT_THICKNESS,   0, TEXT_SIZE, cv.LINE_AA)
+    else:
+        image = cv.putText(image, message, (5, int(40*TEXT_THICKNESS)), cv.FONT_HERSHEY_SIMPLEX, TEXT_THICKNESS, (255, 255, 255), TEXT_SIZE, cv.LINE_AA)
+        image = cv.putText(image, message, (5, int(80*TEXT_THICKNESS)), cv.FONT_HERSHEY_SIMPLEX, TEXT_THICKNESS, (  0,   0,   0), TEXT_SIZE, cv.LINE_AA)
     return image
 
 
