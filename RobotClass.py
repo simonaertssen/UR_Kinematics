@@ -59,7 +59,9 @@ class Robot:
     JointAngleReadObject = [i * pi / 180 for i in [3.81, -64.97, 70.83, -276.25, -96.85, -88.73]]
 
     ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
-    ToolPositionLightBox = [0.14912, -0.31000, 0.05, 0.000, pi, 0.000]
+    # ToolPositionLightBox = [0.146, -0.306, 0.05, 0.000, pi, 0.000]  # Calibrated
+    ToolPositionLightBox = [0.147, -0.313, 0.05, 0.000, pi, 0.000]  # Calibrated
+
     ToolPositionReadObject = [-0.46864, -0.10824, 0.74611, 0.0000, 0.000, pi/2.0]
     ToolPositionTestCollision = [0.04860, -0.73475, 0.30999, 0.7750, 3.044, 0.002]
 
@@ -361,12 +363,15 @@ class Robot:
         until the stop event is set or until a collision is detected.
         """
         difference = [1000.0 for _ in target_position]
+        sum_difference = sum(difference)
         start_time = time.time()
+        last_time_difference = start_time
         MAX_TIME = 15.0
+        MAX_SAME_DIFF_TIME = 1.5
 
         RELATIVE_TOLERANCE = 1e-3  # Robot arm should be accurate up to 1mm
-        ABSOLUTE_TOLERANCE = 6e-3  # Total difference should not exceed 6*tolerance on each joint
-        while sum(difference) > ABSOLUTE_TOLERANCE or all(d > RELATIVE_TOLERANCE for d in difference):
+        ABSOLUTE_TOLERANCE = 9e-3  # Total difference should not exceed 6*tolerance for 6 joints
+        while sum_difference > ABSOLUTE_TOLERANCE or all(d > RELATIVE_TOLERANCE for d in difference):
             if stop_event.isSet() is True:
                 raise InterruptedError("Stop event has been raised.")
             if check_collisions and self.detectCollision():
@@ -378,7 +383,14 @@ class Robot:
                 difference = toolPositionDifference(current_position(), target_position)
             else:
                 difference = jointAngleDifference(current_position(), target_position)
-        print("Target reached, p =", p)
+            now_sum_difference = sum(difference)
+            if now_sum_difference == sum_difference:
+                if time.time() - last_time_difference > MAX_SAME_DIFF_TIME:
+                    raise TimeoutError('No difference measured within {} s. Assuming robot is in position and continue.'.format(MAX_SAME_DIFF_TIME))
+            else:
+                sum_difference = now_sum_difference
+                last_time_difference = time.time()
+            # print(sum_difference, [round(d, 3) for d in difference])
 
     def moveToolTo(self, stop_event, target_position, move, wait=True, check_collisions=True):
         r"""
@@ -418,28 +430,30 @@ class Robot:
             return
         if object_position is None:
             return
-
-        LIGHTBOX_LENGTH = 0.250  # m
-        LIGHTBOX_WIDTH = 0.176  # m
         if len(object_position) < 1:
             return
         X, Y, angle = object_position
 
         # Adjust position to the object
         target_position = self.ToolPositionLightBox.copy()
-        target_position[0] += X * LIGHTBOX_WIDTH   # adjust X position
-        target_position[1] -= Y * LIGHTBOX_LENGTH  # adjust Y position
+        target_position[0] += X    # adjust X position
+        target_position[1] -= Y  # adjust Y position
         target_position[2] = self.ToolHoverHeight
         # Get right orientation from Rodrigues conversion
-        a, b, c = RPY2RotVec(0, pi, -angle)
+        REAL_ANGLE_ADJUST = pi / 180 * 6  # Offset to table to camera
+        a, b, c = RPY2RotVec(0, pi, -angle - REAL_ANGLE_ADJUST)
         target_position[3] = a
         target_position[4] = b
         target_position[5] = c
+        print(target_position)
         self.moveToolTo(stop_event, target_position, 'movel')
         # Go down and pickup the object
         target_position[2] = self.ToolPickUpHeight
         self.moveToolTo(stop_event, target_position, 'movel')
+        # sleep(10.0, stop_event)
         self.closeGripper(stop_event)
+        # sleep(10.0, stop_event)
+        # self.openGripper(stop_event)
         # Go back up
         target_position[2] = self.ToolHoverHeight
         self.moveToolTo(stop_event, target_position, 'movel')

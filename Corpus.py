@@ -2,13 +2,14 @@ import time
 
 from threading import Thread, Event, enumerate as list_threads
 
-from queue import SimpleQueue, LifoQueue, Empty, Full
+from queue import SimpleQueue
 
 from RobotClass import Robot
 from CameraManagement import TopCamera
 from CameraManagement import DetailCamera
 from Functionalities import sleep
 from ImageModule import saveImage
+from Functionalities import pi
 
 
 class MainManager:
@@ -113,26 +114,41 @@ class MainManager:
         self.Robot.giveTask(self.Robot.goHome)
 
     def startRobotTask(self):
-        def task(stop_event_as_argument):
-            # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
-            #
-            # # Get intermediate position to not bump into the screen:
-            # inter_tool_position = self.Robot.getToolPosition()
-            # inter_tool_position[1] += 0.2
-            # self.Robot.moveToolTo(stop_event_as_argument, inter_tool_position, 'movel')
-            # inter_joint_position = self.Robot.getJointAngles()
-            #
-            # self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+        def pickupTask(stop_event_as_argument):
+            self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
 
+            # Get intermediate position to not bump into the screen:
+            inter_tool_position = self.Robot.getToolPosition()
+            inter_tool_position[1] += 0.2
+            self.Robot.moveToolTo(stop_event_as_argument, inter_tool_position, 'movel')
+            inter_joint_position = self.Robot.getJointAngles()
+
+            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+
+            # Get image and save to disk
             self.switchActiveCamera(stop_event_as_argument)
             saveImage(self.Image)
             self.switchActiveCamera(stop_event_as_argument)
 
-            # self.Robot.moveJointsTo(stop_event_as_argument, inter_joint_position, 'movej')
-            #
-            # self.Robot.dropObject(stop_event_as_argument)
-            # self.Robot.goHome(stop_event_as_argument)
-        self.Robot.giveTask(task)
+            self.Robot.moveJointsTo(stop_event_as_argument, inter_joint_position, 'movej')
+
+            self.Robot.dropObject(stop_event_as_argument)
+            self.Robot.goHome(stop_event_as_argument)
+
+        def testTask(stop_event_as_argument):
+            # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
+            current_joints = self.Robot.getJointAngles()
+            current_joints[0] -= pi*3/10
+            current_joints[4] += pi
+            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
+
+            print(self.Robot.getJointAngles())
+
+            current_joints[0] += pi*3/10
+            current_joints[4] -= pi
+            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
+
+        self.Robot.giveTask(testTask)
 
     def stopRobotTask(self):
         print("Stopping robot task")
