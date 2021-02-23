@@ -14,22 +14,17 @@ class bcolors:
 
 
 def communicateError(exception):
-
     tb = exception.__traceback__
-    print(dir(tb.tb_frame))
-    print(tb.tb_frame)
-
     type_exc = exception.__class__.__name__
     file_name = os.path.split(tb.tb_frame.f_code.co_filename)[1]
     line_no = tb.tb_lineno
-
     message = f'{type_exc} in {file_name}, line {line_no}: {exception}'
     print(bcolors.FAIL + message + bcolors.ENDC)
 
 
 def raise_an_error():
     wrapper()
-
+    
 
 def wrapper():
     raise ValueError("This is the message")
