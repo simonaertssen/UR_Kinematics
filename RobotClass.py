@@ -57,7 +57,7 @@ class Robot:
 
     ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
     # ToolPositionLightBox = [0.146, -0.306, 0.05, 0.000, pi, 0.000]  # Calibrated
-    ToolPositionLightBox = [0.147, -0.313, 0.05, 0.000, pi, 0.000]  # Calibrated
+    ToolPositionLightBox = [0.147, -0.311, 0.05, 0.000, pi, 0.000]  # Calibrated
 
     ToolPositionReadObject = [-0.46864, -0.10824, 0.74611, 0.0000, 0.000, pi/2.0]
     ToolPositionTestCollision = [0.04860, -0.73475, 0.30999, 0.7750, 3.044, 0.002]
@@ -364,7 +364,7 @@ class Robot:
         start_time = time.time()
         last_time_difference = start_time
         MAX_TIME = 15.0
-        MAX_SAME_DIFF_TIME = 1.5
+        MAX_SAME_DIFF_TIME = 1.0
 
         RELATIVE_TOLERANCE = 1e-3  # Robot arm should be accurate up to 1mm
         ABSOLUTE_TOLERANCE = 9e-3  # Total difference should not exceed 6*tolerance for 6 joints
@@ -447,11 +447,11 @@ class Robot:
         # Go down and pickup the object
         target_position[2] = self.ToolPickUpHeight
         self.moveToolTo(stop_event, target_position, 'movel')
-        # sleep(10.0, stop_event)
-        self.closeGripper(stop_event)
-        # sleep(10.0, stop_event)
+        # # sleep(10.0, stop_event)
+        # self.closeGripper(stop_event)
+        sleep(10.0, stop_event)
         # self.openGripper(stop_event)
-        # Go back up
+        # # Go back up
         target_position[2] = self.ToolHoverHeight
         self.moveToolTo(stop_event, target_position, 'movel')
         self.goHome(stop_event)

@@ -74,7 +74,7 @@ def findObjectsToPickUp(image_to_extract):
         rectangle_angle += sum(r for r, c in zip(extra_rotations, conditions) if c is True)
 
         # Save all information
-        outputInfo.append(((image_width-contour_Y)/image_width*LIGHT_BOX_WIDTH, contour_X/image_height*LIGHT_BOX_LENGTH, np.pi/2 - rectangle_angle))
+        outputInfo.append(((image_width-contour_Y)/image_width*LIGHT_BOX_WIDTH, contour_X/image_height*LIGHT_BOX_LENGTH, rectangle_angle*np.pi/180.0))
 
         # Draw info on the image:
         draw_on_me = cv.arrowedLine(draw_on_me, contour_centre,  (int(contour_X + d_X*50), int(contour_Y + d_Y*50)), (255, 0, 0), 5)

@@ -114,6 +114,9 @@ class MainManager:
         self.Robot.giveTask(self.Robot.goHome)
 
     def startRobotTask(self):
+        def testTask(stop_event_as_argument):
+            self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
+
         def pickupTask(stop_event_as_argument):
             self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
 
@@ -133,7 +136,7 @@ class MainManager:
 
             self.Robot.dropObject(stop_event_as_argument)
             self.Robot.goHome(stop_event_as_argument)
-        self.Robot.giveTask(pickupTask)
+        self.Robot.giveTask(testTask)
 
     def stopRobotTask(self):
         print("Stopping robot task")
