@@ -44,30 +44,42 @@ def findObjectsToPickUp(image_to_extract):
         rect = cv.minAreaRect(contour)
         box = cv.boxPoints(rect)
         box = np.int0(box)
-        rectangle_X, rectangle_Y = rect[0]
+        (rectangle_X, rectangle_Y), (rectangle_width, rectangle_height), rectangle_angle = rect
         rectangle_centre = (int(rectangle_X), int(rectangle_Y))
+
+        # Compute angle between centroid of contour and bounding rectangle: if the pointer vector
+        # is large enough the difference is large enough and we have a lego brick. The pointer angle
+        # comes from the signed clockwise angle between the pointer and the normal [-1,0],
+        # multiplied with -1 because both axes are flipped.
         d_X = rectangle_X - contour_X
         d_Y = rectangle_Y - contour_Y
+        pointer_length = np.sqrt(d_X**2 + d_Y**2)
+        pointer_angle = -np.arctan2((-1)*d_X + 0*d_Y, 0*d_X + (-1)*d_Y) if pointer_length > 1.0 else 0
 
-        end_point = (int(contour_X + d_X*30), int(contour_Y + d_Y*30))
-        draw_on_me = cv.arrowedLine(draw_on_me, contour_centre, end_point, (255, 0, 0), 5)
+        # # Find midpoints of each of the sides:
+        # middle_X = [np.int0((box[i - 1, 0] + box[i, 0]) / 2) for i in range(4)]
+        # middle_Y = [np.int0((box[i - 1, 1] + box[i, 1]) / 2) for i in range(4)]
+        # # Find longest side:
+        # candidates = np.sqrt(np.array([(middle_X[i] - middle_X[j]) ** 2 + (middle_Y[i] - middle_Y[j]) ** 2 for i, j in zip([0, 1], [2, 3])]))
+        # longest_side = candidates.argmax()
+        # sign = np.sign(middle_X[longest_side + 2] - middle_Y[longest_side])
+        # # Find angle:
+        # pts = np.array([[middle_X[i], middle_Y[i]] for i in longest_side + [0, 2]])
+        # angle = sign * np.arccos(np.abs(pts[1] - pts[0]).dot(np.array([1, 0])) / np.linalg.norm(pts[0] - pts[1]))
 
-        # Find midpoints of each of the sides:
-        middle_X = [np.int0((box[i - 1, 0] + box[i, 0]) / 2) for i in range(4)]
-        middle_Y = [np.int0((box[i - 1, 1] + box[i, 1]) / 2) for i in range(4)]
-        # Find longest side:
-        candidates = np.sqrt(np.array([(middle_X[i] - middle_X[j]) ** 2 + (middle_Y[i] - middle_Y[j]) ** 2 for i, j in zip([0, 1], [2, 3])]))
-        longest_side = candidates.argmax()
-        sign = np.sign(middle_X[longest_side + 2] - middle_Y[longest_side])
-        # Find angle:
-        pts = np.array([[middle_X[i], middle_Y[i]] for i in longest_side + [0, 2]])
-        angle = sign * np.arccos(np.abs(pts[1] - pts[0]).dot(np.array([1, 0])) / np.linalg.norm(pts[0] - pts[1]))
+        # Get angle from the rotated rectangle, depending on the longest edge:
+        rectangle_angle += 90  # In the (0, 90] range
+        conditions = [rectangle_width < rectangle_height, pointer_angle < 0.0]
+        extra_rotations = [90, 180]
+        rectangle_angle += sum(r for r, c in zip(extra_rotations, conditions) if c is True)
+
         # Save all information
-        outputInfo.append(((image_width-contour_Y)/image_width*LIGHT_BOX_WIDTH, contour_X/image_height*LIGHT_BOX_LENGTH, np.pi/2 - angle))
+        outputInfo.append(((image_width-contour_Y)/image_width*LIGHT_BOX_WIDTH, contour_X/image_height*LIGHT_BOX_LENGTH, np.pi/2 - rectangle_angle))
 
         # Draw info on the image:
+        draw_on_me = cv.arrowedLine(draw_on_me, contour_centre,  (int(contour_X + d_X*50), int(contour_Y + d_Y*50)), (255, 0, 0), 5)
         draw_on_me = cv.polylines(draw_on_me, [box], True, (0, 255, 0), thickness=5)
-        draw_on_me = cv.putText(draw_on_me, str(np.round(angle*180/np.pi, 2)), contour_centre, cv.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 2, cv.LINE_AA)
+        draw_on_me = cv.putText(draw_on_me, str(np.round(rectangle_angle, 2)), contour_centre, cv.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 2, cv.LINE_AA)
         draw_on_me = cv.circle(draw_on_me, contour_centre, 5, (0, 0, 255), -1)
         # for i in range(4):
         #     draw_on_me = cv.circle(draw_on_me, (middle_X[i], middle_Y[i]), 5, (255, 0, 0), -1)
