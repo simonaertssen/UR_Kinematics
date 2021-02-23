@@ -161,6 +161,8 @@ class Robot:
                 task_handle(task_stop_event)
             except TypeError as e:
                 communicateError(e, "An uncallable function was encountered.")
+            except Exception as e:
+                communicateError(e)
             finally:  # Signal that the task was performed in some way
                 robot_task_finished_event.set()
                 if task_stop_event.isSet():
