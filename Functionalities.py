@@ -24,7 +24,7 @@ def communicateError(exception, custom_message=""):
     if custom_message:
         message += custom_message
     else:
-        message += exception
+        message += str(exception)
     FAIL = '\033[91m'
     END = '\033[0m'
     print(FAIL + message + END)
