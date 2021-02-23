@@ -754,9 +754,6 @@ class MainWindow(StandardMainWindow):
             self.close()
 
     def closeEvent(self, event):
-        exit_message = "Safely exiting the application..."
-        print(exit_message)
-        self.properties.user_message.setText(exit_message)
         self.StopImageTaskEvent.set()
         try:
             self.manager.shutdownSafely()
