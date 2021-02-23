@@ -54,7 +54,7 @@ def findObjectsToPickUp(image_to_extract):
         d_X = rectangle_X - contour_X
         d_Y = rectangle_Y - contour_Y
         pointer_length = np.sqrt(d_X**2 + d_Y**2)
-        pointer_angle = -np.arctan2((-1)*d_X + 0*d_Y, 0*d_X + (-1)*d_Y) if pointer_length > 1.0 else 0
+        pointer_angle = -np.arctan2(0*d_X + 1*d_Y, 1*d_X + 0*d_Y)*180/np.pi if pointer_length > 1.0 else 0
 
         # # Find midpoints of each of the sides:
         # middle_X = [np.int0((box[i - 1, 0] + box[i, 0]) / 2) for i in range(4)]
@@ -70,8 +70,9 @@ def findObjectsToPickUp(image_to_extract):
         # Get angle from the rotated rectangle, depending on the longest edge:
         rectangle_angle += 90  # In the (0, 90] range
         conditions = [rectangle_width < rectangle_height, pointer_angle < 0.0]
-        extra_rotations = [90, 180]
-        rectangle_angle += sum(r for r, c in zip(extra_rotations, conditions) if c is True)
+        extra_rotations = [90, -180]  # 90 degrees for the leading edge, 180 if upside down
+        adjustments = [r for r, c in zip(extra_rotations, conditions) if c]
+        rectangle_angle += sum(adjustments)
 
         # Save all information
         outputInfo.append(((image_width-contour_Y)/image_width*LIGHT_BOX_WIDTH, contour_X/image_height*LIGHT_BOX_LENGTH, rectangle_angle*np.pi/180.0))
@@ -80,6 +81,8 @@ def findObjectsToPickUp(image_to_extract):
         draw_on_me = cv.arrowedLine(draw_on_me, contour_centre,  (int(contour_X + d_X*50), int(contour_Y + d_Y*50)), (255, 0, 0), 5)
         draw_on_me = cv.polylines(draw_on_me, [box], True, (0, 255, 0), thickness=5)
         draw_on_me = cv.putText(draw_on_me, str(np.round(rectangle_angle, 2)), contour_centre, cv.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 2, cv.LINE_AA)
+        draw_on_me = cv.putText(draw_on_me, str(np.round(pointer_angle, 2)), (100, 100), cv.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 2, cv.LINE_AA)
+
         draw_on_me = cv.circle(draw_on_me, contour_centre, 5, (0, 0, 255), -1)
         # for i in range(4):
         #     draw_on_me = cv.circle(draw_on_me, (middle_X[i], middle_Y[i]), 5, (255, 0, 0), -1)

@@ -118,25 +118,28 @@ class MainManager:
             self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
 
         def pickupTask(stop_event_as_argument):
+            if not self.ImageInfo:
+                raise ValueError("ImageInfo should not be None")
+
+            self.Robot.turnWhiteLampON(stop_event_as_argument)
             self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
 
-            current_joints = self.Robot.getJointAngles()
-            desired_change = [i * pi / 180 for i in [-50.0, -25.0, 25.0, 0, 180.0, 0]]
-            current_joints = [a + b for a, b in zip(current_joints, desired_change)]
-            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
+            # current_joints = self.Robot.getJointAngles()
+            # desired_change = [i * pi / 180 for i in [-50.0, -25.0, 25.0, 0, 180.0, 0]]
+            # current_joints = [a + b for a, b in zip(current_joints, desired_change)]
+            # self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
+            #
+            # self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+            # self.switchActiveCamera(stop_event_as_argument)
+            # saveImage(self.Image)
+            # self.switchActiveCamera(stop_event_as_argument)
+            #
+            # self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
+            # current_joints = [a - b for a, b in zip(current_joints, desired_change)]
+            # self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
 
-            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
-            self.switchActiveCamera(stop_event_as_argument)
-            saveImage(self.Image)
-            self.switchActiveCamera(stop_event_as_argument)
-
-            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
-            current_joints = [a - b for a, b in zip(current_joints, desired_change)]
-            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
-
-            self.Robot.dropObject(stop_event_as_argument)
-            self.Robot.goHome(stop_event_as_argument)
-        self.Robot.giveTask(testTask)
+            # self.Robot.dropObject(stop_event_as_argument)
+        self.Robot.giveTask(pickupTask)
 
     def stopRobotTask(self):
         print("Stopping robot task")

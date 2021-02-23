@@ -250,7 +250,6 @@ class Robot:
         if stop_event.isSet():
             return
         self.set_IO_PORT(0, True)
-        sleep(2.0, stop_event)
 
     def turnWhiteLampOFF(self, stop_event):
         if stop_event.isSet():
@@ -417,6 +416,7 @@ class Robot:
             return
         self.moveJointsTo(stop_event, self.JointAngleDropObject.copy(), "movej")
         self.openGripper(stop_event)
+        self.goHome(stop_event)
 
     def pickUpObject(self, stop_event, object_position):
         r"""
@@ -442,18 +442,17 @@ class Robot:
         target_position[3] = a
         target_position[4] = b
         target_position[5] = c
-        print(target_position)
         self.moveToolTo(stop_event, target_position, 'movel')
         # Go down and pickup the object
-        target_position[2] = self.ToolPickUpHeight
-        self.moveToolTo(stop_event, target_position, 'movel')
-        # # sleep(10.0, stop_event)
+        # target_position[2] = self.ToolPickUpHeight
+        # self.moveToolTo(stop_event, target_position, 'movel')
+        # # # sleep(10.0, stop_event)
         # self.closeGripper(stop_event)
-        sleep(10.0, stop_event)
-        # self.openGripper(stop_event)
-        # # Go back up
-        target_position[2] = self.ToolHoverHeight
-        self.moveToolTo(stop_event, target_position, 'movel')
+        # # sleep(10.0, stop_event)
+        # # self.openGripper(stop_event)
+        # # # Go back up
+        # target_position[2] = self.ToolHoverHeight
+        # self.moveToolTo(stop_event, target_position, 'movel')
         self.goHome(stop_event)
 
     def initialise(self, stop_event):
