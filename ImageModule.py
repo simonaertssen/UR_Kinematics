@@ -27,9 +27,9 @@ def findObjectsToPickUp(image_to_extract):
     for contour in contours:
         area = cv.contourArea(contour)
         area_percentage = area/image_to_extract.size*100
-        if area_percentage < 0.05:  # Do not proceed if less than 5 percent of the image
+        if area_percentage < 0.05:  # Do not proceed if less than 0.05 percent of the image
             continue
-        if area_percentage > 0.5:  # Do not proceed if more than 50 percent of the image
+        if area_percentage > 10:  # Do not proceed if more than 10 percent of the image
             continue
         _, _, _w, _h = cv.boundingRect(contour)
         if _w/_h > 10 or _h/_w > 10:
@@ -68,7 +68,7 @@ def findObjectsToPickUp(image_to_extract):
 
         # Draw info on the image:
         draw_on_me = cv.polylines(draw_on_me, [box], True, (0, 255, 0), thickness=5)
-        draw_on_me = cv.putText(draw_on_me, str(np.round(rectangle_angle, 2)), contour_centre, cv.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 2, cv.LINE_AA)
+        # draw_on_me = cv.putText(draw_on_me, str(np.round(rectangle_angle, 2)), contour_centre, cv.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 2, cv.LINE_AA)
         draw_on_me = cv.circle(draw_on_me, contour_centre, 5, (0, 0, 255), -1)
         contour_num += 1
     return draw_on_me, outputInfo
