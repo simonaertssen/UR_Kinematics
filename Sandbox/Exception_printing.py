@@ -24,7 +24,7 @@ def communicateError(exception):
 
 def raise_an_error():
     wrapper()
-    
+
 
 def wrapper():
     raise ValueError("This is the message")
