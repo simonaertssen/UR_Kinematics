@@ -20,7 +20,7 @@ def communicateError(exception, custom_message=""):
     file_name = os.path.split(tb.tb_frame.f_code.co_filename)[1]
     line_no = tb.tb_lineno
 
-    message = f'{type_exc} in {file_name}, line {line_no}:'
+    message = f'{type_exc} in {file_name}, line {line_no}: '
     if custom_message:
         message += custom_message
     else:
