@@ -5,7 +5,7 @@ from queue import SimpleQueue, LifoQueue, Empty
 from threading import Thread, Event
 
 from Readers import ModBusReader, RobotCCO
-from Functionalities import sleep, pi, toolPositionDifference, jointAngleDifference, spatialDifference
+from Functionalities import communicateError, pi, toolPositionDifference, jointAngleDifference, spatialDifference
 
 from KinematicsModule.Kinematics import RPY2RotVec  # Slow Python implementation
 from KinematicsLib.cKinematics import ForwardKinematics, detectCollision  # Fast C and Cython implementation
@@ -160,7 +160,7 @@ class Robot:
             try:  # See if we can execute the function
                 task_handle(task_stop_event)
             except TypeError as e:
-                print('An uncallable function was encountered: {}'.format(e))
+                communicateError(e, "An uncallable function was encountered.")
             finally:  # Signal that the task was performed in some way
                 robot_task_finished_event.set()
                 if task_stop_event.isSet():
@@ -195,7 +195,7 @@ class Robot:
         try:
             self.RobotCCO.send(message + b'\n')
         except Exception as e:
-            print("Sending failed due to {}".format(e))
+            communicateError(e, "Sending through Robot failed.")
 
     def receive(self):
         r"""
@@ -204,7 +204,7 @@ class Robot:
         try:
             return self.RobotCCO.recv(self.RobotCCO.BufferLength)
         except Exception as e:
-            print("Receiving failed due to {}".format(e))
+            communicateError(e, "Receiving through Robot failed.")
             return b''  # An empty bytes object
 
     def getToolBitInfo(self):
@@ -345,9 +345,9 @@ class Robot:
             try:
                 self.waitUntilTargetReached(current_position, target_position, p, check_collisions, stop_event)
             except TimeoutError as e:  # Time ran out to test for object position
-                print(e)
+                communicateError(e)
             except InterruptedError as e:  # StopEvent is raised
-                print(e)
+                communicateError(e)
             except RuntimeError as e:  # Collision raises RuntimeError, so move to startposition
                 self.halt()
                 time.sleep(0.1)

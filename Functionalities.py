@@ -1,5 +1,4 @@
 import time
-import sys
 import os
 
 pi = 3.14159265359
@@ -15,10 +14,20 @@ def sleep(time_to_sleep, stop_event):
             time.sleep(0.1)
 
 
-def communicateError():
-    exc_type, exc_obj, exc_tb = sys.exc_info()
-    file_name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-    print(exc_type, file_name, exc_tb.tb_lineno)
+def communicateError(exception, custom_message=""):
+    tb = exception.__traceback__
+    type_exc = exception.__class__.__name__
+    file_name = os.path.split(tb.tb_frame.f_code.co_filename)[1]
+    line_no = tb.tb_lineno
+
+    message = f'{type_exc} in {file_name}, line {line_no}:'
+    if custom_message:
+        message += custom_message
+    else:
+        message += exception
+    FAIL = '\033[91m'
+    END = '\033[0m'
+    print(FAIL + message + END)
 
 
 def d_angle(a, b):

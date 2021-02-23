@@ -9,7 +9,7 @@ from queue import SimpleQueue
 from RobotClass import Robot
 from CameraManagement import TopCamera
 from CameraManagement import DetailCamera
-from Functionalities import sleep
+from Functionalities import communicateError, sleep
 from ImageModule import saveImage, imageSharpness, markTextOnImage, imageContrast
 from Functionalities import pi
 

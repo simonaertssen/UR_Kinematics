@@ -3,6 +3,7 @@ import errno
 
 from weakref import ref
 from threading import Thread, Event
+from Functionalities import communicateError
 
 
 class ParameterInfo(object):
@@ -240,7 +241,7 @@ class ModBusReader(Reader):
             try:
                 self.read(communicating_started_event)
             except OSError as e:
-                print("Error reading. {}".format(e))
+                communicateError(e, "Reading error.")
                 self.renewSocket()
 
     def isConnected(self):

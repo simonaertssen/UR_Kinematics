@@ -6,6 +6,7 @@ import cv2 as cv
 import numpy as np
 from pypylon import pylon, genicam
 from ImageModule import findObjectsToPickUp, markTimeDateOnImage
+from Functionalities import communicateError
 
 
 class ImageEventHandler(pylon.ImageEventHandler):
@@ -34,7 +35,7 @@ class ImageEventHandler(pylon.ImageEventHandler):
                     except Empty:
                         self.imageQueue.put_nowait((ZCArray.data, cameraContextValue))
         except genicam.GenericException as e:
-            print("ImageEventHandler Exception: {}".format(e))
+            communicateError(e, "ImageEventHandler Exception")
         finally:
             grab_result.Release()
 
@@ -78,7 +79,7 @@ class Camera:
         try:
             self.open()
         except genicam.RuntimeException as e:
-            print("Runtime exception: pause before opening the camera again")
+            communicateError(e, "Pausing before opening the camera again.")
             self.close()
             self.shutdownSafely()
             time.sleep(1)
@@ -177,9 +178,9 @@ class Camera:
             grabbedImage, cam_num = self.imageEventHandler.imageQueue.get(timeout=0.03)
             grabbedImage, info = self.manipulateImage(np.asarray(grabbedImage))
         except genicam.RuntimeException as e:
-            print('genicam Runtime Exception: {}'.format(e))
+            communicateError(e)
         except RuntimeError as e:
-            print('Runtime Exception: {}'.format(e))
+            communicateError(e)
         except Empty as e:
             pass  # Yes, you know that emptying the queue raises an error
         finally:
@@ -204,7 +205,7 @@ class TopCamera(Camera):
             image_to_manipulate, info = findObjectsToPickUp(image_to_manipulate)
             image_to_manipulate = markTimeDateOnImage(image_to_manipulate)
         except Exception as e:
-            print("Image manipulation failed: ", e)
+            communicateError(e, "Image manipulation failed.")
         return image_to_manipulate, info
 
 

@@ -5,7 +5,6 @@ import os
 import cv2
 import sys
 import time
-import shutil
 
 import numpy as np
 from Corpus import MainManager
@@ -18,8 +17,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QSizePo
                              QGridLayout, QVBoxLayout, QSplitter, QPushButton, QLineEdit, QRadioButton, QCheckBox, QShortcut)
 
 from threading import Thread, Event, Timer, enumerate as list_threads
-from queue import Empty
-
+from Functionalities import communicateError
 
 class StandardObjectWidget(QWidget):
     def __init__(self, screen_width, screen_height, parent):
@@ -721,7 +719,7 @@ class MainWindow(StandardMainWindow):
                 if image is None:
                     continue
             except Exception as e:
-                print(e)
+                communicateError(e)
                 continue
 
             try:
@@ -739,7 +737,7 @@ class MainWindow(StandardMainWindow):
                 self.img_src_display.show()
                 # print("Qsize: {}. FPS: {}".format(image_queue.qsize(), 1/(now-start_time+1.0e-20)))
             except Exception as e:
-                print(e)
+                communicateError(e)
 
     def updateTopCamInfo(self, new_info):
         old_info = new_info
@@ -764,7 +762,7 @@ class MainWindow(StandardMainWindow):
             self.manager.shutdownSafely()
             self.close()
         except Exception as e:
-            print("An exception occurred when exiting the application: ", e)
+            communicateError(e, "An unforeseen exception occurred when exiting the application.")
 
 
 JLI_logo_bytes = bytearray(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x01\xf4\x00\x00\x01\xf4\x08\x06\x00\x00\x00\xcb\xd6\xdf\x8a\x00\x00\x80\x00IDATx\xda\xec\x9d\x07x\x14U\xd7\xc7\xffw\xb6\xa6w\x92\x90@\x08\x10 \xf4\xde{WAT\x94\x8e(\x08\xf6\xcf\x8a]\x10\xc5\x8e\xbd\xbe\x88\x15\x11DPA\x91\x12\x8a\xd2{\xef\x01\x12BI\x02IHO\xb6\xcd\xfd\x9e\x19\x04I\xd9dw\xb3\xb3\xd9M\xce\xefyx\xde\xd7\xec\xee\xec\xcc\x99\xbb\xf7?\xe7\xdeS\xd4 '
