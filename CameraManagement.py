@@ -87,7 +87,6 @@ class Camera:
             self.setCamera()
             self.open()
 
-        # self.open()
         self.camera.AcquisitionMode.SetValue('Continuous')
         self.camera.TriggerMode.SetValue('Off')
         self.pixelWidth = self.camera.Width.Value
@@ -193,6 +192,10 @@ class TopCamera(Camera):
     """
     def __init__(self, serial_number=22290932, grayscale=True):
         super(TopCamera, self).__init__(serial_number, grayscale)
+        # Set Exposure Time to a controlled value, calibrated through Pylon Viewer
+        self.open()
+        self.camera.ExposureTimeAbs.SetValue(1000.0)
+        self.close()
 
     def __repr__(self):
         return "Topcamera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
@@ -238,6 +241,7 @@ def runSingleCamera(camera):
 
     start = time.time()
     while True:
+
         image, info, cam_num = camera.grabImage()
         if image is None:
             continue
