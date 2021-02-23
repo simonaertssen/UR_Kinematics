@@ -1,10 +1,15 @@
 import time
 import os
-
+from threading import Event
 pi = 3.14159265359
 
 
 def sleep(time_to_sleep, stop_event):
+    if not isinstance(time_to_sleep, float):
+        raise TypeError(f"{time_to_sleep} is not an adequate quantity for time")
+    if not isinstance(stop_event, Event):
+        raise TypeError(f"{stop_event} is not an event")
+
     start_time = time.time()
     while not stop_event.isSet():
         now = time.time()
@@ -25,6 +30,9 @@ def communicateError(exception, custom_message=""):
         message += custom_message
     else:
         message += str(exception)
+    if not message[-1] == '.':
+        message += '.'
+
     FAIL = '\033[91m'
     END = '\033[0m'
     print(FAIL + message + END)

@@ -5,7 +5,7 @@ from queue import SimpleQueue, LifoQueue, Empty
 from threading import Thread, Event
 
 from Readers import ModBusReader, RobotCCO
-from Functionalities import communicateError, pi, toolPositionDifference, jointAngleDifference, spatialDifference
+from Functionalities import sleep, communicateError, pi, toolPositionDifference, jointAngleDifference, spatialDifference
 
 from KinematicsModule.Kinematics import RPY2RotVec  # Slow Python implementation
 from KinematicsLib.cKinematics import ForwardKinematics, detectCollision  # Fast C and Cython implementation
@@ -53,14 +53,13 @@ class Robot:
 
     JointAngleInit = [i * pi/180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
     JointAngleDropObject = [i * pi/180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
-    JointAngleReadObject = [i * pi / 180 for i in [1.96, -90.65, 102.96, -102.31, 91.71, 91.73]]
+    JointAngleReadObject = [i * pi / 180 for i in [2.67, -90.67, 103.21, -102.44, 94.23, 90.85]]  # Calibrated
 
     ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
-    # ToolPositionLightBox = [0.146, -0.306, 0.05, 0.000, pi, 0.000]  # Calibrated
     ToolPositionLightBox = [0.147, -0.311, 0.05, 0.000, pi, 0.000]  # Calibrated
 
-    ToolPositionReadObject = [-0.46864, -0.10824, 0.74611, 0.0000, 0.000, pi/2.0]
-    ToolPositionTestCollision = [0.04860, -0.73475, 0.30999, 0.7750, 3.044, 0.002]
+    # ToolPositionReadObject = [-0.46864, -0.10824, 0.74611, 0.0000, 0.000, pi/2.0]
+    # ToolPositionTestCollision = [0.04860, -0.73475, 0.30999, 0.7750, 3.044, 0.002]
 
     StopEvent = Event()  # Stop the robot class from running
     StopTaskEvent = Event()  # Stop the current task from running
@@ -160,7 +159,7 @@ class Robot:
             try:  # See if we can execute the function
                 task_handle(task_stop_event)
             except TypeError as e:
-                communicateError(e, "An uncallable function was encountered.")
+                communicateError(e)
             except Exception as e:
                 communicateError(e)
             finally:  # Signal that the task was performed in some way
@@ -292,7 +291,7 @@ class Robot:
                 break
             if time.time() - start_time > MAX_TIME:
                 break
-            time.sleep(0.01)  # Sometimes this loop is too fast and the value is read wrongly.
+            sleep(0.01, stop_event)  # Sometimes this loop is too fast and the value is read wrongly.
 
     def testGripper(self):
         print('Testing the gripper')
@@ -352,10 +351,10 @@ class Robot:
                 communicateError(e)
             except RuntimeError as e:  # Collision raises RuntimeError, so move to startposition
                 self.halt()
-                time.sleep(0.1)
+                sleep(0.1, stop_event)
                 self.moveTo(stop_event, start_position, "movel", wait=True, p=p, check_collisions=False)
             finally:
-                time.sleep(0.1)  # To let momentum fade away
+                sleep(0.1, stop_event)  # To let momentum fade away
 
     def waitUntilTargetReached(self, current_position, target_position, p, check_collisions, stop_event):
         r"""

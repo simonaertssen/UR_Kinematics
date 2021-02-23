@@ -711,6 +711,8 @@ class MainWindow(StandardMainWindow):
         ImageThreadArgList = [self.manager.grabImage, self.StopImageTaskEvent]
         ContinuousImagesThread = Thread(target=self.updateImageView, args=ImageThreadArgList, daemon=True, name='Async Images')
         ContinuousImagesThread.start()
+        # Wait until the first image is available:
+        self.manager.ImageAvailable.wait(1.0)
 
     def updateImageView(self, get_image_handle, stop_event):
         while not stop_event.isSet():
@@ -735,13 +737,8 @@ class MainWindow(StandardMainWindow):
 
                 self.img_src_display.setPixmap(QPixmap.fromImage(image).scaled(width/2, height/2, QtCore.Qt.KeepAspectRatio))
                 self.img_src_display.show()
-                # print("Qsize: {}. FPS: {}".format(image_queue.qsize(), 1/(now-start_time+1.0e-20)))
             except Exception as e:
                 communicateError(e)
-
-    def updateTopCamInfo(self, new_info):
-        old_info = new_info
-        # print('Info {}'.format(new_info))
 
     def startRobotTask(self):
         self.manager.startRobotTask()
@@ -754,8 +751,8 @@ class MainWindow(StandardMainWindow):
             self.close()
 
     def closeEvent(self, event):
-        self.StopImageTaskEvent.set()
         try:
+            self.StopImageTaskEvent.set()
             self.manager.shutdownSafely()
             self.close()
         except Exception as e:
