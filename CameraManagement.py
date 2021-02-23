@@ -5,7 +5,7 @@ import tracemalloc
 import cv2 as cv
 import numpy as np
 from pypylon import pylon, genicam
-from ImageModule import findObjectsToPickUp, markTimeDateOnImage
+from ImageModule import findObjectsToPickUp, markTimeDateOnImage, markTextOnImage, imageContrast
 from Functionalities import communicateError
 
 
@@ -241,7 +241,7 @@ def runSingleCamera(camera):
         image, info, cam_num = camera.grabImage()
         if image is None:
             continue
-
+        image = markTextOnImage(image, imageContrast(image))
         cv.imshow(testWindow, cv.resize(image, (int(w/1.5), int(h/1.5))))
         if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
             break
