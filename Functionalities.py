@@ -1,6 +1,9 @@
 import time
 import os
 from threading import Event
+import tracemalloc
+
+
 pi = 3.14159265359
 
 
@@ -68,3 +71,12 @@ def spatialDifference(current_position, target_position):
     x1, y1, z1, _, _, _ = current_position
     x2, y2, z2, _, _, _ = target_position
     return ((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2) ** 0.5
+
+
+def testMemoryDemand():
+    tracemalloc.start(10)
+    while True:
+        snapshot = tracemalloc.take_snapshot()
+        for i, stat in enumerate(snapshot.statistics('filename')[:4], 1):
+            print(str(stat))
+        time.sleep(60.0)

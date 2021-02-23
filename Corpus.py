@@ -11,7 +11,8 @@ from CameraManagement import TopCamera
 from CameraManagement import DetailCamera
 from Functionalities import communicateError, sleep
 from ImageModule import saveImage, imageSharpness, markTextOnImage, imageContrast
-from Functionalities import pi
+from Functionalities import pi, testMemoryDemand
+from KinematicsModule.Kinematics import RPY2RotVec  # Slow Python implementation
 
 
 class MainManager:
@@ -21,6 +22,10 @@ class MainManager:
     Image = None
     ImageInfo = []
     ImageAvailable = Event()
+
+    mem_leak_thread = Thread(target=testMemoryDemand, daemon=True, name='Test memory demand')
+    mem_leak_thread.start()
+    print("Started")
 
     def __init__(self):
         self.tryConnect()
@@ -118,6 +123,38 @@ class MainManager:
     def goHome(self):
         self.Robot.giveTask(self.Robot.goHome)
 
+    def optimiseFocus(self, stop_event):
+        start_time = time.time()
+        current_position = self.Robot.getToolPosition()
+        MAX_STEPS = 20
+        step = 10
+        sign = 1
+        while True:
+            if stop_event.isSet():
+                break
+            while not self.ImageAvailable.isSet():
+                # Wait for new image:
+                sleep(0.01, stop_event)
+            if start_time - time.time() > 10.0:
+                print("Over time")
+                break
+
+            if step > MAX_STEPS:
+                step = 1
+                sign *= -1
+
+            # Calibrated
+            current_position[1] += sign * 0.0002
+            current_position[2] -= sign * 0.001
+
+            self.Robot.moveToolTo(stop_event, current_position, 'movej', velocity=0.25)
+            sleep(0.1, stop_event)
+
+            if self.Image is not None and not stop_event.isSet():
+                image_candidate = self.Image.copy()
+                # print(imageContrast(image_candidate))
+            step += 1
+
     def startRobotTask(self):
         def testTask(stop_event_as_argument):
             self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
@@ -142,37 +179,11 @@ class MainManager:
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
 
             self.switchActiveCamera(stop_event_as_argument)
-            # saveImage(self.Image)
-            start_time = time.time()
-            current_position = self.Robot.getToolPosition()
-            MAX_STEPS = 10
-            step = 5
-            sign = 1
-            while True:
-                if stop_event_as_argument.isSet():
-                    break
-                while not self.ImageAvailable.isSet():
-                    # Wait for new image:
-                    time.sleep(0.01)
-                if start_time - time.time() > 10.0:
-                    print("Over time")
-                    break
 
-                if step > MAX_STEPS:
-                    step = 1
-                    sign *= -1
-                current_position[1] += sign*0.0001
-                current_position[2] -= sign*0.0005
-                self.Robot.moveToolTo(stop_event_as_argument, current_position, 'movej', velocity=0.01)
-                time.sleep(0.5)
-
-                image_candidate = self.Image
-                image_candidate = markTextOnImage(image_candidate, imageContrast(image_candidate))
-
-                if not stop_event_as_argument.isSet():
-                    saveImage(image_candidate)
-
-                step += 1
+            try:
+                self.optimiseFocus(stop_event_as_argument)
+            except Exception as e:
+                communicateError(e)
 
             self.switchActiveCamera(stop_event_as_argument)
             # Move back to initial position

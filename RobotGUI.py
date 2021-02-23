@@ -713,6 +713,7 @@ class MainWindow(StandardMainWindow):
         ContinuousImagesThread.start()
         # Wait until the first image is available:
         self.manager.ImageAvailable.wait(1.0)
+        self.startRobotTask()
 
     def updateImageView(self, get_image_handle, stop_event):
         while not stop_event.isSet():
