@@ -304,7 +304,7 @@ class Robot:
     def detectCollision(self):
         return detectCollision(self.getJointPositions())
 
-    def moveTo(self, stop_event, target_position, move, p=True, wait=True, check_collisions=True):
+    def moveTo(self, stop_event, target_position, move, p=True, velocity=0, wait=True, check_collisions=True):
         r"""
         Moves the robot to the target, while blocking the thread which calls this
         function until either the target position is reached or until the
@@ -334,8 +334,10 @@ class Robot:
         else:
             current_position = self.getJointAngles
 
-        MAX_SPEED = 1.0  # m/s
-        command = str.encode("{}({}{}, v={})".format(move, "p" if p is True else "", target_position, MAX_SPEED))
+        command = str.encode("{}({}{})".format(move, "p" if p is True else "", target_position))
+        if velocity > 0:
+            MAX_SPEED = 1.0  # m/s
+            command = command[:-1] + str.encode(", v={})".format(velocity))
         self.send(command)
 
         start_position = current_position()
@@ -363,7 +365,7 @@ class Robot:
         start_time = time.time()
         last_time_difference = start_time
         MAX_TIME = 15.0
-        MAX_SAME_DIFF_TIME = 1.0
+        MAX_SAME_DIFF_TIME = 0.5
 
         RELATIVE_TOLERANCE = 1e-3  # Robot arm should be accurate up to 1mm
         ABSOLUTE_TOLERANCE = 9e-3  # Total difference should not exceed 6*tolerance for 6 joints
@@ -388,7 +390,7 @@ class Robot:
                 last_time_difference = time.time()
             # print(sum_difference, [round(d, 3) for d in difference])
 
-    def moveToolTo(self, stop_event, target_position, move, wait=True, check_collisions=True):
+    def moveToolTo(self, stop_event, target_position, move, velocity=0, wait=True, check_collisions=True):
         r"""
         Wrapper for the moveTo command to distinguish clearly between tool and
         joint commands.
@@ -396,9 +398,9 @@ class Robot:
         it is not given, then we want to start a thread. This avoids having two
         different funcions with two different but similar names.
         """
-        self.moveTo(stop_event, target_position, move, wait=wait, p=True, check_collisions=check_collisions)
+        self.moveTo(stop_event, target_position, move, wait=wait, p=True, velocity=velocity, check_collisions=check_collisions)
 
-    def moveJointsTo(self, stop_event, target_position, move, wait=True, check_collisions=True):
+    def moveJointsTo(self, stop_event, target_position, move, velocity=0, wait=True, check_collisions=True):
         r"""
         Wrapper for the moveTo command to distinguish clearly between tool and
         joint commands.
@@ -406,7 +408,7 @@ class Robot:
         it is not given, then we want to start a thread. This avoids having two
         different funcions with two different but similar names.
         """
-        self.moveTo(stop_event, target_position, move, wait=wait, p=False, check_collisions=check_collisions)
+        self.moveTo(stop_event, target_position, move, wait=wait, p=False, velocity=velocity, check_collisions=check_collisions)
 
     def goHome(self, stop_event, wait=True, check_collisions=True):
         self.moveJointsTo(stop_event, self.JointAngleInit.copy(), "movej", wait=wait, check_collisions=check_collisions)
@@ -444,15 +446,15 @@ class Robot:
         target_position[5] = c
         self.moveToolTo(stop_event, target_position, 'movel')
         # Go down and pickup the object
-        # target_position[2] = self.ToolPickUpHeight
-        # self.moveToolTo(stop_event, target_position, 'movel')
+        target_position[2] = self.ToolPickUpHeight
+        self.moveToolTo(stop_event, target_position, 'movel')
         # # # sleep(10.0, stop_event)
-        # self.closeGripper(stop_event)
+        self.closeGripper(stop_event)
         # # sleep(10.0, stop_event)
-        # # self.openGripper(stop_event)
-        # # # Go back up
-        # target_position[2] = self.ToolHoverHeight
-        # self.moveToolTo(stop_event, target_position, 'movel')
+        # self.openGripper(stop_event)
+        # Go back up
+        target_position[2] = self.ToolHoverHeight
+        self.moveToolTo(stop_event, target_position, 'movel')
         self.goHome(stop_event)
 
     def initialise(self, stop_event):
@@ -460,31 +462,31 @@ class Robot:
         Sequence of moves that are required to initialise the robot safely, like
         dropping any objects the gripper is still holding onto.
         """
-        if stop_event.isSet():
-            return
-        currentJointPosition = self.getJointAngles()
-        distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit.copy())])
-        currentToolPosition = self.getToolPosition()
-        if self.isGripperOpen():
-            if currentToolPosition[2] <= 0.300:
-                targetToolPosition = currentToolPosition.copy()
-                targetToolPosition[2] = 0.310
-                # Move towards first location, don't check collisions
-                # because we might start from a bad position.
-                self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)
-        else:
-            if spatialDifference(currentToolPosition, self.ToolPositionDropObject) < 0.5:
-                if currentToolPosition[2] < 0.07:
-                    targetToolPosition = currentToolPosition.copy()
-                    targetToolPosition[2] = 0.07
-                    self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)
-            else:
-                if distanceFromAngleInit > 0.05:
-                    self.goHome(stop_event, check_collisions=False)
-
-            self.dropObject(stop_event)
-        if sum(jointAngleDifference(self.getJointAngles(), self.JointAngleInit.copy())) > 0.1:
-            self.goHome(stop_event)
+        # if stop_event.isSet():
+        #     return
+        # currentJointPosition = self.getJointAngles()
+        # distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit.copy())])
+        # currentToolPosition = self.getToolPosition()
+        # if self.isGripperOpen():
+        #     if currentToolPosition[2] <= 0.300:
+        #         targetToolPosition = currentToolPosition.copy()
+        #         targetToolPosition[2] = 0.310
+        #         # Move towards first location, don't check collisions
+        #         # because we might start from a bad position.
+        #         self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)
+        # else:
+        #     if spatialDifference(currentToolPosition, self.ToolPositionDropObject) < 0.5:
+        #         if currentToolPosition[2] < 0.07:
+        #             targetToolPosition = currentToolPosition.copy()
+        #             targetToolPosition[2] = 0.07
+        #             self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)
+        #     else:
+        #         if distanceFromAngleInit > 0.05:
+        #             self.goHome(stop_event, check_collisions=False)
+        #
+        #     self.dropObject(stop_event)
+        # if sum(jointAngleDifference(self.getJointAngles(), self.JointAngleInit.copy())) > 0.1:
+        #     self.goHome(stop_event)
 
     @staticmethod
     def beep():

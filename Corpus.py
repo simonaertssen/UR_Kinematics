@@ -1,4 +1,6 @@
 import time
+import sys
+import os
 
 from threading import Thread, Event, enumerate as list_threads
 
@@ -8,7 +10,7 @@ from RobotClass import Robot
 from CameraManagement import TopCamera
 from CameraManagement import DetailCamera
 from Functionalities import sleep
-from ImageModule import saveImage
+from ImageModule import saveImage, imageSharpness, markTextOnImage, imageContrast
 from Functionalities import pi
 
 
@@ -81,12 +83,14 @@ class MainManager:
             self.ImageAvailable.set()
         return self.Image, self.ImageInfo, cam_num
 
-    def switchActiveCamera(self, stop_event):
+    def switchActiveCamera(self, stop_event=None):
         r"""
         Switch the active camera. Because items are initialised using their correct class name,
         the TopCamera will always be the active camera instance. That means when we switch
         reference between cameras, we can run another camera without having to change names.
         """
+        if stop_event is None:  # Replace with a random event when none is given
+            stop_event = Event()
         if stop_event.isSet():
             return
 
@@ -103,6 +107,7 @@ class MainManager:
         self.ImageAvailable.clear()
         while not stop_event.isSet() and not self.ImageAvailable.isSet():
             time.sleep(0.01)
+        print("Camera switched")
 
     def openGripper(self):
         self.Robot.giveTask(self.Robot.openGripper)
@@ -118,27 +123,68 @@ class MainManager:
             self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
 
         def pickupTask(stop_event_as_argument):
-            if not self.ImageInfo:
-                raise ValueError("ImageInfo should not be None")
+            # Delete all previous images:
+            image_folder = os.path.join(os.getcwd(), 'Images')
+            for image_file in os.listdir(image_folder):
+                os.remove(os.path.join(image_folder, image_file))
+
+            # if not self.ImageInfo:
+            #     raise ValueError("ImageInfo should not be None")
 
             self.Robot.turnWhiteLampON(stop_event_as_argument)
-            self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
+            # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
 
+            # Move to desired position from the Home position
             # current_joints = self.Robot.getJointAngles()
             # desired_change = [i * pi / 180 for i in [-50.0, -25.0, 25.0, 0, 180.0, 0]]
             # current_joints = [a + b for a, b in zip(current_joints, desired_change)]
             # self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
-            #
-            # self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
-            # self.switchActiveCamera(stop_event_as_argument)
+            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+
+            self.switchActiveCamera(stop_event_as_argument)
             # saveImage(self.Image)
-            # self.switchActiveCamera(stop_event_as_argument)
-            #
+            start_time = time.time()
+            current_position = self.Robot.getToolPosition()
+            MAX_STEPS = 10
+            step = 5
+            sign = 1
+            while True:
+                if stop_event_as_argument.isSet():
+                    break
+                while not self.ImageAvailable.isSet():
+                    # Wait for new image:
+                    time.sleep(0.01)
+                if start_time - time.time() > 10.0:
+                    print("Over time")
+                    break
+
+                if step > MAX_STEPS:
+                    step = 1
+                    sign *= -1
+                current_position[1] += sign*0.0001
+                current_position[2] -= sign*0.0005
+                self.Robot.moveToolTo(stop_event_as_argument, current_position, 'movej', velocity=0.01)
+                time.sleep(0.5)
+
+                image_candidate = self.Image
+                image_candidate = markTextOnImage(image_candidate, imageContrast(image_candidate))
+
+                if not stop_event_as_argument.isSet():
+                    saveImage(image_candidate)
+
+                step += 1
+
+            self.switchActiveCamera(stop_event_as_argument)
+            # Move back to initial position
+            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+
+            # Move back to temporary position, and back home
             # self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
             # current_joints = [a - b for a, b in zip(current_joints, desired_change)]
             # self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
 
             # self.Robot.dropObject(stop_event_as_argument)
+            # self.Robot.turnWhiteLampOFF(stop_event_as_argument)
         self.Robot.giveTask(pickupTask)
 
     def stopRobotTask(self):

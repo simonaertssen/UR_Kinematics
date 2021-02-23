@@ -74,6 +74,19 @@ def findObjectsToPickUp(image_to_extract):
     return draw_on_me, outputInfo
 
 
+def markTextOnImage(image, message):
+    if not isinstance(message, str):
+        message = str(message)
+    im_shape = image.shape
+    TEXT_THICKNESS = 0.75
+    TEXT_SIZE = 4
+    if len(im_shape) == 2:
+        image = cv.putText(image, message, (5, int(40*TEXT_THICKNESS)), cv.FONT_HERSHEY_SIMPLEX, TEXT_THICKNESS, 255, TEXT_SIZE, cv.LINE_AA)
+    else:
+        image = cv.putText(image, message, (5, int(40*TEXT_THICKNESS)), cv.FONT_HERSHEY_SIMPLEX, TEXT_THICKNESS, (255, 255, 255), TEXT_SIZE, cv.LINE_AA)
+    return image
+
+
 def markTimeDateOnImage(image):
     message = time.asctime()
     im_shape = image.shape
@@ -88,7 +101,7 @@ def markTimeDateOnImage(image):
     return image
 
 
-def saveImage(image_to_save):
+def saveImage(image_to_save, image_name=""):
     w, h = image_to_save.shape[0:2]
     if image_to_save is None or w == 0 or h == 0:
         print("Image does not contain information")
@@ -99,4 +112,16 @@ def saveImage(image_to_save):
     date_time_string = time.asctime().replace(" ", "_").replace(":", "_")
     image_name = os.path.join(here, date_time_string + ".png")
     cv.imwrite(image_name, image_to_save)
+
+
+def imageSharpness(image):
+    image_laplace = cv.Laplacian(image, cv.CV_8U, ksize=1)
+    _, std = cv.meanStdDev(image_laplace)
+    return std[0][0]*std[0][0]
+
+
+def imageContrast(image):
+    h_tv = np.power((image[1:, :] - image[:-1, :]), 2).sum()
+    w_tv = np.power((image[:, 1:] - image[:, :-1]), 2).sum()
+    return np.sqrt(h_tv + w_tv).sum()
 

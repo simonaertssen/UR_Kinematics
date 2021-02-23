@@ -1,4 +1,6 @@
 import time
+import sys
+import os
 
 pi = 3.14159265359
 
@@ -11,6 +13,12 @@ def sleep(time_to_sleep, stop_event):
             break
         else:
             time.sleep(0.1)
+
+
+def communicateError():
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    file_name = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    print(exc_type, file_name, exc_tb.tb_lineno)
 
 
 def d_angle(a, b):
