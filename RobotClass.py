@@ -463,7 +463,6 @@ class Robot:
         Sequence of moves that are required to initialise the robot safely, like
         dropping any objects the gripper is still holding onto.
         """
-        return
         if stop_event.isSet():
             return
         currentJointPosition = self.getJointAngles()

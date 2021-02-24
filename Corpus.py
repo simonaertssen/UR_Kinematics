@@ -155,7 +155,7 @@ class MainManager:
         def sample_objective(position, stop_event_as_argument):
             # Set position, record an image and record the score
             self.Robot.moveToolTo(stop_event_as_argument, position, 'movej', velocity=0.01)
-            sleep(2.0, stop_event_as_argument)
+            sleep(0.25, stop_event_as_argument)
 
             # Sample image:
             def objective(image):
@@ -275,7 +275,10 @@ class MainManager:
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
 
             self.switchActiveCamera(stop_event_as_argument)
-            saveImage(self.getNextAvailableImage(stop_event_as_argument))
+            self.optimiseFocus(stop_event_as_argument)
+            self.optimiseReflectionAngle(stop_event_as_argument)
+            best_image = self.getNextAvailableImage(stop_event_as_argument)
+            saveImage(best_image, stop_event_as_argument)
             self.switchActiveCamera(stop_event_as_argument)
 
             # Move back to initial position
@@ -288,7 +291,7 @@ class MainManager:
 
             self.Robot.dropObject(stop_event_as_argument)
 
-        self.Robot.giveTask(testPresentation)
+        self.Robot.giveTask(pickupTask)
 
     def stopRobotTask(self):
         print("Stopping robot task")
