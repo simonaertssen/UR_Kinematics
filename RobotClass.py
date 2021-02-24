@@ -362,15 +362,15 @@ class Robot:
         until the stop event is set or until a collision is detected.
         """
         difference = [1000.0 for _ in target_position]
-        sum_difference = sum(difference)
+        last_difference = difference.copy()
         start_time = time.time()
         last_time_difference = start_time
         MAX_TIME = 15.0
-        MAX_SAME_DIFF_TIME = 0.5
+        MAX_SAME_DIFF_TIME = 0.25
 
         RELATIVE_TOLERANCE = 1e-3  # Robot arm should be accurate up to 1mm
         ABSOLUTE_TOLERANCE = 9e-3  # Total difference should not exceed 6*tolerance for 6 joints
-        while sum_difference > ABSOLUTE_TOLERANCE or all(d > RELATIVE_TOLERANCE for d in difference):
+        while sum(difference) > ABSOLUTE_TOLERANCE or all(d > RELATIVE_TOLERANCE for d in difference):
             if stop_event.isSet() is True:
                 raise InterruptedError("Stop event has been raised.")
             if check_collisions and self.detectCollision():
@@ -382,14 +382,12 @@ class Robot:
                 difference = toolPositionDifference(current_position(), target_position)
             else:
                 difference = jointAngleDifference(current_position(), target_position)
-            now_sum_difference = sum(difference)
-            if now_sum_difference == sum_difference:
+            if difference == last_difference:
                 if time.time() - last_time_difference > MAX_SAME_DIFF_TIME:
                     raise TimeoutError('No difference measured within {} s. Assuming robot is in position and continue.'.format(MAX_SAME_DIFF_TIME))
             else:
-                sum_difference = now_sum_difference
+                last_difference = difference.copy()
                 last_time_difference = time.time()
-            # print(sum_difference, [round(d, 3) for d in difference])
 
     def moveToolTo(self, stop_event, target_position, move, velocity=0, wait=True, check_collisions=True):
         r"""
