@@ -163,7 +163,7 @@ class MainManager:
         def sample_objective(position, stop_event_as_argument):
             # Set position, record an image and record the score
             self.Robot.moveToolTo(stop_event_as_argument, position, 'movej', velocity=0.01)
-            sleep(1.0, stop_event_as_argument)
+            sleep(0.1, stop_event_as_argument)
 
             # Sample image:
             def objective(image):
@@ -182,12 +182,12 @@ class MainManager:
         MAX_ITERATIONS = 30
         start_time = time.time()
         MAX_TIME = 60.0
-        MAX_TOLERANCE = 1.0e-3
+        MAX_TOLERANCE = 1.0e-4
 
         # Gather initial data (3 points for a 2nd order polynomial)
         data = np.empty((2, MAX_ITERATIONS))
         data[:] = np.NAN
-        for index, dz in enumerate([-0.002, 0, 0.002]):
+        for index, dz in enumerate([-0.002, 0.0, 0.003]):
             current_position = apply_transformation(dz, current_position)
             data[:, index] = np.array([current_position[2], sample_objective(current_position, stop_event)])
             current_position = apply_transformation(-dz, current_position)
@@ -198,10 +198,11 @@ class MainManager:
             idx = ~np.isnan(data)
             poly = np.polyfit(data[0, idx[0]], data[1, idx[1]], 2)
             z_new = -poly[1] / (2 * poly[0])  # -b/2a
-            if abs(z_new - current_position[2]) < MAX_TOLERANCE:
+            dz = z_new - current_position[2]
+            if abs(dz) < MAX_TOLERANCE:
                 print("Found optimum:", z_new)
                 break
-            current_position[2] = z_new
+            current_position = apply_transformation(dz, current_position)
             data[:, iteration + 3] = np.array([z_new, sample_objective(current_position, stop_event)])
             iteration += 1
         # Finally get image and save it:
@@ -215,7 +216,7 @@ class MainManager:
         def testPresentation(stop_event_as_argument):
             # if not self._imageInfo:
             #     raise ValueError("_imageInfo should not be None")
-
+            #
             # self.Robot.turnWhiteLampON(stop_event_as_argument)
             # self.Robot.pickUpObject(stop_event_as_argument, self._imageInfo[0])
             #
