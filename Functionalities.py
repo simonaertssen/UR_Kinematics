@@ -1,7 +1,8 @@
-import time
 import os
-from threading import Event
+import time
+import traceback
 import tracemalloc
+from threading import Event
 
 
 pi = 3.14159265359
@@ -22,19 +23,16 @@ def sleep(time_to_sleep, stop_event):
             time.sleep(0.1)
 
 
-def communicateError(exception, custom_message=""):
+def communicateError(exception):
     tb = exception.__traceback__
-    type_exc = exception.__class__.__name__
-    file_name = os.path.split(tb.tb_frame.f_code.co_filename)[1]
-    line_no = tb.tb_lineno
+    summary = traceback.extract_tb(tb, limit=-1)[0]
 
-    message = f'{type_exc} in {file_name}, line {line_no}: '
-    if custom_message:
-        message += custom_message
-    else:
-        message += str(exception)
-    if not message[-1] == '.':
-        message += '.'
+    type_exc = exception.__class__.__name__
+    func_name = summary.name
+    file_name = os.path.split(summary.filename)[1]
+    line_no = summary.lineno
+    problem = summary._line
+    message = f'{type_exc}({exception}) in {func_name}(), file {file_name}, line {line_no}. Cause: {problem}'
 
     FAIL = '\033[91m'
     END = '\033[0m'

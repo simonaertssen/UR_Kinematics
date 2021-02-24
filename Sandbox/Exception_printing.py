@@ -1,25 +1,28 @@
 import os
+import traceback
 
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+HEADER = '\033[95m'
+OKBLUE = '\033[94m'
+OKCYAN = '\033[96m'
+OKGREEN = '\033[92m'
+WARNING = '\033[93m'
+FAIL = '\033[91m'
+ENDC = '\033[0m'
+BOLD = '\033[1m'
+UNDERLINE = '\033[4m'
 
 
 def communicateError(exception):
     tb = exception.__traceback__
+    summary = traceback.extract_tb(tb, limit=-1)[0]
+
     type_exc = exception.__class__.__name__
-    file_name = os.path.split(tb.tb_frame.f_code.co_filename)[1]
-    line_no = tb.tb_lineno
-    message = f'{type_exc} in {file_name}, line {line_no}: {exception}'
-    print(bcolors.FAIL + message + bcolors.ENDC)
+    func_name = summary.name
+    file_name = os.path.split(summary.filename)[1]
+    line_no = summary.lineno
+    problem = summary._line
+    message = f'{type_exc}({exception}) in {func_name}(), file {file_name}, line {line_no}. Cause: {problem}'
+    print(FAIL + message + ENDC)
 
 
 def raise_an_error():
@@ -27,7 +30,15 @@ def raise_an_error():
 
 
 def wrapper():
-    raise ValueError("This is the message")
+    deep(1.0)
+
+
+def deep(x):
+    deeper(x)
+
+
+def deeper(x):
+    x[0]
 
 
 if __name__ == '__main__':
