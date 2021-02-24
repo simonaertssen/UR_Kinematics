@@ -115,12 +115,16 @@ def saveImage(image_to_save, image_name=""):
 
 
 def imageSharpness(image):
+    if not isinstance(image, np.ndarray):
+        return np.nan
     image_laplace = cv.Laplacian(image, cv.CV_8U, ksize=1)
     _, std = cv.meanStdDev(image_laplace)
     return std[0][0]*std[0][0]
 
 
 def imageContrast(image):
+    if not isinstance(image, np.ndarray):
+        return np.nan
     h_tv = np.power((image[1:, :] - image[:-1, :]), 2).sum()
     w_tv = np.power((image[:, 1:] - image[:, :-1]), 2).sum()
     return np.sqrt(h_tv + w_tv).sum()
