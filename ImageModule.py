@@ -77,6 +77,8 @@ def findObjectsToPickUp(image_to_extract):
 def markTextOnImage(image, message):
     if not isinstance(message, str):
         message = str(message)
+    if not isinstance(image, np.ndarray):
+        return
     im_shape = image.shape
     TEXT_THICKNESS = 0.75
     TEXT_SIZE = 4
@@ -88,6 +90,8 @@ def markTextOnImage(image, message):
 
 
 def markTimeDateOnImage(image):
+    if not isinstance(image, np.ndarray):
+        return
     message = time.asctime()
     im_shape = image.shape
     TEXT_THICKNESS = 0.75
@@ -102,6 +106,8 @@ def markTimeDateOnImage(image):
 
 
 def saveImage(image_to_save, image_name=""):
+    if not isinstance(image_to_save, np.ndarray):
+        return np.nan
     w, h = image_to_save.shape[0:2]
     if image_to_save is None or w == 0 or h == 0:
         print("Image does not contain information")
