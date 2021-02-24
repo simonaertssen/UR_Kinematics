@@ -28,16 +28,15 @@ def communicateError(exception, message_extra=""):
     summary = traceback.extract_tb(tb, limit=-1)[0]
 
     type_exc = exception.__class__.__name__
+    text = str(exception) if not message_extra else message_extra
+    if len(text) > 0 and text[-1] == '.':
+        text = text[:-1]
     func_name = summary.name
     file_name = os.path.split(summary.filename)[1]
     line_no = summary.lineno
     problem = summary._line
 
-    if message_extra:
-        exception = message_extra
-    if exception[-1] == '.':
-        exception = exception[:-1]
-    message = f'{type_exc}({exception}) in {func_name}(), file {file_name}, line {line_no}.'
+    message = f'{type_exc}({text}) in {func_name}(), file {file_name}, line {line_no}.'
     if problem[0:5] != 'raise':
         message += f' Cause: {problem}'
 

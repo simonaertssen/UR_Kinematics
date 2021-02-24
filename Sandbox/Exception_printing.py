@@ -1,33 +1,27 @@
 import os
 import traceback
 
-HEADER = '\033[95m'
-OKBLUE = '\033[94m'
-OKCYAN = '\033[96m'
-OKGREEN = '\033[92m'
-WARNING = '\033[93m'
-FAIL = '\033[91m'
-ENDC = '\033[0m'
-BOLD = '\033[1m'
-UNDERLINE = '\033[4m'
-
 
 def communicateError(exception, message_extra=""):
     tb = exception.__traceback__
     summary = traceback.extract_tb(tb, limit=-1)[0]
 
     type_exc = exception.__class__.__name__
+    text = str(exception) if not message_extra else message_extra
+    if len(text) > 0 and text[-1] == '.':
+        text = text[:-1]
     func_name = summary.name
     file_name = os.path.split(summary.filename)[1]
     line_no = summary.lineno
     problem = summary._line
 
-    if message_extra:
-        exception = message_extra
-    message = f'{type_exc}({exception}) in {func_name}(), file{file_name}, line{line_no}.'
+    message = f'{type_exc}({text}) in {func_name}(), file {file_name}, line {line_no}.'
     if problem[0:5] != 'raise':
-        message += f'Cause: {problem}'
-    print(FAIL + message + ENDC)
+        message += f' Cause: {problem}'
+
+    FAIL = '\033[91m'
+    END = '\033[0m'
+    print(FAIL + message + END)
 
 
 def raise_an_error():
@@ -43,7 +37,7 @@ def deep(x):
 
 
 def deeper(x):
-    raise ValueError("Test message")
+    raise ValueError
 
 
 if __name__ == '__main__':
