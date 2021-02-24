@@ -148,66 +148,78 @@ class MainManager:
     def goHome(self):
         self.Robot.giveTask(self.Robot.goHome)
 
-    def optimiseFocus(self, stop_event):
+    def optimise(self, stop_event, transformation_to_next_value, idx):
         if stop_event.isSet():
             return
-
-        current_position = self.Robot.getToolPosition()
-
-        # Calibrated transformations
-        def apply_transformation(d_z, position):
-            position[1] -= d_z * 0.2
-            position[2] += d_z
-            return position
 
         def sample_objective(position, stop_event_as_argument):
             # Set position, record an image and record the score
             self.Robot.moveToolTo(stop_event_as_argument, position, 'movej', velocity=0.01)
-            sleep(0.1, stop_event_as_argument)
+            sleep(2.0, stop_event_as_argument)
 
             # Sample image:
             def objective(image):
                 value = imageContrast(image)
-                print("Objective value =", value)
                 return value
             try:
                 latest_image = self.getNextAvailableImage(stop_event_as_argument)
             except Exception as e:
                 communicateError(e)
-                return 0
+                return np.NAN
             return objective(latest_image)
 
-        # Set loop parameter
+        # Set loop parameters
         iteration = 1
         MAX_ITERATIONS = 30
         start_time = time.time()
         MAX_TIME = 60.0
-        MAX_TOLERANCE = 1.0e-4
+        MAX_TOLERANCE = 1.0e-3
 
         # Gather initial data (3 points for a 2nd order polynomial)
+        current_position = self.Robot.getToolPosition()
         data = np.empty((2, MAX_ITERATIONS))
         data[:] = np.NAN
-        for index, dz in enumerate([-0.002, 0.0, 0.003]):
-            current_position = apply_transformation(dz, current_position)
-            data[:, index] = np.array([current_position[2], sample_objective(current_position, stop_event)])
-            current_position = apply_transformation(-dz, current_position)
-        print("Data gathered")
+        for index, d in enumerate([-0.003, 0.0, 0.003]):
+            current_position = transformation_to_next_value(d, current_position)
+            data[:, index] = np.array([current_position[idx], sample_objective(current_position, stop_event)])
+            current_position = transformation_to_next_value(-d, current_position)
 
         while iteration + 3 < MAX_ITERATIONS and not stop_event.isSet() and start_time - time.time() < MAX_TIME:
             # Remove nans from computation and fit the 2nd order polynomial:
-            idx = ~np.isnan(data)
-            poly = np.polyfit(data[0, idx[0]], data[1, idx[1]], 2)
-            z_new = -poly[1] / (2 * poly[0])  # -b/2a
-            dz = z_new - current_position[2]
-            if abs(dz) < MAX_TOLERANCE:
-                print("Found optimum:", z_new)
+            mask = ~np.isnan(data)
+            poly = np.polyfit(data[0, mask[0]], data[1, mask[1]], 2)
+            new = -poly[1] / (2 * poly[0])  # -b/2a
+            d = new - current_position[idx]
+            if abs(d) < MAX_TOLERANCE:
                 break
-            current_position = apply_transformation(dz, current_position)
-            data[:, iteration + 3] = np.array([z_new, sample_objective(current_position, stop_event)])
+            current_position = transformation_to_next_value(d, current_position)
+            data[:, iteration + 3] = np.array([new, sample_objective(current_position, stop_event)])
             iteration += 1
-        # Finally get image and save it:
-        saveImage(self.getNextAvailableImage(stop_event))
         return current_position
+
+    def optimiseFocus(self, stop_event):
+        if stop_event.isSet():
+            return
+        Z_IDX = 2
+
+        # Calibrated transformations
+        def apply_z_to_x_transformation(d_z, position):
+            position[1] -= d_z * 0.2
+            position[2] += d_z
+            return position
+        return self.optimise(stop_event, apply_z_to_x_transformation, Z_IDX)
+
+    def optimiseReflectionAngle(self, stop_event):
+        if stop_event.isSet():
+            return
+        A_IDX = 3
+
+        # Calibrated transformations
+        def apply_angle_transformation(d_z, position):
+            position[3] += d_z
+            return position
+
+        return self.optimise(stop_event, apply_angle_transformation, A_IDX)
 
     def startRobotTask(self):
         def testTask(stop_event_as_argument):
@@ -229,7 +241,10 @@ class MainManager:
 
             self.switchActiveCamera(stop_event_as_argument)
             try:
-                focused_position = self.optimiseFocus(stop_event_as_argument)
+                # self.optimiseFocus(stop_event_as_argument)
+                self.optimiseReflectionAngle(stop_event_as_argument)
+                best_image = self.getNextAvailableImage(stop_event_as_argument)
+                saveImage(best_image, stop_event_as_argument)
             except Exception as e:
                 communicateError(e)
             self.switchActiveCamera(stop_event_as_argument)
