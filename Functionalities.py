@@ -23,7 +23,7 @@ def sleep(time_to_sleep, stop_event):
             time.sleep(0.1)
 
 
-def communicateError(exception):
+def communicateError(exception, message_extra=""):
     tb = exception.__traceback__
     summary = traceback.extract_tb(tb, limit=-1)[0]
 
@@ -32,7 +32,12 @@ def communicateError(exception):
     file_name = os.path.split(summary.filename)[1]
     line_no = summary.lineno
     problem = summary._line
-    message = f'{type_exc}({exception}) in {func_name}(), file {file_name}, line {line_no}. Cause: {problem}'
+
+    if not message_extra:
+        exception = message_extra
+    message = f'{type_exc}({exception}) in {func_name}(), file{file_name}, line{line_no}.'
+    if problem[0:5] != 'raise':
+        message += f'Cause: {problem}'
 
     FAIL = '\033[91m'
     END = '\033[0m'
