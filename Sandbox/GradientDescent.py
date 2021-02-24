@@ -34,12 +34,12 @@ def fit_poly():
     x = 1000
 
     iteration = 1
-    MAX_ITERATIONS = 100
+    MAX_ITERATIONS = 10
     TOLERANCE = 1.0e-5
 
     # Need at least three points:
     data = np.empty((2, MAX_ITERATIONS))
-    data[:] = np.nan
+    data[:] = np.NAN
     data[:, 0] = np.array([x, objective(x)])
     data[:, 1] = np.array([x+0.0001, objective(x+0.0001)])
     data[:, 2] = np.array([x-0.0001, objective(x-0.0001)])
@@ -50,7 +50,8 @@ def fit_poly():
             print("Maximum number of iterations met.")
             break
 
-        poly = np.polyfit(data[0, 0:index], data[1, 0:index], 2)
+        idx = ~np.isnan(data)
+        poly = np.polyfit(data[0, idx[0]], data[1, idx[1]], 2)
         x_new = -poly[1]/(2*poly[0])  # -b/2a
 
         if abs(x - x_new) < TOLERANCE:
