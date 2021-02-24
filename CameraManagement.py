@@ -192,10 +192,6 @@ class TopCamera(Camera):
     """
     def __init__(self, serial_number=22290932, grayscale=True):
         super(TopCamera, self).__init__(serial_number, grayscale)
-        # Set Exposure Time to a controlled value, calibrated through Pylon Viewer
-        self.open()
-        self.camera.ExposureTimeAbs.SetValue(1000.0)
-        self.close()
 
     def __repr__(self):
         return "Topcamera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
@@ -219,6 +215,10 @@ class DetailCamera(Camera):
     """
     def __init__(self, serial_number=21565643, grayscale=True):
         super(DetailCamera, self).__init__(serial_number, grayscale)
+        # Set Exposure Time to a controlled value, calibrated through Pylon Viewer
+        self.open()
+        self.camera.ExposureTimeAbs.SetValue(1000.0)
+        self.close()
 
     def __repr__(self):
         return "DetailCamera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
