@@ -67,4 +67,6 @@ if __name__ == '__main__':
     print("The objective lies at:", -1, objective(-1))
     # descend()
     fit_poly()
+    # This works within one or two iterations, depending on the initial conditions. What is most
+    # useful however is that the method works for maxima AND minima!
 
