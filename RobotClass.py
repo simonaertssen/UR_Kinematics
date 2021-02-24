@@ -463,31 +463,32 @@ class Robot:
         Sequence of moves that are required to initialise the robot safely, like
         dropping any objects the gripper is still holding onto.
         """
-        # if stop_event.isSet():
-        #     return
-        # currentJointPosition = self.getJointAngles()
-        # distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit.copy())])
-        # currentToolPosition = self.getToolPosition()
-        # if self.isGripperOpen():
-        #     if currentToolPosition[2] <= 0.300:
-        #         targetToolPosition = currentToolPosition.copy()
-        #         targetToolPosition[2] = 0.310
-        #         # Move towards first location, don't check collisions
-        #         # because we might start from a bad position.
-        #         self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)
-        # else:
-        #     if spatialDifference(currentToolPosition, self.ToolPositionDropObject) < 0.5:
-        #         if currentToolPosition[2] < 0.07:
-        #             targetToolPosition = currentToolPosition.copy()
-        #             targetToolPosition[2] = 0.07
-        #             self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)
-        #     else:
-        #         if distanceFromAngleInit > 0.05:
-        #             self.goHome(stop_event, check_collisions=False)
-        #
-        #     self.dropObject(stop_event)
-        # if sum(jointAngleDifference(self.getJointAngles(), self.JointAngleInit.copy())) > 0.1:
-        #     self.goHome(stop_event)
+        return
+        if stop_event.isSet():
+            return
+        currentJointPosition = self.getJointAngles()
+        distanceFromAngleInit = sum([abs(i - j) for i, j in zip(currentJointPosition, self.JointAngleInit.copy())])
+        currentToolPosition = self.getToolPosition()
+        if self.isGripperOpen():
+            if currentToolPosition[2] <= 0.300:
+                targetToolPosition = currentToolPosition.copy()
+                targetToolPosition[2] = 0.310
+                # Move towards first location, don't check collisions
+                # because we might start from a bad position.
+                self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)
+        else:
+            if spatialDifference(currentToolPosition, self.ToolPositionDropObject) < 0.5:
+                if currentToolPosition[2] < 0.07:
+                    targetToolPosition = currentToolPosition.copy()
+                    targetToolPosition[2] = 0.07
+                    self.moveToolTo(stop_event, targetToolPosition, "movel", check_collisions=False)
+            else:
+                if distanceFromAngleInit > 0.05:
+                    self.goHome(stop_event, check_collisions=False)
+
+            self.dropObject(stop_event)
+        if sum(jointAngleDifference(self.getJointAngles(), self.JointAngleInit.copy())) > 0.1:
+            self.goHome(stop_event)
 
     @staticmethod
     def beep():
