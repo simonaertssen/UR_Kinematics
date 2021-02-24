@@ -1,6 +1,6 @@
 import time
-import sys
 import os
+import numpy as np
 
 from threading import Thread, Event, enumerate as list_threads
 
@@ -12,7 +12,6 @@ from CameraManagement import DetailCamera
 from Functionalities import communicateError, sleep
 from ImageModule import saveImage, imageSharpness, markTextOnImage, imageContrast
 from Functionalities import pi, testMemoryDemand
-from KinematicsModule.Kinematics import RPY2RotVec  # Slow Python implementation
 
 
 class MainManager:
@@ -22,10 +21,6 @@ class MainManager:
     Image = None
     ImageInfo = []
     ImageAvailable = Event()
-
-    mem_leak_thread = Thread(target=testMemoryDemand, daemon=True, name='Test memory demand')
-    mem_leak_thread.start()
-    print("Started")
 
     def __init__(self):
         self.tryConnect()
@@ -88,6 +83,23 @@ class MainManager:
             self.ImageAvailable.set()
         return self.Image, self.ImageInfo, cam_num
 
+    def getNextAvailableImage(self, stop_event):
+        if stop_event.isSet():
+            return
+        MAX_TIME = 1.0
+        start_time = time.time()
+
+        self.ImageAvailable.clear()
+        while not stop_event.isSet() and not self.ImageAvailable.isSet():
+            time.sleep(0.01)
+            if start_time - time.time() > MAX_TIME:
+                raise TimeoutError("Waiting for image took too long.")
+
+        if self.Image is not None:
+            return self.Image.copy()
+        else:
+            raise ReferenceError("Image not found, reference was deleted.")
+
     def switchActiveCamera(self, stop_event=None):
         r"""
         Switch the active camera. Because items are initialised using their correct class name,
@@ -124,24 +136,52 @@ class MainManager:
         self.Robot.giveTask(self.Robot.goHome)
 
     def optimiseFocus(self, stop_event):
-        start_time = time.time()
-        current_position = self.Robot.getToolPosition()
-        MAX_STEPS = 20
-        step = 10
-        sign = 1
-        while True:
-            if stop_event.isSet():
-                break
-            while not self.ImageAvailable.isSet():
-                # Wait for new image:
-                sleep(0.01, stop_event)
-            if start_time - time.time() > 10.0:
-                print("Over time")
-                break
+        if stop_event.isSet():
+            return
 
-            if step > MAX_STEPS:
-                step = 1
-                sign *= -1
+        current_position = self.Robot.getToolPosition()
+
+        def sample_objective(position, stop_event_as_argument):
+            # Set position, record an image and record the score
+            self.Robot.moveToolTo(stop_event_as_argument, position, 'movej')
+            sleep(0.1, stop_event_as_argument)
+
+            # Sample image:
+            def objective(image):
+                return imageContrast(image)
+            try:
+                latest_image = self.getNextAvailableImage(stop_event_as_argument)
+            except Exception as e:
+                communicateError(e)
+                return 0
+            return objective(latest_image)
+
+        # Set loop parameter
+        iteration = 1
+        MAX_ITERATIONS = 20
+        start_time = time.time()
+        MAX_TIME = 10.0
+
+        # Gather initial data (3 points for a 2nd order polynomial)
+        index = 0
+        data = np.empty((2, MAX_ITERATIONS))
+        data[:] = np.nan
+        for index, dz in enumerate([-0.002, 0, 0.002]):
+            current_position[1] -= dz * 0.2
+            current_position[2] += dz
+            data[:, index] = np.array([current_position[2], sample_objective(current_position, stop_event)])
+            current_position[1] += dz * 0.2
+            current_position[2] -= dz
+
+        while iteration < MAX_ITERATIONS and not stop_event.isSet() and start_time - time.time() < MAX_TIME:
+            # Fit the 2nd order polynomial:
+            poly = np.polyfit(data[0, 0:index], data[1, 0:index], 2)
+            z_new = -poly[1] / (2 * poly[0])  # -b/2a
+
+            # Wait until image is available
+            self.ImageAvailable.clear()
+            while not self.ImageAvailable.isSet():
+                sleep(0.01, stop_event)
 
             # Calibrated
             current_position[1] += sign * 0.0002
@@ -159,7 +199,7 @@ class MainManager:
         def testTask(stop_event_as_argument):
             self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
 
-        def pickupTask(stop_event_as_argument):
+        def testPresentation(stop_event_as_argument):
             # Delete all previous images:
             image_folder = os.path.join(os.getcwd(), 'Images')
             for image_file in os.listdir(image_folder):
@@ -169,13 +209,13 @@ class MainManager:
             #     raise ValueError("ImageInfo should not be None")
 
             self.Robot.turnWhiteLampON(stop_event_as_argument)
-            # self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
+            self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
 
             # Move to desired position from the Home position
-            # current_joints = self.Robot.getJointAngles()
-            # desired_change = [i * pi / 180 for i in [-50.0, -25.0, 25.0, 0, 180.0, 0]]
-            # current_joints = [a + b for a, b in zip(current_joints, desired_change)]
-            # self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
+            current_joints = self.Robot.getJointAngles()
+            desired_change = [i * pi / 180 for i in [-50.0, -25.0, 25.0, 0, 180.0, 0]]
+            current_joints = [a + b for a, b in zip(current_joints, desired_change)]
+            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
 
             self.switchActiveCamera(stop_event_as_argument)
@@ -196,6 +236,36 @@ class MainManager:
 
             # self.Robot.dropObject(stop_event_as_argument)
             # self.Robot.turnWhiteLampOFF(stop_event_as_argument)
+
+        def pickupTask(stop_event_as_argument):
+            if not self.ImageInfo:
+                raise ValueError("ImageInfo should not be None")
+
+            self.Robot.turnWhiteLampON(stop_event_as_argument)
+            self.Robot.pickUpObject(stop_event_as_argument, self.ImageInfo[0])
+
+            # Move to desired position from the Home position
+            current_joints = self.Robot.getJointAngles()
+            desired_change = [i * pi / 180 for i in [-50.0, -25.0, 25.0, 0, 180.0, 0]]
+            current_joints = [a + b for a, b in zip(current_joints, desired_change)]
+            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
+            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+
+            self.switchActiveCamera(stop_event_as_argument)
+            saveImage(self.Image)
+            self.switchActiveCamera(stop_event_as_argument)
+
+            # Move back to initial position
+            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+
+            # Move back to temporary position, and back home
+            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
+            current_joints = [a - b for a, b in zip(current_joints, desired_change)]
+            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
+
+            self.Robot.dropObject(stop_event_as_argument)
+            # self.Robot.turnWhiteLampOFF(stop_event_as_argument)
+
         self.Robot.giveTask(pickupTask)
 
     def stopRobotTask(self):
