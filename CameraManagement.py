@@ -177,9 +177,9 @@ class Camera:
             grabbedImage, cam_num = self.imageEventHandler.imageQueue.get(timeout=0.03)
             grabbedImage, info = self.manipulateImage(np.asarray(grabbedImage))
         except genicam.RuntimeException as e:
-            communicateError(e)
+            communicateError(e, "genicam: grabImage not ready")
         except RuntimeError as e:
-            communicateError(e)
+            communicateError(e, "grabImage not ready")
         except Empty as e:
             pass  # Yes, you know that emptying the queue raises an error
         finally:
