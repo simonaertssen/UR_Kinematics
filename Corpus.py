@@ -155,11 +155,12 @@ class MainManager:
         def sample_objective(position, stop_event_as_argument):
             # Set position, record an image and record the score
             self.Robot.moveToolTo(stop_event_as_argument, position, 'movej', velocity=0.01)
-            sleep(0.25, stop_event_as_argument)
+            sleep(0.25, stop_event_as_argument)  # Let vibrations dissipate
 
             # Sample image:
             def objective(image):
                 value = imageContrast(image)
+                print("Objective value =", value)
                 return value
             try:
                 latest_image = self.getNextAvailableImage(stop_event_as_argument)
@@ -190,6 +191,9 @@ class MainManager:
             poly = np.polyfit(data[0, mask[0]], data[1, mask[1]], 2)
             new = -poly[1] / (2 * poly[0])  # -b/2a
             d = new - current_position[idx]
+            print("d =", d)
+            if d > 0.02:
+                d /= 2
             if abs(d) < MAX_TOLERANCE:
                 break
             current_position = transformation_to_next_value(d, current_position)
@@ -275,6 +279,7 @@ class MainManager:
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
 
             self.switchActiveCamera(stop_event_as_argument)
+            self.optimiseReflectionAngle(stop_event_as_argument)
             self.optimiseFocus(stop_event_as_argument)
             self.optimiseReflectionAngle(stop_event_as_argument)
             best_image = self.getNextAvailableImage(stop_event_as_argument)
