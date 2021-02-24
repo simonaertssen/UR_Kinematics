@@ -105,9 +105,11 @@ def markTimeDateOnImage(image):
     return image
 
 
-def saveImage(image_to_save, image_name=""):
+def saveImage(image_to_save, stop_event):
+    if stop_event and stop_event.isSet():
+        return
     if not isinstance(image_to_save, np.ndarray):
-        return np.nan
+        return
     w, h = image_to_save.shape[0:2]
     if image_to_save is None or w == 0 or h == 0:
         print("Image does not contain information")
