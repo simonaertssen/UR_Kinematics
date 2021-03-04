@@ -5,7 +5,7 @@ import tracemalloc
 import cv2 as cv
 import numpy as np
 from pypylon import pylon, genicam
-from ImageModule import findObjectsToPickUp, markTimeDateOnImage, markTextOnImage, imageContrast, cropRectangle
+from ImageModule import findObjectsToPickUp, markTimeDateOnImage
 from Functionalities import communicateError
 
 

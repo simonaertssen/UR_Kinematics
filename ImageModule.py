@@ -105,7 +105,7 @@ def markTimeDateOnImage(image):
     return image
 
 
-def cropRectangle(image_original):
+def cropToRectangle(image_original):
     S = 5.0
     image = cv.resize(image_original, None, fx=1/S, fy=1/S, interpolation=cv.INTER_AREA)
     image = image/image.max()
