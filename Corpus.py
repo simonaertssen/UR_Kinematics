@@ -189,12 +189,12 @@ class MainManager:
 
             # Set position, record an image and record the score
             self.Robot.moveToolTo(stop_event_as_argument, position, 'movel', velocity=0.1)
-            # sleep(0.5, stop_event_as_argument)  # Let vibrations dissipate
+            sleep(0.25, stop_event_as_argument)  # Let vibrations dissipate
 
             # Sample image:
             def objective(image):
                 image = cropToRectangle(image)
-                value = imageContrast(image)
+                value = imageSharpness(image)
                 return value
 
             try:
@@ -203,7 +203,7 @@ class MainManager:
             except Exception as e:
                 communicateError(e)
             print("Objective value =", samples.mean())
-            sleep(1.0, stop_event_as_argument)
+            # sleep(1.0, stop_event_as_argument)
             return samples.mean()
 
         # Set loop parameters
@@ -211,16 +211,16 @@ class MainManager:
         MAX_ITERATIONS = 10
         start_time = time.time()
         MAX_TIME = 60.0         # 1 minute
-        MAX_TOLERANCE = 1.0e-3  # 1 mm
+        MAX_TOLERANCE = 0.001   # 1 mm
         MAX_DEVIATION = 0.02    # 20 cm
+        MAX_STEP = 0.003        # 5 mm
 
         # Gather initial data (3 points for a 2nd order polynomial)
         original_position = self.Robot.getToolPosition()
         current_position = original_position.copy()
         data = np.empty((2, MAX_ITERATIONS))
         data[:] = np.NAN
-        for index, d_pos in enumerate([-0.003, -0.001, 0.001, 0.003]):
-            print("d_pos =", d_pos)
+        for index, d_pos in enumerate([-MAX_STEP, 0.000, MAX_STEP]):
             current_position = transformation_to_next_value(d_pos, current_position)
             data[:, index] = np.array([current_position[idx], sample_objective(current_position, stop_event)])
             # Invert the transformation because we are just taking estimates around the initial position
@@ -230,35 +230,24 @@ class MainManager:
             # Remove nans from computation and fit the 2nd order polynomial:
             mask = ~np.isnan(data)
             poly = np.polyfit(data[0, mask[0]], data[1, mask[1]], 2)
-            a, b, c = poly
-            poly = -a, b, c
-            if poly[0] > 0:
-                new = -poly[1] / (2 * poly[0])  # -b/2a
-                d_pos = new - current_position[idx]
-            else:  # Then we have a negative parabola, and that's not good
-                print(data)
-                minimum_index = np.nanargmin(data[1, mask[1]])
-                print(minimum_index)
-                data[minimum_index] = np.NAN
-                minimum_index = np.nanargmin(data[1, mask[1]])
-                data[minimum_index] = np.NAN
-                poly = np.polyfit(data[0, mask[0]], data[1, mask[1]], 1)  # Fit a line and go in positive direction
-                d_pos = 0.003 if poly[0] > 0 else -0.003
+            new = -poly[1] / (2 * poly[0])  # -b/2a
+            d_pos = new - current_position[idx]
+            d_pos = (d_pos/abs(d_pos)) * min(abs(d_pos), MAX_STEP)
+            print(f"Now = {round(current_position[idx],4)}, new = {round(new,4)}, d = {round(d_pos,4)}")
 
-            print("d_pos =", d_pos)
-            if d_pos > 0.02:
-                d_pos /= 2
-            if abs(d_pos) < MAX_TOLERANCE:  # Because we cannot move closer than 1 mm
-                break
             current_position = transformation_to_next_value(d_pos, current_position)
-            data[:, iteration + 3] = np.array([new, sample_objective(current_position, stop_event)])
+            data[:, iteration + 3] = np.array([current_position[idx], sample_objective(current_position, stop_event)])
             # current_position = transformation_to_next_value(-d_pos, current_position)
             # current_position = self.Robot.getToolPosition()
+            # If deviation is too large then move back to the beginning
             if sum(toolPositionDifference(original_position, current_position)) > MAX_DEVIATION:
-                print("Largest deviation")
                 data[:, iteration + 3] = np.NAN
+                self.Robot.moveToolTo(stop_event, original_position, 'movel')
                 iteration -= 1
                 continue
+            if abs(d_pos) < MAX_TOLERANCE:  # Because we cannot move closer than 1 mm
+                print("Smaller")
+                break
             iteration += 1
         return current_position
 
@@ -294,7 +283,6 @@ class MainManager:
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
 
             self.switchActiveCamera(stop_event_as_argument)
-            # self.optimiseExposure(stop_event_as_argument)
             # self.optimiseReflectionAngle(stop_event_as_argument)
             self.optimiseFocus(stop_event_as_argument)
             # self.optimiseReflectionAngle(stop_event_as_argument)
@@ -320,9 +308,8 @@ class MainManager:
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
 
             self.switchActiveCamera(stop_event_as_argument)
-            # self.optimiseExposure(stop_event_as_argument)
-            self.optimiseReflectionAngle(stop_event_as_argument)
-            # self.optimiseFocus(stop_event_as_argument)
+            # self.optimiseReflectionAngle(stop_event_as_argument)
+            self.optimiseFocus(stop_event_as_argument)
             # self.optimiseReflectionAngle(stop_event_as_argument)
             best_image = self.waitForNextAvailableImage(stop_event_as_argument)
             saveImage(best_image, stop_event_as_argument)
@@ -338,7 +325,7 @@ class MainManager:
 
             self.Robot.dropObject(stop_event_as_argument)
 
-        self.Robot.giveTask(testPresentation)
+        self.Robot.giveTask(pickupTask)
 
     def stopRobotTask(self):
         self.Robot.halt()

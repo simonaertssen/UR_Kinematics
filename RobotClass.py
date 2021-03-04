@@ -369,7 +369,7 @@ class Robot:
         start_time = time.time()
         last_time_difference = start_time
         MAX_TIME = 15.0
-        MAX_SAME_DIFF_TIME = 0.75
+        MAX_SAME_DIFF_TIME = 0.5
 
         RELATIVE_TOLERANCE = 1e-3  # Robot arm should be accurate up to 1mm
         ABSOLUTE_TOLERANCE = 9e-3  # Total difference should not exceed 6*tolerance for 6 joints
@@ -434,6 +434,8 @@ class Robot:
         """
         if stop_event.isSet():
             return
+        if not self.isGripperOpen():
+            self.dropObject(stop_event)
         if object_position is None:
             return
         if len(object_position) < 1:
@@ -469,6 +471,7 @@ class Robot:
         Sequence of moves that are required to initialise the robot safely, like
         dropping any objects the gripper is still holding onto.
         """
+        # return
         if stop_event.isSet():
             return
         currentJointPosition = self.getJointAngles()
