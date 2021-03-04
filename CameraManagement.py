@@ -214,7 +214,7 @@ class DetailCamera(Camera):
         super(DetailCamera, self).__init__(serial_number, grayscale)
         # Set Exposure Time to a controlled value, calibrated through Pylon Viewer
         self.open()
-        self.camera.ExposureTimeAbs.SetValue(20000.0)
+        self.camera.ExposureTimeAbs.SetValue(18000.0)
         self.close()
 
     def __repr__(self):
