@@ -1,6 +1,6 @@
-from libc.math cimport sin, cos, sqrt
+from libc.math cimport sin, cos, sqrt, fabs
 from libc.stdio cimport printf
-from libc.stdlib cimport calloc, free, abs
+from libc.stdlib cimport calloc, free
 
 cdef extern from "forwardkinematics.h":
     double *T_c(double, double, double, double)
@@ -332,15 +332,17 @@ cpdef detectCollision(positions):
 
 
 cpdef toolPositionDifference(current_position, target_position):
-    cdef double x1, y1, z1, xr1, yr1, zr1 = current_position
-    cdef double x2, y2, z2, xr2, yr2, zr2 = target_position
-    return tuple(abs(x1 - x2), abs(y1 - y2), abs(z1 - z2), d_angle(xr1, xr2), d_angle(yr1, yr2), d_angle(zr1, zr2))
+    cdef double x1, y1, z1, xr1, yr1, zr1, x2, y2, z2, xr2, yr2, zr2;
+    x1, y1, z1, xr1, yr1, zr1 = current_position;
+    x2, y2, z2, xr2, yr2, zr2 = target_position;
+    return tuple(fabs(x1 - x2), fabs(y1 - y2), fabs(z1 - z2), d_angle(xr1, xr2), d_angle(yr1, yr2), d_angle(zr1, zr2));
 
 
 cpdef jointAngleDifference(current_position, target_position):
-    cdef double b1, s1, e1, w11, w21, w31 = current_position
-    cdef double b2, s2, e2, w12, w22, w32 = target_position
-    return tuple(d_angle(b1, b2), d_angle(s1, s2), d_angle(e1, e2), d_angle(w11, w12), d_angle(w21, w22), d_angle(w31, w32))
+    cdef double b1, s1, e1, w11, w21, w31, b2, s2, e2, w12, w22, w32;
+    b1, s1, e1, w11, w21, w31 = current_position;
+    b2, s2, e2, w12, w22, w32 = target_position;
+    return tuple(d_angle(b1, b2), d_angle(s1, s2), d_angle(e1, e2), d_angle(w11, w12), d_angle(w21, w22), d_angle(w31, w32));
 
 
 cpdef spatialDifference(current_position, target_position):
@@ -354,6 +356,7 @@ cpdef spatialDifference(current_position, target_position):
     target_position : list
         The target position, given by a tool position.
     """
-    cdef double x1, y1, z1, _, _, _ = current_position
-    cdef double x2, y2, z2, _, _, _ = target_position
-    return sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1) + (z2 - z1)(z2 - z1))
+    cdef double x1, y1, z1, xr1, yr1, zr1, x2, y2, z2, xr2, yr2, zr2;
+    x1, y1, z1, xr1, yr1, zr1 = current_position;
+    x2, y2, z2, xr2, yr2, zr2 = target_position;
+    return sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1) + (z2 - z1)*(z2 - z1));

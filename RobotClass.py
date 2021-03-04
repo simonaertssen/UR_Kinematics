@@ -5,10 +5,11 @@ from queue import SimpleQueue, LifoQueue, Empty
 from threading import Thread, Event
 
 from Readers import ModBusReader, RobotCCO
-from Functionalities import sleep, communicateError, pi, toolPositionDifference, jointAngleDifference, spatialDifference
+from Functionalities import sleep, communicateError, pi
 
 from KinematicsModule.Kinematics import RPY2RotVec  # Slow Python implementation
 from KinematicsLib.cKinematics import ForwardKinematics, detectCollision  # Fast C and Cython implementation
+from KinematicsLib.cKinematics import toolPositionDifference, jointAngleDifference, spatialDifference
 
 
 class Robot:
