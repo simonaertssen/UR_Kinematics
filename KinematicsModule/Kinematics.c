@@ -4175,7 +4175,7 @@ static PyObject *__pyx_f_11cKinematics_toolPositionDifference(PyObject *__pyx_v_
  *     cdef double x1, y1, z1, xr1, yr1, zr1, x2, y2, z2, xr2, yr2, zr2;
  *     x1, y1, z1, xr1, yr1, zr1 = current_position;             # <<<<<<<<<<<<<<
  *     x2, y2, z2, xr2, yr2, zr2 = target_position;
- *     return tuple(fabs(x1 - x2), fabs(y1 - y2), fabs(z1 - z2), d_angle(xr1, xr2), d_angle(yr1, yr2), d_angle(zr1, zr2));
+ *     return tuple((fabs(x1 - x2), fabs(y1 - y2), fabs(z1 - z2), d_angle(xr1, xr2), d_angle(yr1, yr2), d_angle(zr1, zr2)));
  */
   if ((likely(PyTuple_CheckExact(__pyx_v_current_position))) || (PyList_CheckExact(__pyx_v_current_position))) {
     PyObject* sequence = __pyx_v_current_position;
@@ -4263,7 +4263,7 @@ static PyObject *__pyx_f_11cKinematics_toolPositionDifference(PyObject *__pyx_v_
  *     cdef double x1, y1, z1, xr1, yr1, zr1, x2, y2, z2, xr2, yr2, zr2;
  *     x1, y1, z1, xr1, yr1, zr1 = current_position;
  *     x2, y2, z2, xr2, yr2, zr2 = target_position;             # <<<<<<<<<<<<<<
- *     return tuple(fabs(x1 - x2), fabs(y1 - y2), fabs(z1 - z2), d_angle(xr1, xr2), d_angle(yr1, yr2), d_angle(zr1, zr2));
+ *     return tuple((fabs(x1 - x2), fabs(y1 - y2), fabs(z1 - z2), d_angle(xr1, xr2), d_angle(yr1, yr2), d_angle(zr1, zr2)));
  * 
  */
   if ((likely(PyTuple_CheckExact(__pyx_v_target_position))) || (PyList_CheckExact(__pyx_v_target_position))) {
@@ -4351,7 +4351,7 @@ static PyObject *__pyx_f_11cKinematics_toolPositionDifference(PyObject *__pyx_v_
   /* "Kinematics.pyx":338
  *     x1, y1, z1, xr1, yr1, zr1 = current_position;
  *     x2, y2, z2, xr2, yr2, zr2 = target_position;
- *     return tuple(fabs(x1 - x2), fabs(y1 - y2), fabs(z1 - z2), d_angle(xr1, xr2), d_angle(yr1, yr2), d_angle(zr1, zr2));             # <<<<<<<<<<<<<<
+ *     return tuple((fabs(x1 - x2), fabs(y1 - y2), fabs(z1 - z2), d_angle(xr1, xr2), d_angle(yr1, yr2), d_angle(zr1, zr2)));             # <<<<<<<<<<<<<<
  * 
  * 
  */
@@ -4388,11 +4388,8 @@ static PyObject *__pyx_f_11cKinematics_toolPositionDifference(PyObject *__pyx_v_
   __pyx_t_4 = 0;
   __pyx_t_5 = 0;
   __pyx_t_6 = 0;
-  __pyx_t_6 = __Pyx_PyObject_Call(((PyObject *)(&PyTuple_Type)), __pyx_t_7, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 338, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_6);
-  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  __pyx_r = __pyx_t_6;
-  __pyx_t_6 = 0;
+  __pyx_r = __pyx_t_7;
+  __pyx_t_7 = 0;
   goto __pyx_L0;
 
   /* "Kinematics.pyx":334
@@ -4549,7 +4546,7 @@ static PyObject *__pyx_f_11cKinematics_jointAngleDifference(PyObject *__pyx_v_cu
  *     cdef double b1, s1, e1, w11, w21, w31, b2, s2, e2, w12, w22, w32;
  *     b1, s1, e1, w11, w21, w31 = current_position;             # <<<<<<<<<<<<<<
  *     b2, s2, e2, w12, w22, w32 = target_position;
- *     return tuple(d_angle(b1, b2), d_angle(s1, s2), d_angle(e1, e2), d_angle(w11, w12), d_angle(w21, w22), d_angle(w31, w32));
+ *     return tuple((d_angle(b1, b2), d_angle(s1, s2), d_angle(e1, e2), d_angle(w11, w12), d_angle(w21, w22), d_angle(w31, w32)));
  */
   if ((likely(PyTuple_CheckExact(__pyx_v_current_position))) || (PyList_CheckExact(__pyx_v_current_position))) {
     PyObject* sequence = __pyx_v_current_position;
@@ -4637,7 +4634,7 @@ static PyObject *__pyx_f_11cKinematics_jointAngleDifference(PyObject *__pyx_v_cu
  *     cdef double b1, s1, e1, w11, w21, w31, b2, s2, e2, w12, w22, w32;
  *     b1, s1, e1, w11, w21, w31 = current_position;
  *     b2, s2, e2, w12, w22, w32 = target_position;             # <<<<<<<<<<<<<<
- *     return tuple(d_angle(b1, b2), d_angle(s1, s2), d_angle(e1, e2), d_angle(w11, w12), d_angle(w21, w22), d_angle(w31, w32));
+ *     return tuple((d_angle(b1, b2), d_angle(s1, s2), d_angle(e1, e2), d_angle(w11, w12), d_angle(w21, w22), d_angle(w31, w32)));
  * 
  */
   if ((likely(PyTuple_CheckExact(__pyx_v_target_position))) || (PyList_CheckExact(__pyx_v_target_position))) {
@@ -4725,7 +4722,7 @@ static PyObject *__pyx_f_11cKinematics_jointAngleDifference(PyObject *__pyx_v_cu
   /* "Kinematics.pyx":345
  *     b1, s1, e1, w11, w21, w31 = current_position;
  *     b2, s2, e2, w12, w22, w32 = target_position;
- *     return tuple(d_angle(b1, b2), d_angle(s1, s2), d_angle(e1, e2), d_angle(w11, w12), d_angle(w21, w22), d_angle(w31, w32));             # <<<<<<<<<<<<<<
+ *     return tuple((d_angle(b1, b2), d_angle(s1, s2), d_angle(e1, e2), d_angle(w11, w12), d_angle(w21, w22), d_angle(w31, w32)));             # <<<<<<<<<<<<<<
  * 
  * 
  */
@@ -4762,11 +4759,8 @@ static PyObject *__pyx_f_11cKinematics_jointAngleDifference(PyObject *__pyx_v_cu
   __pyx_t_4 = 0;
   __pyx_t_5 = 0;
   __pyx_t_6 = 0;
-  __pyx_t_6 = __Pyx_PyObject_Call(((PyObject *)(&PyTuple_Type)), __pyx_t_7, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 345, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_6);
-  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  __pyx_r = __pyx_t_6;
-  __pyx_t_6 = 0;
+  __pyx_r = __pyx_t_7;
+  __pyx_t_7 = 0;
   goto __pyx_L0;
 
   /* "Kinematics.pyx":341
