@@ -185,6 +185,11 @@ class Camera:
         finally:
             return grabbedImage, info, cam_num
 
+    def adjustExposure(self, new_value):
+        self.open()
+        self.camera.ExposureTimeAbs.SetValue(float(new_value))
+        self.close()
+
 
 class TopCamera(Camera):
     r"""
@@ -197,14 +202,10 @@ class TopCamera(Camera):
         return "Topcamera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
 
     def manipulateImage(self, image_to_manipulate):
-        try:
-            info = []
-            # Overload to deal with images in the right way
-            image_to_manipulate = self.toGrayScale(image_to_manipulate)
-            image_to_manipulate, info = findObjectsToPickUp(image_to_manipulate)
-            image_to_manipulate = markTimeDateOnImage(image_to_manipulate)
-        except Exception as e:
-            communicateError(e, "Image manipulation failed.")
+        # Overload to deal with images in the right way
+        image_to_manipulate = self.toGrayScale(image_to_manipulate)
+        image_to_manipulate, info = findObjectsToPickUp(image_to_manipulate)
+        image_to_manipulate = markTimeDateOnImage(image_to_manipulate)
         return image_to_manipulate, info
 
 
@@ -217,14 +218,13 @@ class DetailCamera(Camera):
         super(DetailCamera, self).__init__(serial_number, grayscale)
         # Set Exposure Time to a controlled value, calibrated through Pylon Viewer
         self.open()
-        self.camera.ExposureTimeAbs.SetValue(15000.0)
+        self.camera.ExposureTimeAbs.SetValue(20000.0)
         self.close()
 
     def __repr__(self):
         return "DetailCamera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
 
     def manipulateImage(self, image_to_manipulate):
-        info = []
         # Overload to deal with images in the right way
         image_to_manipulate = self.toGrayScale(image_to_manipulate)
         image_to_manipulate = markTimeDateOnImage(image_to_manipulate)
