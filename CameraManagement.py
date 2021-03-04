@@ -185,11 +185,6 @@ class Camera:
         finally:
             return grabbedImage, info, cam_num
 
-    def adjustExposure(self, new_value):
-        self.open()
-        self.camera.ExposureTimeAbs.SetValue(float(new_value))
-        self.close()
-
 
 class TopCamera(Camera):
     r"""
