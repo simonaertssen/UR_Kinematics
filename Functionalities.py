@@ -37,7 +37,7 @@ def communicateError(exception, message_extra=""):
     problem = summary._line
 
     message = f'{type_exc}({text}) in {func_name}(), file {file_name}, line {line_no}.'
-    if problem[0:5] != 'raise':
+    if problem and problem[0:5] != 'raise':
         message += f' Cause: {problem}'
 
     FAIL = '\033[91m'
