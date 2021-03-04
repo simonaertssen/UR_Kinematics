@@ -105,6 +105,39 @@ def markTimeDateOnImage(image):
     return image
 
 
+def cropRectangle(image_original):
+    S = 5.0
+    image = cv.resize(image_original, None, fx=1/S, fy=1/S, interpolation=cv.INTER_AREA)
+    image = image/image.max()
+    h, w = image.shape
+    image_to_analyse = cv.inRange(image, 0.25, 1.0)
+
+    kernel = np.ones((3, 3), np.uint8)
+    image_to_analyse = cv.morphologyEx(image_to_analyse, cv.MORPH_OPEN, kernel)
+    image_to_analyse = cv.morphologyEx(image_to_analyse, cv.MORPH_CLOSE, kernel)
+
+    _, contours, hierarchy = cv.findContours(image_to_analyse, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    c = max(contours, key=cv.contourArea)
+    rect = cv.minAreaRect(c)
+    (rectangle_X, rectangle_Y), (rectangle_width, rectangle_height), rectangle_angle = rect
+    if rectangle_angle < -80:
+        rect = tuple(((rectangle_Y, rectangle_X), (rectangle_height, rectangle_width), rectangle_angle + 90))
+        print('Switched')
+    box = cv.boxPoints(rect)
+    box = np.int0(box*S)
+
+    image_original = cv.polylines(image_original, [box], True, 255, thickness=5)
+
+    width = int(rect[1][0])
+    height = int(rect[1][1])
+    src_pts = box.astype("float32")
+    dst_pts = np.array([[0, height - 1], [0, 0], [width - 1, 0], [width - 1, height - 1]], dtype="float32")
+    M = cv.getPerspectiveTransform(src_pts, dst_pts)
+    image = cv.warpPerspective(image_original, M, (width, height))
+
+    return image
+
+
 def saveImage(image_to_save, stop_event):
     if stop_event and stop_event.isSet():
         return

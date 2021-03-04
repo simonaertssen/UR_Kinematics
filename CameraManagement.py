@@ -5,7 +5,7 @@ import tracemalloc
 import cv2 as cv
 import numpy as np
 from pypylon import pylon, genicam
-from ImageModule import findObjectsToPickUp, markTimeDateOnImage, markTextOnImage, imageContrast
+from ImageModule import findObjectsToPickUp, markTimeDateOnImage, markTextOnImage, imageContrast, cropRectangle
 from Functionalities import communicateError
 
 
@@ -217,7 +217,7 @@ class DetailCamera(Camera):
         super(DetailCamera, self).__init__(serial_number, grayscale)
         # Set Exposure Time to a controlled value, calibrated through Pylon Viewer
         self.open()
-        self.camera.ExposureTimeAbs.SetValue(7000.0)
+        self.camera.ExposureTimeAbs.SetValue(15000.0)
         self.close()
 
     def __repr__(self):
@@ -228,6 +228,11 @@ class DetailCamera(Camera):
         # Overload to deal with images in the right way
         image_to_manipulate = self.toGrayScale(image_to_manipulate)
         image_to_manipulate = markTimeDateOnImage(image_to_manipulate)
+        try:
+            image_to_manipulate = cropRectangle(image_to_manipulate)
+        except Exception as e:
+            communicateError(e)
+
         return image_to_manipulate, info
 
 
@@ -245,12 +250,14 @@ def runSingleCamera(camera):
         image, info, cam_num = camera.grabImage()
         if image is None:
             continue
-        image = markTextOnImage(image, imageContrast(image))
+        # image = markTextOnImage(image, imageContrast(image))
         cv.imshow(testWindow, cv.resize(image, (int(w/1.5), int(h/1.5))))
+        # time.sleep(0.5)
+
         if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
             break
         now = time.time()
-        print("{} FPS = {}".format(camera, 1 / (time.time() - start)))
+        # print("{} FPS = {}".format(camera, 1 / (time.time() - start)))
         start = now
     camera.shutdownSafely()
     cv.destroyAllWindows()
