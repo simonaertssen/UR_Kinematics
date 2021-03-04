@@ -202,6 +202,7 @@ class TopCamera(Camera):
         return "Topcamera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
 
     def manipulateImage(self, image_to_manipulate):
+        info = []
         # Overload to deal with images in the right way
         image_to_manipulate = self.toGrayScale(image_to_manipulate)
         image_to_manipulate, info = findObjectsToPickUp(image_to_manipulate)
@@ -225,6 +226,7 @@ class DetailCamera(Camera):
         return "DetailCamera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
 
     def manipulateImage(self, image_to_manipulate):
+        info = []
         # Overload to deal with images in the right way
         image_to_manipulate = self.toGrayScale(image_to_manipulate)
         image_to_manipulate = markTimeDateOnImage(image_to_manipulate)
