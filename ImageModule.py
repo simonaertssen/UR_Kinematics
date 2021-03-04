@@ -121,8 +121,8 @@ def cropRectangle(image_original):
     rect = cv.minAreaRect(c)
     (rectangle_X, rectangle_Y), (rectangle_width, rectangle_height), rectangle_angle = rect
     if rectangle_angle < -80:
+        # The the rectangle is aligned to the other side
         rect = tuple(((rectangle_Y, rectangle_X), (rectangle_height, rectangle_width), rectangle_angle + 90))
-        print('Switched')
     box = cv.boxPoints(rect)
     box = np.int0(box*S)
 

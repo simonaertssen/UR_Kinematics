@@ -172,7 +172,7 @@ class Camera:
         if not self.camera.IsGrabbing():
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
         try:
-            if self.camera.WaitForFrameTriggerReady(0, pylon.TimeoutHandling_Return):
+            if self.camera.WaitForFrameTriggerReady(100, pylon.TimeoutHandling_Return):
                 self.camera.ExecuteSoftwareTrigger()
             grabbedImage, cam_num = self.imageEventHandler.imageQueue.get(timeout=0.03)
             grabbedImage, info = self.manipulateImage(np.asarray(grabbedImage))
@@ -228,11 +228,6 @@ class DetailCamera(Camera):
         # Overload to deal with images in the right way
         image_to_manipulate = self.toGrayScale(image_to_manipulate)
         image_to_manipulate = markTimeDateOnImage(image_to_manipulate)
-        try:
-            image_to_manipulate = cropRectangle(image_to_manipulate)
-        except Exception as e:
-            communicateError(e)
-
         return image_to_manipulate, info
 
 
@@ -250,14 +245,12 @@ def runSingleCamera(camera):
         image, info, cam_num = camera.grabImage()
         if image is None:
             continue
-        # image = markTextOnImage(image, imageContrast(image))
         cv.imshow(testWindow, cv.resize(image, (int(w/1.5), int(h/1.5))))
-        # time.sleep(0.5)
 
         if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
             break
         now = time.time()
-        # print("{} FPS = {}".format(camera, 1 / (time.time() - start)))
+        print("{} FPS = {}".format(camera, 1 / (time.time() - start)))
         start = now
     camera.shutdownSafely()
     cv.destroyAllWindows()

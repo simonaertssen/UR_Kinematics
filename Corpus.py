@@ -79,17 +79,11 @@ class MainManager:
     def grabImage(self):
         # Intercept to be able to use the info for the robot
         image, image_info, cam_num = self.TopCamera.grabImage()
-        if image and isinstance(image, np.ndarray):
+        if image is not None and image_info is not None:
             self._image = image.copy()
-        else:
-            raise ValueError("No image available")
-
-        if image_info and isinstance(image_info, list):
             self._imageInfo = image_info.copy()
-        else:
-            raise ValueError("No image info available")
-        if not self.ImageAvailable.isSet():
-            self.ImageAvailable.set()
+            if not self.ImageAvailable.isSet():
+                self.ImageAvailable.set()
         return self._image.copy(), self._imageInfo.copy(), cam_num
 
     @staticmethod
