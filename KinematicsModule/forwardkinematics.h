@@ -2,6 +2,8 @@
 #include <math.h>
 #include <stdlib.h>
 
+PI = 3.14159265359
+
 
 double *T_c(double theta, double d, double r, double alpha){
     /*
@@ -89,4 +91,9 @@ void dot_c(double *A, double *B){
     short i;
     for (i = 0; i < 16; i++) B[i] = result[i];
     free(result);
+}
+
+
+double d_angle(double a, double b) {
+    return PI - abs(abs(a - b) - PI);
 }
