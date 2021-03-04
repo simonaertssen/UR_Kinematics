@@ -79,10 +79,10 @@ class MainManager:
     def grabImage(self):
         # Intercept to be able to use the info for the robot
         image, image_info, cam_num = self.TopCamera.grabImage()
-        if isinstance(image, np.ndarray):
-            self._image = image.copy()
-        if image_info:
-            self._imageInfo = image_info.copy()
+        if image is None or image_info is None:
+            raise ValueError("Value 'None'encountered")
+        self._image = image.copy()
+        self._imageInfo = image_info.copy()
         if not self.ImageAvailable.isSet():
             self.ImageAvailable.set()
         return self._image.copy(), self._imageInfo.copy(), cam_num
@@ -162,6 +162,7 @@ class MainManager:
                 value = imageContrast(image)
                 print("Objective value =", value)
                 return value
+
             try:
                 latest_image = self.getNextAvailableImage(stop_event_as_argument)
             except Exception as e:
@@ -266,7 +267,7 @@ class MainManager:
 
         def pickupTask(stop_event_as_argument):
             if not self._imageInfo:
-                raise ValueError("_imageInfo should not be None, possibly no items.")
+                raise ValueError("Image info should not be None, possibly no items.")
 
             self.Robot.turnWhiteLampON(stop_event_as_argument)
             self.Robot.pickUpObject(stop_event_as_argument, self._imageInfo[0])

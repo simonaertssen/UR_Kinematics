@@ -369,7 +369,7 @@ class Robot:
         start_time = time.time()
         last_time_difference = start_time
         MAX_TIME = 15.0
-        MAX_SAME_DIFF_TIME = 0.5
+        MAX_SAME_DIFF_TIME = 0.75
 
         RELATIVE_TOLERANCE = 1e-3  # Robot arm should be accurate up to 1mm
         ABSOLUTE_TOLERANCE = 9e-3  # Total difference should not exceed 6*tolerance for 6 joints
@@ -386,7 +386,7 @@ class Robot:
             else:
                 difference = jointAngleDifference(current_position(), target_position)
 
-            if all(i == j for i, j in zip(difference, last_difference)):
+            if difference == last_difference:
                 if first_time_equal:
                     last_time_difference = time.time()
                     first_time_equal = False
