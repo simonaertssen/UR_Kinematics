@@ -53,7 +53,8 @@ class Robot:
 
     JointAngleInit = [i * pi/180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
     JointAngleDropObject = [i * pi/180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
-    JointAngleReadObject = [i * pi / 180 for i in [2.85, -90.38, 102.72, -102.28, 94.52, 90.67]]  # Calibrated
+    # JointAngleReadObject = [i * pi / 180 for i in [2.85, -90.38, 102.72, -102.28, 94.52, 90.67]]  # Calibrated
+    JointAngleReadObject = [i * pi / 180 for i in [7.43, -88.50, 100.43, -104.31, 105.05, 86.45]]  # Calibrated
 
     ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
     ToolPositionLightBox = [0.147, -0.311, 0.05, 0.000, pi, 0.000]  # Calibrated
@@ -361,8 +362,8 @@ class Robot:
         Block the moveTo command until either the target position is reached or
         until the stop event is set or until a collision is detected.
         """
-        difference = [1000.0 for _ in target_position]
-        last_difference = difference.copy()
+        difference = tuple(1000.0 for _ in target_position)
+        last_difference = difference
         first_time_equal = False
         start_time = time.time()
         last_time_difference = start_time
@@ -391,7 +392,7 @@ class Robot:
                 if time.time() - last_time_difference > MAX_SAME_DIFF_TIME:
                     raise TimeoutError('No difference measured within {} s. Assuming robot is in position and continue.'.format(MAX_SAME_DIFF_TIME))
             else:
-                last_difference = difference.copy()
+                last_difference = difference
                 first_time_equal = True
             # print([round(d, 3) for d in difference])
 
