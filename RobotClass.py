@@ -7,7 +7,7 @@ from threading import Thread, Event
 from Readers import ModBusReader, RobotCCO
 from Functionalities import sleep, communicateError, pi
 
-from KinematicsModule.Kinematics import RPY2RotVec  # Slow Python implementation
+from KinematicsModule.Kinematics import RPY2RotVec, RPY2RotVecRodr, RotVec2RPY  # Slow Python implementation
 from KinematicsLib.cKinematics import ForwardKinematics, detectCollision  # Fast C and Cython implementation
 from KinematicsLib.cKinematics import toolPositionDifference, jointAngleDifference, spatialDifference
 
@@ -55,7 +55,7 @@ class Robot:
     JointAngleInit = [i * pi/180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
     JointAngleDropObject = [i * pi/180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
     # JointAngleReadObject = [i * pi / 180 for i in [7.43, -88.50, 100.43, -104.31, 105.05, 86.45]]  # Calibrated
-    JointAngleReadObject = [i * pi / 180 for i in [4.27, -89.63, 101.81, -103.13, 97.65, 89.29]]  # Calibrated
+    JointAngleReadObject = [i * pi / 180 for i in [4.27, -89.63, 101.81, -103.13, 97.65, 90.0]]  # Calibrated
 
     ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
     ToolPositionLightBox = [0.148, -0.311, 0.05, 0.000, pi, 0.000]  # Calibrated
@@ -110,7 +110,7 @@ class Robot:
         commands immediately, we need to send an IO command. Don't kow why but it works.
         """
         self.send(b'set_digital_out(7, False)')  # Necessary to give the robot another command first
-        self.send(b'stopl(0.00001)')
+        self.send(b'stopj(1)')
         self.send(b'set_digital_out(7, False)')
 
     def halt(self):
@@ -449,7 +449,7 @@ class Robot:
         target_position[2] = self.ToolHoverHeight
         # Get right orientation from Rodrigues conversion
         REAL_ANGLE_ADJUST = pi / 180 * 6  # Offset to table to camera
-        a, b, c = RPY2RotVec(0, pi, -angle - REAL_ANGLE_ADJUST)
+        a, b, c = RPY2RotVecRodr(0, pi, -angle - REAL_ANGLE_ADJUST)
         target_position[3] = a
         target_position[4] = b
         target_position[5] = c
@@ -457,10 +457,7 @@ class Robot:
         # Go down and pickup the object
         target_position[2] = self.ToolPickUpHeight
         self.moveToolTo(stop_event, target_position, 'movel')
-        # # # sleep(10.0, stop_event)
         self.closeGripper(stop_event)
-        # # sleep(10.0, stop_event)
-        # self.openGripper(stop_event)
         # Go back up
         target_position[2] = self.ToolHoverHeight
         self.moveToolTo(stop_event, target_position, 'movel')
@@ -472,7 +469,7 @@ class Robot:
         Sequence of moves that are required to initialise the robot safely, like
         dropping any objects the gripper is still holding onto.
         """
-        return  # Comment in to test only the presentation
+        # return  # Comment in to test only the presentation
         if stop_event.isSet():
             return
         currentJointPosition = self.getJointAngles()

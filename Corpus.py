@@ -339,41 +339,58 @@ class MainManager:
             self.Robot.moveJointsTo(stop_event_as_argument, joint_angle_read, 'movej')
 
             self.switchActiveCamera(stop_event_as_argument)
-            self.optimiseExposure(stop_event_as_argument)
-            self.optimiseFocus(stop_event_as_argument)
-            self.optimiseReflectionAngle(stop_event_as_argument)
+            # self.optimiseExposure(stop_event_as_argument)
+            # self.optimiseFocus(stop_event_as_argument)
+            # self.optimiseReflectionAngle(stop_event_as_argument)
 
             resize_factor = 61.16 / 390.27  # irl length / image length
             # real_length = h * resize_factor
             real_length = 61.16
-            PIECE_LENGTH = 5.0
+            PIECE_LENGTH = 3.0
             num_pieces = np.ceil(real_length / PIECE_LENGTH).astype(int)  # Cut up in pieces of 10 mm
             print("num_pieces = ", num_pieces)
             tool_position = self.Robot.getToolPosition()
             print("tool_position = ", tool_position)
-            rot_angle = tool_position[5]
+            yaw, pitch, roll = RotVec2RPY(*tool_position[3:])  # Unpack into function input
+            print(yaw, pitch, roll)
 
-            # Move half of the length away in the correct direction:
-            tool_position[1] += np.sin(rot_angle) * (real_length / 2.0) * 1.0e-3
-            tool_position[2] -= np.cos(rot_angle) * (real_length / 2.0) * 1.0e-3
-            print("tool_position = ", tool_position)
+            # Get rotation matrices for the conversion:
+            sin = np.sin
+            cos = np.cos
+            yawMatrix = np.array([
+                [cos(yaw), -sin(yaw), 0],
+                [sin(yaw), cos(yaw), 0],
+                [0, 0, 1]])
+            pitchMatrix = np.array([
+                [cos(pitch), 0, sin(pitch)],
+                [0, 1, 0],
+                [-sin(pitch), 0, cos(pitch)]])
+            rollMatrix = np.array([
+                [1, 0, 0],
+                [0, cos(roll), -sin(roll)],
+                [0, sin(roll), cos(roll)]])
 
+            print(-real_length/2.0*1.0e-3)
+            CALIBRATION = 0.005
+            new_pos = np.array([-CALIBRATION, 0, real_length/2.0*1.0e-3]).dot(yawMatrix.dot(pitchMatrix.dot(rollMatrix)))  # Calibrated
+
+            tool_position[0] += new_pos[0]
+            tool_position[1] += new_pos[1]
+            tool_position[2] += new_pos[2]
             for i in range(num_pieces):
                 self.Robot.moveToolTo(stop_event_as_argument, tool_position, 'movel', velocity=0.1)
-                sleep(0.25, stop_event_as_argument)
-                # if i == 0:
-                #     self.optimiseExposure(stop_event_as_argument)
-                #     self.optimiseFocus(stop_event_as_argument)
-                #     self.optimiseReflectionAngle(stop_event_as_argument)
+                sleep(0.35, stop_event_as_argument)
 
                 best_image = self.waitForNextAvailableImage(stop_event_as_argument)
                 saveImage(best_image, stop_event_as_argument)
 
-                tool_position[1] -= np.sin(rot_angle) * PIECE_LENGTH * 1.0e-3
-                tool_position[2] += np.cos(rot_angle) * PIECE_LENGTH * 1.0e-3
+                new_pos = np.array([CALIBRATION*2.0/num_pieces, 0, -PIECE_LENGTH * 1.0e-3]).dot(yawMatrix.dot(pitchMatrix.dot(rollMatrix)))
+                tool_position[0] += new_pos[0]
+                tool_position[1] += new_pos[1]
+                tool_position[2] += new_pos[2]
 
-            # best_image = self.waitForNextAvailableImage(stop_event_as_argument)
-            # saveImage(best_image, stop_event_as_argument)
+            best_image = self.waitForNextAvailableImage(stop_event_as_argument)
+            saveImage(best_image, stop_event_as_argument)
             self.switchActiveCamera(stop_event_as_argument)
 
         def pickupTask(stop_event_as_argument):
@@ -406,19 +423,50 @@ class MainManager:
             if line_sweep:
                 resize_factor = 61.16 / 390.27  # irl length / image length
                 real_length = h * resize_factor
-                num_pieces = np.ceil(real_length / 10)  # Cut up in pieces of 10 mm
-                print("num_pieces = ", num_pieces)
+                PIECE_LENGTH_SUGGESTION = 3.0  # millimeter
+                num_pieces = np.ceil(real_length / PIECE_LENGTH_SUGGESTION).astype(int)  # Cut up in pieces of 10 mm
+                PIECE_LENGTH = real_length/num_pieces
+
+                real_length -= 3*PIECE_LENGTH  # Remove two pieces from the object
+                num_pieces -= 3
+
                 tool_position = self.Robot.getToolPosition()
-                print("tool_position = ", tool_position)
-                rot_angle = tool_position[5]
-                # slope = np.tan(tool_position[5])  # Rotation about the z axis
+                yaw, pitch, roll = RotVec2RPY(*tool_position[3:])  # Unpack into function input
 
-                # Move half of the length away in the correct direction:
-                tool_position[1] += np.cos(rot_angle) * (real_length / 2.0)
-                tool_position[2] -= np.sin(rot_angle) * (real_length / 2.0)
-                self.Robot.moveToolTo(stop_event_as_argument, tool_position, 'movel')
+                # Get rotation matrices for the conversion:
+                sin = np.sin
+                cos = np.cos
+                yawMatrix = np.array([
+                    [cos(yaw), -sin(yaw), 0],
+                    [sin(yaw), cos(yaw), 0],
+                    [0, 0, 1]])
+                pitchMatrix = np.array([
+                    [cos(pitch), 0, sin(pitch)],
+                    [0, 1, 0],
+                    [-sin(pitch), 0, cos(pitch)]])
+                rollMatrix = np.array([
+                    [1, 0, 0],
+                    [0, cos(roll), -sin(roll)],
+                    [0, sin(roll), cos(roll)]])
 
-                # for n in range(num_pieces):
+                # Move to one of the ends:
+                CALIBRATION = 0.005  # millimeter
+                new_pos = np.array([-CALIBRATION, 0, (real_length - PIECE_LENGTH) / 2.0 * 1.0e-3]).dot(yawMatrix.dot(pitchMatrix.dot(rollMatrix)))  # Calibrated
+                tool_position[0] += new_pos[0]
+                tool_position[1] += new_pos[1]
+                tool_position[2] += new_pos[2]
+                self.Robot.moveToolTo(stop_event_as_argument, tool_position, 'movel', velocity=0.1)
+                sleep(0.35, stop_event_as_argument)
+
+                for i in range(num_pieces):
+                    new_pos = np.array([CALIBRATION * 2.0 / num_pieces, 0, -PIECE_LENGTH * 1.0e-3]).dot(yawMatrix.dot(pitchMatrix.dot(rollMatrix)))
+                    tool_position[0] += new_pos[0]
+                    tool_position[1] += new_pos[1]
+                    tool_position[2] += new_pos[2]
+                    self.Robot.moveToolTo(stop_event_as_argument, tool_position, 'movel', velocity=0.1)
+                    sleep(0.35, stop_event_as_argument)
+                    best_image = self.waitForNextAvailableImage(stop_event_as_argument)
+                    saveImage(best_image, stop_event_as_argument)
 
             best_image = self.waitForNextAvailableImage(stop_event_as_argument)
             saveImage(best_image, stop_event_as_argument)
@@ -434,7 +482,7 @@ class MainManager:
 
             self.Robot.dropObject(stop_event_as_argument)
 
-        self.Robot.giveTask(testPresentation)
+        self.Robot.giveTask(pickupTask)
 
     def stopRobotTask(self):
         self.Robot.halt()
