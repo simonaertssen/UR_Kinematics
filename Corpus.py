@@ -175,78 +175,68 @@ class MainManager:
     def goHome(self):
         self.Robot.giveTask(self.Robot.goHome)
 
-    def optimise(self, stop_event, transformation_to_next_value, idx):
+    def optimise(self, stop_event, info, objective, transform_position, new_target):
         if stop_event.isSet():
             return
+
+        # Guards:
+        idx = info['idx']
+        if not isinstance(idx, int):
+            raise TypeError("Index is not an integer")
+        if not callable(transform_position) or not callable(objective) or not callable(new_target):
+            raise TypeError("Optimisation functions are not callable")
 
         def sample_objective(position, stop_event_as_argument):
             if stop_event.isSet():
                 return np.NAN
 
-            MAX_SAMPLES = 3
-            samples = np.empty(MAX_SAMPLES)
-            samples[:] = np.NAN
-
             # Set position, record an image and record the score
             self.Robot.moveToolTo(stop_event_as_argument, position, 'movel', velocity=0.1)
             sleep(0.25, stop_event_as_argument)  # Let vibrations dissipate
-
-            # Sample image:
-            def objective(image):
-                image = cropToRectangle(image)
-                value = imageSharpness(image)
-                return value
-
             try:
-                for i in range(MAX_SAMPLES):
-                    samples[i] = objective(self.waitForNextAvailableImage(stop_event_as_argument))
+                value = objective(self.waitForNextAvailableImage(stop_event_as_argument))
+                print("Objective value =", value)
+                return value
             except Exception as e:
                 communicateError(e)
-            print("Objective value =", samples.mean())
-            # sleep(1.0, stop_event_as_argument)
-            return samples.mean()
 
         # Set loop parameters
         iteration = 1
-        MAX_ITERATIONS = 10
+        MAX_ITERATIONS = 30
         start_time = time.time()
-        MAX_TIME = 60.0         # 1 minute
-        MAX_TOLERANCE = 0.001   # 1 mm
-        MAX_DEVIATION = 0.02    # 20 cm
-        MAX_STEP = 0.003        # 5 mm
+        MAX_TIME = 60.0                          # 1 minute
+        MAX_TOLERANCE = 0.001                    # 1 mm
+        MAX_DEVIATION = info['MAX_DEVIATION']    # 20 cm
+        MAX_STEP = info['MAX_STEP']              # 3 mm
 
         # Gather initial data (3 points for a 2nd order polynomial)
         original_position = self.Robot.getToolPosition()
         current_position = original_position.copy()
         data = np.empty((2, MAX_ITERATIONS))
         data[:] = np.NAN
-        for index, d_pos in enumerate([-MAX_STEP, 0.000, MAX_STEP]):
-            current_position = transformation_to_next_value(d_pos, current_position)
+        for index, d_pos in enumerate(info['init']):
+            current_position = transform_position(d_pos, current_position)
             data[:, index] = np.array([current_position[idx], sample_objective(current_position, stop_event)])
             # Invert the transformation because we are just taking estimates around the initial position
-            current_position = transformation_to_next_value(-d_pos, current_position)
+            current_position = transform_position(-d_pos, current_position)
 
         while iteration + 3 < MAX_ITERATIONS and not stop_event.isSet() and start_time - time.time() < MAX_TIME:
             # Remove nans from computation and fit the 2nd order polynomial:
-            mask = ~np.isnan(data)
-            poly = np.polyfit(data[0, mask[0]], data[1, mask[1]], 2)
-            new = -poly[1] / (2 * poly[0])  # -b/2a
-            d_pos = new - current_position[idx]
-            d_pos = (d_pos/abs(d_pos)) * min(abs(d_pos), MAX_STEP)
-            print(f"Now = {round(current_position[idx],4)}, new = {round(new,4)}, d = {round(d_pos,4)}")
+            target = new_target(data)
+            d_pos = target - current_position[idx]
+            d_pos = (d_pos / abs(d_pos)) * min(abs(d_pos), MAX_STEP)
+            print(f"Now = {round(current_position[idx], 4)}, new = {round(target, 4)}, d = {round(d_pos, 4)}")
 
-            current_position = transformation_to_next_value(d_pos, current_position)
-            data[:, iteration + 3] = np.array([current_position[idx], sample_objective(current_position, stop_event)])
-            # current_position = transformation_to_next_value(-d_pos, current_position)
-            # current_position = self.Robot.getToolPosition()
+            current_position = transform_position(d_pos, current_position)
+            data[:, iteration + 2] = np.array([current_position[idx], sample_objective(current_position, stop_event)])
             # If deviation is too large then move back to the beginning
             if sum(toolPositionDifference(original_position, current_position)) > MAX_DEVIATION:
+                print("Too much deviation")
                 data[:, iteration + 3] = np.NAN
                 self.Robot.moveToolTo(stop_event, original_position, 'movel')
                 iteration -= 1
                 continue
             if abs(d_pos) < MAX_TOLERANCE:  # Because we cannot move closer than 1 mm
-                print("Smaller")
                 break
             iteration += 1
         return current_position
@@ -254,38 +244,81 @@ class MainManager:
     def optimiseFocus(self, stop_event):
         if stop_event.isSet():
             return
-        Z_IDX = 2
 
         # Calibrated transformations
         def apply_z_to_x_transformation(d_z, position):
             position[1] -= d_z * 0.2
             position[2] += d_z
             return position
-        return self.optimise(stop_event, apply_z_to_x_transformation, Z_IDX)
+
+        def objective(image):
+            value = imageSharpness(image)
+            return value
+
+        def new_value(data):
+            # Fit a polynomial to the focused images and find optimal focus
+            mask = ~np.isnan(data)
+            poly = np.polyfit(data[0, mask[0]], data[1, mask[1]], 2)
+            return -poly[1] / (2 * poly[0])  # -b/2a
+
+        opt_info = {'idx': 2, 'MAX_STEP': 0.001, 'init': [-0.001, 0.000, 0.001]}
+        return self.optimise(stop_event, opt_info, objective, apply_z_to_x_transformation, new_value)
 
     def optimiseReflectionAngle(self, stop_event):
         if stop_event.isSet():
             return
-        A_IDX = 3
 
         # Calibrated transformations
         def apply_angle_transformation(d_z, position):
             position[3] += d_z
             return position
 
-        return self.optimise(stop_event, apply_angle_transformation, A_IDX)
+        def objective(image):
+            image = cropToRectangle(image)
+            num_255 = (image == 255).sum()
+            value = imageSharpness(image)
+            return num_255
+
+        def new_value(data):
+            xs = data[0, ~np.isnan(data[0, :])]
+            ys = data[1, ~np.isnan(data[1, :])]
+            x_new = xs[-1] - 0.003 * (ys[-2] - ys[-1])/(xs[-2] - xs[-1])
+            return x_new
+
+        opt_info = {'idx': 3, 'MAX_STEP': 0.005, 'init': [0.00, 0.005]}
+        return self.optimise(stop_event, opt_info, objective, apply_angle_transformation, new_value)
 
     def startRobotTask(self):
-        def testTask(stop_event_as_argument):
+        def continuousTask(stop_event_as_argument):
+            if not self._imageInfo:
+                raise ValueError("Image info should not be None, possibly no items.")
+            for i in range(len(self._imageInfo)):
+                try:
+                    pickupTask(stop_event_as_argument)
+                except Exception as e:
+                    communicateError(e)
+                    break
+
+        def testPickup(stop_event_as_argument):
             self.Robot.pickUpObject(stop_event_as_argument, self._imageInfo[0])
+            # Move to desired position from the Home position
+            current_joints = self.Robot.getJointAngles()
+            desired_change = [i * pi / 180 for i in [-50.0, -25.0, 25.0, 0, 180.0, 0]]
+            current_joints = [a + b for a, b in zip(current_joints, desired_change)]
+            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
+            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
+            current_joints = [a - b for a, b in zip(current_joints, desired_change)]
+            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
+
+            self.Robot.dropObject(stop_event_as_argument)
 
         def testPresentation(stop_event_as_argument):
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
 
             self.switchActiveCamera(stop_event_as_argument)
-            # self.optimiseReflectionAngle(stop_event_as_argument)
             self.optimiseFocus(stop_event_as_argument)
-            # self.optimiseReflectionAngle(stop_event_as_argument)
+            self.optimiseReflectionAngle(stop_event_as_argument)
             best_image = self.waitForNextAvailableImage(stop_event_as_argument)
             saveImage(best_image, stop_event_as_argument)
             self.switchActiveCamera(stop_event_as_argument)
@@ -308,13 +341,11 @@ class MainManager:
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
 
             self.switchActiveCamera(stop_event_as_argument)
-            # self.optimiseReflectionAngle(stop_event_as_argument)
-            sleep(2.0, stop_event_as_argument)
-            # self.optimiseFocus(stop_event_as_argument)
-            # # self.optimiseReflectionAngle(stop_event_as_argument)
-            # best_image = self.waitForNextAvailableImage(stop_event_as_argument)
-            # saveImage(best_image, stop_event_as_argument)
-            # self.switchActiveCamera(stop_event_as_argument)
+            self.optimiseFocus(stop_event_as_argument)
+            self.optimiseReflectionAngle(stop_event_as_argument)
+            best_image = self.waitForNextAvailableImage(stop_event_as_argument)
+            saveImage(best_image, stop_event_as_argument)
+            self.switchActiveCamera(stop_event_as_argument)
 
             # Move back to initial position
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
@@ -326,7 +357,7 @@ class MainManager:
 
             self.Robot.dropObject(stop_event_as_argument)
 
-        self.Robot.giveTask(pickupTask)
+        self.Robot.giveTask(testPresentation)
 
     def stopRobotTask(self):
         self.Robot.halt()
