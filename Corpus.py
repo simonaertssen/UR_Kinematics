@@ -202,7 +202,7 @@ class MainManager:
                     samples[i] = objective(self.waitForNextAvailableImage(stop_event_as_argument))
             except Exception as e:
                 communicateError(e)
-            return samples.mean()
+            return np.nanmean(samples)
 
         # Set loop parameters
         iteration = 1
@@ -228,23 +228,26 @@ class MainManager:
             # Remove nans from computation and fit the 2nd order polynomial:
             target = new_target(data)
             d_pos = target - current_position[idx]
+            if np.isnan(d_pos):
+                # Nan value from the optimisation
+                break
             d_pos_old = d_pos
             d_pos = (d_pos / abs(d_pos)) * min(abs(d_pos), MAX_STEP)
             print(f"Now = {round(current_position[idx], 4)}, new = {round(target, 4)}, d = {round(d_pos, 4)} instead of {round(d_pos_old, 4)}")
 
             current_position = transform_position(d_pos, current_position)
             data[:, iteration + 2] = np.array([current_position[idx], sample_objective(current_position, stop_event)])
-            # If deviation is too large then move back to the beginning
-            if sum(toolPositionDifference(original_position, current_position)) > MAX_DEVIATION:
-                data[:, iteration + 3] = np.NAN
-                self.Robot.moveToolTo(stop_event, original_position, 'movel')
-                iteration -= 1
-                continue
             if abs(d_pos) < MAX_TOLERANCE:  # Because we cannot move closer than 1 mm
                 # instead of measuring how close we are to  the optimal value of the objective
                 # function (which runs across multiple orders of magnitude) we stop optimising
                 # if the next step is less than half of our precision away
                 break
+            if sum(toolPositionDifference(original_position, current_position)) > MAX_DEVIATION:
+                # If deviation is too large then move back to the beginning
+                data[:, iteration + 3] = np.NAN
+                self.Robot.moveToolTo(stop_event, original_position, 'movel')
+                iteration -= 1
+                continue
             iteration += 1
         return current_position
 
@@ -292,7 +295,7 @@ class MainManager:
             # Gradient method
             xs = data[0, ~np.isnan(data[0, :])]
             ys = data[1, ~np.isnan(data[1, :])]
-            grad = (ys[-2] - ys[-1])/(xs[-2] - xs[-1])
+            grad = (ys[-2] - ys[-1])/(xs[-2] - xs[-1] + 1.0e-10)
             lr = 1.0e-7
             x_new = xs[-1] - lr * grad
             return x_new
@@ -307,9 +310,9 @@ class MainManager:
 
     def startRobotTask(self):
         def continuousTask(stop_event_as_argument):
-            if not self._imageInfo:
-                raise ValueError("Image info should not be None, possibly no items.")
-            for i in range(len(self._imageInfo)):
+            while not stop_event_as_argument.isSet():
+                if not self._imageInfo:
+                    raise ValueError("Image info should not be None, possibly no items.")
                 try:
                     pickupTask(stop_event_as_argument)
                 except Exception as e:
@@ -341,7 +344,9 @@ class MainManager:
             self.switchActiveCamera(stop_event_as_argument)
 
         def pickupTask(stop_event_as_argument):
+            print("Num samples = ", len(self._imageInfo))
             if not self._imageInfo:
+                print("self._imageInfo =", self._imageInfo)
                 raise ValueError("Image info should not be None, possibly no items.")
 
             self.Robot.turnWhiteLampON(stop_event_as_argument)
@@ -372,7 +377,7 @@ class MainManager:
 
             self.Robot.dropObject(stop_event_as_argument)
 
-        self.Robot.giveTask(testPresentation)
+        self.Robot.giveTask(continuousTask)
 
     def stopRobotTask(self):
         self.Robot.halt()

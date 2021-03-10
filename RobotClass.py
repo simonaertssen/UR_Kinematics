@@ -58,7 +58,7 @@ class Robot:
     JointAngleReadObject = [i * pi / 180 for i in [4.27, -89.63, 101.81, -103.13, 97.65, 89.53]]  # Calibrated
 
     ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
-    ToolPositionLightBox = [0.147, -0.311, 0.05, 0.000, pi, 0.000]  # Calibrated
+    ToolPositionLightBox = [0.146, -0.311, 0.05, 0.000, pi, 0.000]  # Calibrated
 
     # ToolPositionReadObject = [-0.46864, -0.10824, 0.74611, 0.0000, 0.000, pi/2.0]
     # ToolPositionTestCollision = [0.04860, -0.73475, 0.30999, 0.7750, 3.044, 0.002]
@@ -471,7 +471,7 @@ class Robot:
         Sequence of moves that are required to initialise the robot safely, like
         dropping any objects the gripper is still holding onto.
         """
-        return
+        # return  # Comment in to test only the presentation
         if stop_event.isSet():
             return
         currentJointPosition = self.getJointAngles()

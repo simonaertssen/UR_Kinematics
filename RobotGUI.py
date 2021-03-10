@@ -46,7 +46,7 @@ class StandardMainWindow(QMainWindow):
 
         RectScreen0 = appQt.desktop().screenGeometry(0)
         self.move(RectScreen0.left(), RectScreen0.top())
-        # self.resize(RectScreen0.width(), RectScreen0.height())
+        # self.resize(RectScreen0.width(), RectScreen0.height())  # Comment in for full screen
 
         self.screen_width = GetSystemMetrics(0) if screen_width is None else screen_width
         self.screen_height = GetSystemMetrics(1) if screen_height is None else screen_height
