@@ -287,9 +287,9 @@ def SpeedOfCollisionDetection():
 
 
 def SpeedOfRYP():
-    r = 1.984
-    p = 0.2894
-    y = -2.04476
+    r = 0.0
+    p = 3.141509
+    y = -2.4934075403510954
     print(RotVec2RPY(r, p, y))
     print(RPY2RotVec(r, p, y))
     print(RPY2RotVecRodr(r, p, y))
@@ -319,5 +319,5 @@ if __name__ == '__main__':
     # 47293 iterations per second for the pure Python implementation
 
     SpeedOfRYP()
-    # Rodriguez version takes 43116 iterations per second
-    # Classical version takes 105477 iterations per second
+    # Rodriguez version takes 20288 iterations per second
+    # Classical version takes 46003 iterations per second
