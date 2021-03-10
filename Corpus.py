@@ -190,15 +190,19 @@ class MainManager:
             if stop_event.isSet():
                 return np.NAN
 
+            MAX_SAMPLES = 3
+            samples = np.empty(MAX_SAMPLES)
+            samples[:] = np.NAN
+
             # Set position, record an image and record the score
             self.Robot.moveToolTo(stop_event_as_argument, position, 'movel', velocity=0.1)
             sleep(0.25, stop_event_as_argument)  # Let vibrations dissipate
             try:
-                value = objective(self.waitForNextAvailableImage(stop_event_as_argument))
-                print("Objective value =", value)
-                return value
+                for i in range(MAX_SAMPLES):
+                    samples[i] = objective(self.waitForNextAvailableImage(stop_event_as_argument))
             except Exception as e:
                 communicateError(e)
+            return samples.mean()
 
         # Set loop parameters
         iteration = 1
@@ -206,8 +210,8 @@ class MainManager:
         start_time = time.time()
         MAX_TIME = 60.0                          # 1 minute
         MAX_TOLERANCE = 0.001                    # 1 mm
-        MAX_DEVIATION = info['MAX_DEVIATION']    # 20 cm
-        MAX_STEP = info['MAX_STEP']              # 3 mm
+        MAX_DEVIATION = info['MAX_DEVIATION']    # mm
+        MAX_STEP = info['MAX_STEP']              # mm
 
         # Gather initial data (3 points for a 2nd order polynomial)
         original_position = self.Robot.getToolPosition()
@@ -231,7 +235,6 @@ class MainManager:
             data[:, iteration + 2] = np.array([current_position[idx], sample_objective(current_position, stop_event)])
             # If deviation is too large then move back to the beginning
             if sum(toolPositionDifference(original_position, current_position)) > MAX_DEVIATION:
-                print("Too much deviation")
                 data[:, iteration + 3] = np.NAN
                 self.Robot.moveToolTo(stop_event, original_position, 'movel')
                 iteration -= 1
@@ -252,16 +255,20 @@ class MainManager:
             return position
 
         def objective(image):
-            value = imageSharpness(image)
-            return value
+            return imageSharpness(image)
 
         def new_value(data):
             # Fit a polynomial to the focused images and find optimal focus
             mask = ~np.isnan(data)
             poly = np.polyfit(data[0, mask[0]], data[1, mask[1]], 2)
-            return -poly[1] / (2 * poly[0])  # -b/2a
+            return -poly[1] / (2 * poly[0])  # -b/2a is the top of a parabola
 
-        opt_info = {'idx': 2, 'MAX_STEP': 0.001, 'init': [-0.001, 0.000, 0.001]}
+        # Distance: all numbers are in millimeter
+        opt_info = {'idx': 2,                       # Index of the position we optimise on
+                    'MAX_STEP': 0.004,              # Maximum change of the parameter per step
+                    'MAX_DEVIATION': 0.020,         # Total maximum change wrt the initial position
+                    'init': [-0.001, 0.000, 0.001]  # Initial samples
+                    }
         return self.optimise(stop_event, opt_info, objective, apply_z_to_x_transformation, new_value)
 
     def optimiseReflectionAngle(self, stop_event):
@@ -275,17 +282,22 @@ class MainManager:
 
         def objective(image):
             image = cropToRectangle(image)
-            num_255 = (image == 255).sum()
-            value = imageSharpness(image)
-            return num_255
+            return (image == 255).sum()
 
         def new_value(data):
             xs = data[0, ~np.isnan(data[0, :])]
             ys = data[1, ~np.isnan(data[1, :])]
-            x_new = xs[-1] - 0.003 * (ys[-2] - ys[-1])/(xs[-2] - xs[-1])
+            grad = (ys[-2] - ys[-1])/(xs[-2] - xs[-1])
+            lr = 1.0e-6
+            x_new = xs[-1] - lr * grad
             return x_new
 
-        opt_info = {'idx': 3, 'MAX_STEP': 0.005, 'init': [0.00, 0.005]}
+        # Angle: all numbers are in milli rad
+        opt_info = {'idx': 3,                # Index of the position we optimise on
+                    'MAX_STEP': 0.006,       # Maximum change of the parameter per step
+                    'MAX_DEVIATION': 0.030,  # Total maximum change wrt the initial position
+                    'init': [0.00, 0.004]    # Initial samples
+                    }
         return self.optimise(stop_event, opt_info, objective, apply_angle_transformation, new_value)
 
     def startRobotTask(self):
@@ -317,7 +329,7 @@ class MainManager:
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
 
             self.switchActiveCamera(stop_event_as_argument)
-            self.optimiseFocus(stop_event_as_argument)
+            # self.optimiseFocus(stop_event_as_argument)
             self.optimiseReflectionAngle(stop_event_as_argument)
             best_image = self.waitForNextAvailableImage(stop_event_as_argument)
             saveImage(best_image, stop_event_as_argument)
@@ -343,6 +355,7 @@ class MainManager:
             self.switchActiveCamera(stop_event_as_argument)
             self.optimiseFocus(stop_event_as_argument)
             self.optimiseReflectionAngle(stop_event_as_argument)
+
             best_image = self.waitForNextAvailableImage(stop_event_as_argument)
             saveImage(best_image, stop_event_as_argument)
             self.switchActiveCamera(stop_event_as_argument)
@@ -357,7 +370,7 @@ class MainManager:
 
             self.Robot.dropObject(stop_event_as_argument)
 
-        self.Robot.giveTask(testPresentation)
+        self.Robot.giveTask(pickupTask)
 
     def stopRobotTask(self):
         self.Robot.halt()
