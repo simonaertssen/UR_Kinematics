@@ -12,6 +12,7 @@ from CameraManagement import TopCamera, DetailCamera
 from Functionalities import communicateError, sleep
 from ImageModule import saveImage, imageSharpness, markTextOnImage, imageContrast, cropToRectangle
 from Functionalities import pi, testMemoryDemand
+from KinematicsModule.Kinematics import RotVec2RPY  # Slow Python implementation
 from KinematicsLib.cKinematics import toolPositionDifference, jointAngleDifference, spatialDifference
 
 
@@ -125,21 +126,22 @@ class MainManager:
 
         step = 0
         MAX_STEPS = 10
-        step_value = 500
+        step_value = 10
         TARGET = 250.0
         while not stop_event.isSet() and step < MAX_STEPS:
             latest_image = cropToRectangle(self.waitForNextAvailableImage(stop_event))
-            max_value = latest_image.max()
+            max_value  = latest_image.max()
+            mean_value = latest_image.mean()
             print(max_value)
-            if abs(max_value - TARGET) < 1.0:
+            if abs(max_value - TARGET) < 1.0 or mean_value < 150:
                 break
             current_value = self.TopCamera.camera.ExposureTimeAbs.GetValue()
             new_value = current_value - (max_value - TARGET)*step_value
             print("New value =", latest_image.mean())
-            if new_value < 0.0:
+            if new_value < 10.0:  # Lowest exposure time from manufacturer
                 break
             self.TopCamera.camera.ExposureTimeAbs.SetValue(new_value)
-            sleep(1.0, stop_event)
+            sleep(0.01, stop_event)
             step += 1
 
     def switchActiveCamera(self, stop_event=None):
@@ -238,6 +240,7 @@ class MainManager:
             print(f"Now = {round(current_position[idx], 4)}, new = {round(target, 4)}, d = {round(d_pos, 4)} instead of {round(d_pos_old, 4)}")
 
             current_position = transform_position(d_pos, current_position)
+            print("current_position = ", [round(d, 4) for d in current_position])
             data[:, iteration + 2] = np.array([current_position[idx], sample_objective(current_position, stop_event)])
             if abs(d_pos) < MAX_TOLERANCE:  # Because we cannot move closer than 1 mm
                 # instead of measuring how close we are to  the optimal value of the objective
@@ -246,7 +249,7 @@ class MainManager:
                 break
             if sum(toolPositionDifference(original_position, current_position)) > MAX_DEVIATION:
                 # If deviation is too large then move back to the beginning
-                data[:, iteration + 3] = np.NAN
+                data[:, iteration + 2] = np.NAN
                 self.Robot.moveToolTo(stop_event, original_position, 'movel')
                 iteration -= 1
                 continue
@@ -297,7 +300,12 @@ class MainManager:
             # Gradient method
             xs = data[0, ~np.isnan(data[0, :])]
             ys = data[1, ~np.isnan(data[1, :])]
-            grad = (ys[-2] - ys[-1])/(xs[-2] - xs[-1] + 1.0e-10)
+            grad = 0.0
+            try:
+                grad = (ys[-2] - ys[-1])/(xs[-2] - xs[-1] + 1.0e-10)
+            except IndexError as e:
+                print(ys)
+                communicateError(e)
             lr = 1.0e-7
             x_new = xs[-1] - lr * grad
             return x_new
@@ -326,13 +334,46 @@ class MainManager:
             # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movel')
 
         def testPresentation(stop_event_as_argument):
-            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+            joint_angle_read = self.Robot.JointAngleReadObject.copy()
+            joint_angle_read[-1] -= np.pi / 2
+            self.Robot.moveJointsTo(stop_event_as_argument, joint_angle_read, 'movej')
 
             self.switchActiveCamera(stop_event_as_argument)
+            self.optimiseExposure(stop_event_as_argument)
             self.optimiseFocus(stop_event_as_argument)
             self.optimiseReflectionAngle(stop_event_as_argument)
-            best_image = self.waitForNextAvailableImage(stop_event_as_argument)
-            saveImage(best_image, stop_event_as_argument)
+
+            resize_factor = 61.16 / 390.27  # irl length / image length
+            # real_length = h * resize_factor
+            real_length = 61.16
+            PIECE_LENGTH = 5.0
+            num_pieces = np.ceil(real_length / PIECE_LENGTH).astype(int)  # Cut up in pieces of 10 mm
+            print("num_pieces = ", num_pieces)
+            tool_position = self.Robot.getToolPosition()
+            print("tool_position = ", tool_position)
+            rot_angle = tool_position[5]
+
+            # Move half of the length away in the correct direction:
+            tool_position[1] += np.sin(rot_angle) * (real_length / 2.0) * 1.0e-3
+            tool_position[2] -= np.cos(rot_angle) * (real_length / 2.0) * 1.0e-3
+            print("tool_position = ", tool_position)
+
+            for i in range(num_pieces):
+                self.Robot.moveToolTo(stop_event_as_argument, tool_position, 'movel', velocity=0.1)
+                sleep(0.25, stop_event_as_argument)
+                # if i == 0:
+                #     self.optimiseExposure(stop_event_as_argument)
+                #     self.optimiseFocus(stop_event_as_argument)
+                #     self.optimiseReflectionAngle(stop_event_as_argument)
+
+                best_image = self.waitForNextAvailableImage(stop_event_as_argument)
+                saveImage(best_image, stop_event_as_argument)
+
+                tool_position[1] -= np.sin(rot_angle) * PIECE_LENGTH * 1.0e-3
+                tool_position[2] += np.cos(rot_angle) * PIECE_LENGTH * 1.0e-3
+
+            # best_image = self.waitForNextAvailableImage(stop_event_as_argument)
+            # saveImage(best_image, stop_event_as_argument)
             self.switchActiveCamera(stop_event_as_argument)
 
         def pickupTask(stop_event_as_argument):
@@ -358,14 +399,33 @@ class MainManager:
             self.Robot.moveJointsTo(stop_event_as_argument, joint_angle_read, 'movej')
 
             self.switchActiveCamera(stop_event_as_argument)
+            self.optimiseExposure(stop_event_as_argument)
             self.optimiseFocus(stop_event_as_argument)
             self.optimiseReflectionAngle(stop_event_as_argument)
+
+            if line_sweep:
+                resize_factor = 61.16 / 390.27  # irl length / image length
+                real_length = h * resize_factor
+                num_pieces = np.ceil(real_length / 10)  # Cut up in pieces of 10 mm
+                print("num_pieces = ", num_pieces)
+                tool_position = self.Robot.getToolPosition()
+                print("tool_position = ", tool_position)
+                rot_angle = tool_position[5]
+                # slope = np.tan(tool_position[5])  # Rotation about the z axis
+
+                # Move half of the length away in the correct direction:
+                tool_position[1] += np.cos(rot_angle) * (real_length / 2.0)
+                tool_position[2] -= np.sin(rot_angle) * (real_length / 2.0)
+                self.Robot.moveToolTo(stop_event_as_argument, tool_position, 'movel')
+
+                # for n in range(num_pieces):
+
             best_image = self.waitForNextAvailableImage(stop_event_as_argument)
             saveImage(best_image, stop_event_as_argument)
             self.switchActiveCamera(stop_event_as_argument)
 
             # Move back to initial position
-            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+            self.Robot.moveJointsTo(stop_event_as_argument, joint_angle_read, 'movej')
 
             # Move back to temporary position, and back home
             self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
@@ -374,7 +434,7 @@ class MainManager:
 
             self.Robot.dropObject(stop_event_as_argument)
 
-        self.Robot.giveTask(continuousTask)
+        self.Robot.giveTask(testPresentation)
 
     def stopRobotTask(self):
         self.Robot.halt()
