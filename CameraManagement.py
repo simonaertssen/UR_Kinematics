@@ -88,7 +88,7 @@ class Camera:
             self.open()
 
         self.camera.AcquisitionMode.SetValue('Continuous')
-        self.camera.TriggerMode.SetValue('Off')
+        self.camera.TriggerMode.SetValue('On')
         self.pixelWidth = self.camera.Width.Value
         self.pixelHeight = self.camera.Height.Value
         self.close()
@@ -138,6 +138,9 @@ class Camera:
 
     def shutdownSafely(self):
         self.Connected = False
+        self.open()
+        self.camera.TriggerMode.SetValue('Off')  # To maximise compatibility with Pylon Viewer
+        self.close()
         if self.camera:
             self.close()
             self.camera.DetachDevice()
