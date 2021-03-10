@@ -21,6 +21,7 @@ class MainManager:
     DetailCamera = DetailCamera
     _image = None
     _imageInfo = []
+    currentObject = ()
     ImageAvailable = Event()
 
     def __init__(self):
@@ -230,6 +231,7 @@ class MainManager:
             d_pos = target - current_position[idx]
             if np.isnan(d_pos):
                 # Nan value from the optimisation
+                print(f"NAN: target = {target}, current_position[idx] = {current_position[idx]}")
                 break
             d_pos_old = d_pos
             d_pos = (d_pos / abs(d_pos)) * min(abs(d_pos), MAX_STEP)
@@ -321,17 +323,7 @@ class MainManager:
 
         def testPickup(stop_event_as_argument):
             self.Robot.pickUpObject(stop_event_as_argument, self._imageInfo[0])
-            # Move to desired position from the Home position
-            current_joints = self.Robot.getJointAngles()
-            desired_change = [i * pi / 180 for i in [-50.0, -25.0, 25.0, 0, 180.0, 0]]
-            current_joints = [a + b for a, b in zip(current_joints, desired_change)]
-            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
-            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
-            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
-            current_joints = [a - b for a, b in zip(current_joints, desired_change)]
-            self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
-
-            self.Robot.dropObject(stop_event_as_argument)
+            # self.Robot.moveToolTo(stop_event_as_argument, self.Robot.ToolPositionLightBox.copy(), 'movel')
 
         def testPresentation(stop_event_as_argument):
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
@@ -350,19 +342,24 @@ class MainManager:
                 raise ValueError("Image info should not be None, possibly no items.")
 
             self.Robot.turnWhiteLampON(stop_event_as_argument)
-            self.Robot.pickUpObject(stop_event_as_argument, self._imageInfo[0])
+            self.currentObject = self._imageInfo[0]
+            X, Y, w, h, angle = self.Robot.pickUpObject(stop_event_as_argument, self.currentObject)
+            line_sweep = min(w, h) > 100.0  # Then we need to rotate the object and do a line sweep
 
             # Move to desired position from the Home position
             current_joints = self.Robot.getJointAngles()
             desired_change = [i * pi / 180 for i in [-50.0, -25.0, 25.0, 0, 180.0, 0]]
             current_joints = [a + b for a, b in zip(current_joints, desired_change)]
             self.Robot.moveJointsTo(stop_event_as_argument, current_joints, 'movej')
-            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
+
+            joint_angle_read = self.Robot.JointAngleReadObject.copy()
+            if line_sweep:
+                joint_angle_read[-1] -= np.pi/2
+            self.Robot.moveJointsTo(stop_event_as_argument, joint_angle_read, 'movej')
 
             self.switchActiveCamera(stop_event_as_argument)
             self.optimiseFocus(stop_event_as_argument)
             self.optimiseReflectionAngle(stop_event_as_argument)
-
             best_image = self.waitForNextAvailableImage(stop_event_as_argument)
             saveImage(best_image, stop_event_as_argument)
             self.switchActiveCamera(stop_event_as_argument)

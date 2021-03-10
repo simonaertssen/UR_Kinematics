@@ -55,10 +55,10 @@ class Robot:
     JointAngleInit = [i * pi/180 for i in [61.42, -93.00, 94.65, -91.59, -90.0, 0.0]]
     JointAngleDropObject = [i * pi/180 for i in [87.28, -74.56, 113.86, -129.29, -89.91, -2.73]]
     # JointAngleReadObject = [i * pi / 180 for i in [7.43, -88.50, 100.43, -104.31, 105.05, 86.45]]  # Calibrated
-    JointAngleReadObject = [i * pi / 180 for i in [4.27, -89.63, 101.81, -103.13, 97.65, 89.53]]  # Calibrated
+    JointAngleReadObject = [i * pi / 180 for i in [4.27, -89.63, 101.81, -103.13, 97.65, 89.29]]  # Calibrated
 
     ToolPositionDropObject = [0.08511, -0.51591, 0.04105, 0.00000, 0.00000, 0.00000]
-    ToolPositionLightBox = [0.146, -0.311, 0.05, 0.000, pi, 0.000]  # Calibrated
+    ToolPositionLightBox = [0.148, -0.311, 0.05, 0.000, pi, 0.000]  # Calibrated
 
     # ToolPositionReadObject = [-0.46864, -0.10824, 0.74611, 0.0000, 0.000, pi/2.0]
     # ToolPositionTestCollision = [0.04860, -0.73475, 0.30999, 0.7750, 3.044, 0.002]
@@ -440,7 +440,7 @@ class Robot:
             return
         if len(object_position) < 1:
             return
-        X, Y, angle = object_position
+        (X, Y), (w, h), angle = object_position
 
         # Adjust position to the object
         target_position = self.ToolPositionLightBox.copy()
@@ -465,6 +465,7 @@ class Robot:
         target_position[2] = self.ToolHoverHeight
         self.moveToolTo(stop_event, target_position, 'movel')
         self.goHome(stop_event)
+        return X, Y, w, h, angle
 
     def initialise(self, stop_event):
         r"""
