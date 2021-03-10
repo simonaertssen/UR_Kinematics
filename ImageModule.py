@@ -65,8 +65,10 @@ def findObjectsToPickUp(image_to_extract):
 
         # Save all information
         save_position   = (image_width-contour_Y)/image_width*LIGHT_BOX_WIDTH, contour_X/image_height*LIGHT_BOX_LENGTH
-        save_dimensions = (rectangle_width, rectangle_height)
-        outputInfo.append((save_position, save_dimensions, rectangle_angle*np.pi/180.0))
+        save_width  = min(rectangle_width, rectangle_height)
+        save_height = max(rectangle_width, rectangle_height)
+        save_size   = (save_width/LIGHT_BOX_WIDTH, save_height/LIGHT_BOX_LENGTH)
+        outputInfo.append((save_position, save_size, rectangle_angle*np.pi/180.0))
 
         # Draw info on the image:
         draw_on_me = cv.polylines(draw_on_me, [box], True, (0, 255, 0), thickness=5)
