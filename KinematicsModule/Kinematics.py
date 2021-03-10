@@ -145,7 +145,7 @@ def detectCollision(positions):
     return False
 
 
-def RPY2RotVec(roll, pitch, yaw):
+def RPY2RotVecRodr(roll, pitch, yaw):
     """
     Convert roll pitch, yaw angles to a rotation vector.
     See: www.zacobria.com/universal-robots-knowledge-base-tech-support-
@@ -199,27 +199,113 @@ def RPY2RotVec(roll, pitch, yaw):
     return rx, ry, rz
 
 
+def RPY2RotVec(gamma, beta, alpha):
+    # See https://forum.universal-robots.com/t/pose-rotation-order/223/2
+    ca = np.cos(alpha)
+    cb = np.cos(beta)
+    cg = np.cos(gamma)
+    sa = np.sin(alpha)
+    sb = np.sin(beta)
+    sg = np.sin(gamma)
+
+    r11 = ca * cb
+    r12 = ca * sb * sg - sa * cg
+    r13 = ca * sb * cg + sa * sg
+    r21 = sa * cb
+    r22 = sa * sb * sg + ca * cg
+    r23 = sa * sb * cg - ca * sg
+    r31 = -sb
+    r32 = cb * sg
+    r33 = cb * cg
+
+    theta = np.arccos((r11 + r22 + r33 - 1) / 2)
+    sth = np.sin(theta)
+    kx = (r32 - r23) / (2 * sth)
+    ky = (r13 - r31) / (2 * sth)
+    kz = (r21 - r12) / (2 * sth)
+    return theta * kx, theta * ky, theta * kz
+
+
+def RotVec2RPY(rx, ry, rz):
+    # See https://forum.universal-robots.com/t/pose-rotation-order/223/2
+    theta = np.sqrt(rx * rx + ry * ry + rz * rz)
+    kx = rx / theta
+    ky = ry / theta
+    kz = rz / theta
+    cth = np.cos(theta)
+    sth = np.sin(theta)
+    vth = 1 - np.cos(theta)
+
+    r11 = kx * kx * vth + cth
+    r12 = kx * ky * vth - kz * sth
+    r13 = kx * kz * vth + ky * sth
+    r21 = kx * ky * vth + kz * sth
+    r22 = ky * ky * vth + cth
+    r23 = ky * kz * vth - kx * sth
+    r31 = kx * kz * vth - ky * sth
+    r32 = ky * kz * vth + kx * sth
+    r33 = kz * kz * vth + cth
+
+    beta = np.arctan2(-r31, np.sqrt(r11 * r11 + r21 * r21))
+    if beta > 1.570621793869697:  # beta > 89.99:
+        beta = 1.570621793869697
+        alpha = 0
+        gamma = np.arctan2(r12, r22)
+    elif beta < - 1.570621793869697:  # beta < -d2r(89.99):
+        beta = -1.570621793869697
+        alpha = 0
+        gamma = -np.arctan2(r12, r22)
+    else:
+        cb = np.cos(beta)
+        alpha = np.arctan2(r21 / cb, r11 / cb)
+        gamma = np.arctan2(r32 / cb, r33 / cb)
+    return gamma, beta, alpha
+
+
 def SpeedOfCurrentKinematics():
-    start = time.time()
     n = 100000
+    start = time.time()
     for _ in range(n):
         toolTip = None
         pos = ForwardKinematics((0.0, -np.pi/2, 0.0, -np.pi/2, 0.0, 0.0))
     interval = time.time() - start
     print(n/interval, "iterations per second")
 
+
 def SpeedOfCollisionDetection():
-    start = time.time()
     X = [0.1]*9
     Y = [0.1]*9
     Z = [0.1]*9
 
     n = 100000
+    start = time.time()
     for _ in range(n):
         toolTip = None
         collision = detectCollision((X, Y, Z))
     interval = time.time() - start
     print(n/interval, "iterations per second")
+
+
+def SpeedOfRYP():
+    r = 1.984
+    p = 0.2894
+    y = -2.04476
+    print(RotVec2RPY(r, p, y))
+    print(RPY2RotVec(r, p, y))
+    print(RPY2RotVecRodr(r, p, y))
+
+    n = 100000
+    start = time.time()
+    for _ in range(n):
+        RPY2RotVecRodr(r, p, y)
+    interval = time.time() - start
+    print(n / interval, "iterations per second")
+
+    start = time.time()
+    for _ in range(n):
+        RPY2RotVec(r, p, y)
+    interval = time.time() - start
+    print(n / interval, "iterations per second")
 
 
 if __name__ == '__main__':
@@ -231,3 +317,7 @@ if __name__ == '__main__':
 
     SpeedOfCollisionDetection()
     # 47293 iterations per second for the pure Python implementation
+
+    SpeedOfRYP()
+    # Rodriguez version takes 43116 iterations per second
+    # Classical version takes 105477 iterations per second
