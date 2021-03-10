@@ -309,11 +309,12 @@ class MainManager:
 
             self.switchActiveCamera(stop_event_as_argument)
             # self.optimiseReflectionAngle(stop_event_as_argument)
-            self.optimiseFocus(stop_event_as_argument)
-            # self.optimiseReflectionAngle(stop_event_as_argument)
-            best_image = self.waitForNextAvailableImage(stop_event_as_argument)
-            saveImage(best_image, stop_event_as_argument)
-            self.switchActiveCamera(stop_event_as_argument)
+            sleep(2.0, stop_event_as_argument)
+            # self.optimiseFocus(stop_event_as_argument)
+            # # self.optimiseReflectionAngle(stop_event_as_argument)
+            # best_image = self.waitForNextAvailableImage(stop_event_as_argument)
+            # saveImage(best_image, stop_event_as_argument)
+            # self.switchActiveCamera(stop_event_as_argument)
 
             # Move back to initial position
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')

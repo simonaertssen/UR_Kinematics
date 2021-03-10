@@ -19,6 +19,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QSizePo
 from threading import Thread, Event, Timer, enumerate as list_threads
 from Functionalities import communicateError
 
+
 class StandardObjectWidget(QWidget):
     def __init__(self, screen_width, screen_height, parent):
         super(StandardObjectWidget, self).__init__(parent)
