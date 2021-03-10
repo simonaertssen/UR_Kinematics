@@ -209,7 +209,7 @@ class MainManager:
         MAX_ITERATIONS = 30
         start_time = time.time()
         MAX_TIME = 60.0                          # 1 minute
-        MAX_TOLERANCE = 0.001                    # 1 mm
+        MAX_TOLERANCE = 0.0005                   # mm, half of the robot precision
         MAX_DEVIATION = info['MAX_DEVIATION']    # mm
         MAX_STEP = info['MAX_STEP']              # mm
 
@@ -228,8 +228,9 @@ class MainManager:
             # Remove nans from computation and fit the 2nd order polynomial:
             target = new_target(data)
             d_pos = target - current_position[idx]
+            d_pos_old = d_pos
             d_pos = (d_pos / abs(d_pos)) * min(abs(d_pos), MAX_STEP)
-            print(f"Now = {round(current_position[idx], 4)}, new = {round(target, 4)}, d = {round(d_pos, 4)}")
+            print(f"Now = {round(current_position[idx], 4)}, new = {round(target, 4)}, d = {round(d_pos, 4)} instead of {round(d_pos_old, 4)}")
 
             current_position = transform_position(d_pos, current_position)
             data[:, iteration + 2] = np.array([current_position[idx], sample_objective(current_position, stop_event)])
@@ -240,6 +241,9 @@ class MainManager:
                 iteration -= 1
                 continue
             if abs(d_pos) < MAX_TOLERANCE:  # Because we cannot move closer than 1 mm
+                # instead of measuring how close we are to  the optimal value of the objective
+                # function (which runs across multiple orders of magnitude) we stop optimising
+                # if the next step is less than half of our precision away
                 break
             iteration += 1
         return current_position
@@ -285,18 +289,19 @@ class MainManager:
             return (image == 255).sum()
 
         def new_value(data):
+            # Gradient method
             xs = data[0, ~np.isnan(data[0, :])]
             ys = data[1, ~np.isnan(data[1, :])]
             grad = (ys[-2] - ys[-1])/(xs[-2] - xs[-1])
-            lr = 1.0e-6
+            lr = 1.0e-7
             x_new = xs[-1] - lr * grad
             return x_new
 
         # Angle: all numbers are in milli rad
         opt_info = {'idx': 3,                # Index of the position we optimise on
-                    'MAX_STEP': 0.006,       # Maximum change of the parameter per step
+                    'MAX_STEP': 0.01,       # Maximum change of the parameter per step
                     'MAX_DEVIATION': 0.030,  # Total maximum change wrt the initial position
-                    'init': [0.00, 0.004]    # Initial samples
+                    'init': [0.00, 0.002]    # Initial samples
                     }
         return self.optimise(stop_event, opt_info, objective, apply_angle_transformation, new_value)
 
@@ -329,14 +334,11 @@ class MainManager:
             self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
 
             self.switchActiveCamera(stop_event_as_argument)
-            # self.optimiseFocus(stop_event_as_argument)
+            self.optimiseFocus(stop_event_as_argument)
             self.optimiseReflectionAngle(stop_event_as_argument)
             best_image = self.waitForNextAvailableImage(stop_event_as_argument)
             saveImage(best_image, stop_event_as_argument)
             self.switchActiveCamera(stop_event_as_argument)
-
-            # Move back to initial position
-            self.Robot.moveJointsTo(stop_event_as_argument, self.Robot.JointAngleReadObject.copy(), 'movej')
 
         def pickupTask(stop_event_as_argument):
             if not self._imageInfo:
@@ -370,7 +372,7 @@ class MainManager:
 
             self.Robot.dropObject(stop_event_as_argument)
 
-        self.Robot.giveTask(pickupTask)
+        self.Robot.giveTask(testPresentation)
 
     def stopRobotTask(self):
         self.Robot.halt()
