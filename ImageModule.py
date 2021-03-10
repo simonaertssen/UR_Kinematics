@@ -67,7 +67,7 @@ def findObjectsToPickUp(image_to_extract):
         save_position   = (image_width-contour_Y)/image_width*LIGHT_BOX_WIDTH, contour_X/image_height*LIGHT_BOX_LENGTH
         save_width  = min(rectangle_width, rectangle_height)
         save_height = max(rectangle_width, rectangle_height)
-        save_size   = (save_width/LIGHT_BOX_WIDTH, save_height/LIGHT_BOX_LENGTH)
+        save_size   = (save_width, save_height)
         outputInfo.append((save_position, save_size, rectangle_angle*np.pi/180.0))
 
         # Draw info on the image:
