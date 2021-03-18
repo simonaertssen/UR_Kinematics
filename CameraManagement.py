@@ -250,7 +250,7 @@ def runSingleCamera(camera):
         if cv.waitKey(1) & 0xFF == 27:  # Exit upon escape key
             break
         now = time.time()
-        print("{} FPS = {}".format(camera, 1 / (time.time() - start)))
+        print("{} FPS = {}".format(camera, 1 / (time.time() - start + 1.0e-12)))
         start = now
     camera.shutdownSafely()
     cv.destroyAllWindows()
@@ -308,7 +308,7 @@ def runCamerasAlternate(cameraOn, cameraOff):
             h, w = cameraOn.getShape()
 
         now = time.time()
-        print("FPS =", 1 / (time.time() - start))
+        print("FPS =", 1 / (time.time() - start + 1.0e-12))
         start = now
     cameraOn.shutdownSafely()
     cameraOn.shutdownSafely()
