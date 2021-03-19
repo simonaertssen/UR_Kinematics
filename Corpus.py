@@ -132,12 +132,10 @@ class MainManager:
             latest_image = cropToRectangle(self.waitForNextAvailableImage(stop_event))
             max_value  = latest_image.max()
             mean_value = latest_image.mean()
-            print(max_value)
             if abs(max_value - TARGET) < 1.0 or mean_value < 150:
                 break
             current_value = self.TopCamera.camera.ExposureTimeAbs.GetValue()
             new_value = current_value - (max_value - TARGET)*step_value
-            print("New value =", latest_image.mean())
             if new_value < 10.0:  # Lowest exposure time from manufacturer
                 break
             self.TopCamera.camera.ExposureTimeAbs.SetValue(new_value)
@@ -236,7 +234,7 @@ class MainManager:
                 print(f"NAN: target = {target}, current_position[idx] = {current_position[idx]}")
                 break
             d_pos_old = d_pos
-            d_pos = (d_pos / abs(d_pos)) * min(abs(d_pos), MAX_STEP)
+            d_pos = (d_pos / abs(d_pos + 1.0e-12)) * min(abs(d_pos), MAX_STEP)
             print(f"Now = {round(current_position[idx], 4)}, new = {round(target, 4)}, d = {round(d_pos, 4)} instead of {round(d_pos_old, 4)}")
 
             current_position = transform_position(d_pos, current_position)
@@ -483,7 +481,7 @@ class MainManager:
 
             self.Robot.dropObject(stop_event_as_argument)
 
-        self.Robot.giveTask(pickupTask)
+        self.Robot.giveTask(continuousTask)
 
     def stopRobotTask(self):
         self.Robot.halt()
