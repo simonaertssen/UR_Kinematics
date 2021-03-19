@@ -104,6 +104,8 @@ class Camera:
         self.pixelHeight = self.camera.Height.Value
         self.close()
         self.registerGrabbingStrategy()
+        if not self.camera.IsGrabbing():
+            self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
 
     def __repr__(self):
         return "Camera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
