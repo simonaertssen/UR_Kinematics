@@ -28,7 +28,7 @@ class ImageEventHandler(pylon.ImageEventHandler):
         method was shown to be superior in terms of speed.
         """
         try:
-            if grab_result.GrabSucceeded():
+            if grab_result and grab_result.GrabSucceeded():
                 cameraContextValue = grab_result.GetCameraContext()
                 with grab_result.GetArrayZeroCopy() as ZCArray:
                     try:
@@ -38,7 +38,8 @@ class ImageEventHandler(pylon.ImageEventHandler):
         except genicam.GenericException as e:
             communicateError(e, "ImageEventHandler Exception")
         finally:
-            grab_result.Release()
+            if grab_result:
+                grab_result.Release()
 
 
 class Camera:
@@ -104,8 +105,6 @@ class Camera:
         self.pixelHeight = self.camera.Height.Value
         self.close()
         self.registerGrabbingStrategy()
-        if not self.camera.IsGrabbing():
-            self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
 
     def __repr__(self):
         return "Camera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
@@ -189,7 +188,7 @@ class Camera:
         if not self.camera.IsGrabbing():
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
         try:
-            if self.camera.WaitForFrameTriggerReady(300, pylon.TimeoutHandling_Return):
+            if self.camera.WaitForFrameTriggerReady(200, pylon.TimeoutHandling_ThrowException):
                 self.camera.ExecuteSoftwareTrigger()
             grabbedImage, cam_num = self.imageEventHandler.imageQueue.get(timeout=0.03)
             grabbedImage, info = self.manipulateImage(np.asarray(grabbedImage))
@@ -231,6 +230,8 @@ class DetailCamera(Camera):
         self.open()
         self.camera.ExposureTimeAbs.SetValue(300.0)
         self.close()
+        # Because we ended up opening and closing the camera again:
+        self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
 
     def __repr__(self):
         return "DetailCamera {}. Open? {}. Is Grabbing? {}.".format(self.serialNumber, self.camera.IsOpen(), self.camera.IsGrabbing())
