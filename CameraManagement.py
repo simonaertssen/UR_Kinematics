@@ -178,6 +178,8 @@ class Camera:
         return image_to_manipulate
 
     def grabImage(self):
+        # Annoying error:
+        # RuntimeException(genicam: grabImage not ready) in ExecuteSoftwareTrigger(), file pylon.py, line 3941. Cause: return _pylon.InstantCamera_ExecuteSoftwareTrigger(self)
         if not self.Connected:
             return None
         self.open()
@@ -189,10 +191,8 @@ class Camera:
                 self.camera.ExecuteSoftwareTrigger()
             grabbedImage, cam_num = self.imageEventHandler.imageQueue.get(timeout=0.03)
             grabbedImage, info = self.manipulateImage(np.asarray(grabbedImage))
-        except genicam.RuntimeException as e:
-            communicateError(e, "genicam: grabImage not ready")
-        except RuntimeError as e:
-            communicateError(e, "grabImage not ready")
+        except (genicam.RuntimeException, RuntimeError) as e:
+            communicateError(e)
         except Empty as e:
             pass  # Yes, you know that emptying the queue raises an error
         finally:
