@@ -350,7 +350,7 @@ class Robot:
             except TimeoutError as e:  # Time ran out to test for object position
                 communicateError(e)
             except InterruptedError as e:  # StopEvent is raised
-                communicateError(e)
+                print(e)
             except RuntimeError as e:  # Collision raises RuntimeError, so move to startposition
                 self.halt()
                 sleep(0.1, stop_event)
