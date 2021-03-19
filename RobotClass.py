@@ -347,10 +347,10 @@ class Robot:
         if wait:
             try:
                 self.waitUntilTargetReached(current_position, target_position, p, check_collisions, stop_event)
-            except TimeoutError as e:  # Time ran out to test for object position
-                communicateError(e)
+            except TimeoutError as e:  # Time ran out to test for object position: do not print as error
+                print(str(e))
             except InterruptedError as e:  # StopEvent is raised
-                print(e)
+                communicateError(e)
             except RuntimeError as e:  # Collision raises RuntimeError, so move to startposition
                 self.halt()
                 sleep(0.1, stop_event)
