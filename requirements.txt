@@ -1,10 +1,8 @@
-opencv_contrib_python==3.4.2.16
-numpy==1.16.5
-matplotlib==3.1.1
-Cython==0.29.13
-pypylon==1.5.4
 pywin32==223
-Pillow==8.1.2
-pypylon_opencv_viewer==1.1.0
+opencv_contrib_python==3.4.2.16
+Cython==0.29.22
+pypylon==1.7.2
+vispy==0.6.3
+numpy==1.20.1
+matplotlib==3.1.1
 PyQt5==5.15.4
-sip==6.0.3
