@@ -74,11 +74,17 @@ class Camera:
         self.camera = None
         self.imageEventHandler = ImageEventHandler()
         self.Connected = False
-        try:
+
+        TRIES = 2
+        for current_try in range(TRIES):
             self.setCamera()
-        except (genicam.GenericException, genicam.RuntimeException) as e:
-            communicateError(e, f'Camera {self.serialNumber} could not be found')
-            sys.exit()
+            if self.Connected or current_try == TRIES-1:
+                break
+            print("Pausing before opening the camera again.")
+            time.sleep(1)
+            super(Camera, self).__init__()
+        if not self.Connected:
+            sys.exit(-1)
 
         # Open camera briefly to avoid errors while registering properties.
         try:
@@ -114,15 +120,18 @@ class Camera:
         is not given, use the first camera that pylon finds. An error is raised
         if no cameras could be found.
         """
-        if self.serialNumber is None:
-            self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
-        else:
-            self.info.SetSerialNumber(str(self.serialNumber))
-            self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(self.info))
-        # Close all connections if they exist:
-        self.close()
-        self.Connected = True
-        print("Camera {} is connected.".format(self.serialNumber))
+        try:
+            if self.serialNumber is None:
+                self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
+            else:
+                self.info.SetSerialNumber(str(self.serialNumber))
+                self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(self.info))
+            # Close all connections if they exist:
+            self.close()
+            self.Connected = True
+            print("Camera {} is connected.".format(self.serialNumber))
+        except (genicam.GenericException, genicam.RuntimeException) as e:
+            communicateError(e, f'Camera {self.serialNumber} could not be found')
 
     def isConnected(self):
         return self.Connected
