@@ -2,6 +2,7 @@ import time
 from queue import Queue, Empty
 import tracemalloc
 
+import sys
 import cv2 as cv
 import numpy as np
 from pypylon import pylon, genicam
@@ -73,7 +74,11 @@ class Camera:
         self.camera = None
         self.imageEventHandler = ImageEventHandler()
         self.Connected = False
-        self.setCamera()
+        try:
+            self.setCamera()
+        except (genicam.GenericException, genicam.RuntimeException) as e:
+            communicateError(e, f'Camera {self.serialNumber} could not be found')
+            sys.exit()
 
         # Open camera briefly to avoid errors while registering properties.
         try:
@@ -109,19 +114,15 @@ class Camera:
         is not given, use the first camera that pylon finds. An error is raised
         if no cameras could be found.
         """
-        try:
-            if self.serialNumber is None:
-                self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
-            else:
-                self.info.SetSerialNumber(str(self.serialNumber))
-                self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(self.info))
-            # Close all connections if they exist:
-            self.close()
-            self.Connected = True
-            print("Camera {} is connected.".format(self.serialNumber))
-        except genicam.GenericException as e:
-            self.shutdownSafely()
-            raise ConnectionError('Camera {} could not be found: {}'.format(self.serialNumber, e))
+        if self.serialNumber is None:
+            self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
+        else:
+            self.info.SetSerialNumber(str(self.serialNumber))
+            self.camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(self.info))
+        # Close all connections if they exist:
+        self.close()
+        self.Connected = True
+        print("Camera {} is connected.".format(self.serialNumber))
 
     def isConnected(self):
         return self.Connected
@@ -175,7 +176,7 @@ class Camera:
         if not self.camera.IsGrabbing():
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
         try:
-            if self.camera.WaitForFrameTriggerReady(100, pylon.TimeoutHandling_Return):
+            if self.camera.WaitForFrameTriggerReady(300, pylon.TimeoutHandling_Return):
                 self.camera.ExecuteSoftwareTrigger()
             grabbedImage, cam_num = self.imageEventHandler.imageQueue.get(timeout=0.03)
             grabbedImage, info = self.manipulateImage(np.asarray(grabbedImage))
