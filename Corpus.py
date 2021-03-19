@@ -158,6 +158,7 @@ class MainManager:
             return
         self.TopCamera.close()
         self.TopCamera, self.DetailCamera = self.DetailCamera, self.TopCamera
+
         # Wait for the new camera to start grabbing
         while not stop_event.isSet() and not self.TopCamera.camera.IsGrabbing():
             sleep(0.01, stop_event)
@@ -229,13 +230,13 @@ class MainManager:
             # Remove nans from computation and fit the 2nd order polynomial:
             target = new_target(data)
             d_pos = target - current_position[idx]
-            if np.isnan(d_pos) or np.isnan(current_position[idx]):
+            if np.isnan(d_pos):
                 # Nan value from the optimisation
                 print(f"NAN: target = {target}, current_position[idx] = {current_position[idx]}")
                 break
             d_pos_old = d_pos
             d_pos = (d_pos / abs(d_pos + 1.0e-12)) * min(abs(d_pos), MAX_STEP)
-            print(f"Now = {round(current_position[idx], 4)}, new = {round(target, 4)}, d = {round(d_pos, 4)} instead of {round(d_pos_old, 4)}")
+            # print(f"Now = {round(current_position[idx], 4)}, new = {round(target, 4)}, d = {round(d_pos, 4)} instead of {round(d_pos_old, 4)}")
 
             current_position = transform_position(d_pos, current_position)
             data[:, iteration + 2] = np.array([current_position[idx], sample_objective(current_position, stop_event)])
@@ -470,6 +471,7 @@ class MainManager:
             best_image = self.waitForNextAvailableImage(stop_event_as_argument)
             saveImage(best_image, stop_event_as_argument)
             self.switchActiveCamera(stop_event_as_argument)
+            print("Item done")
 
             # Move back to initial position
             self.Robot.moveJointsTo(stop_event_as_argument, joint_angle_read, 'movej')
