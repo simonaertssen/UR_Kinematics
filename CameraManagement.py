@@ -188,7 +188,7 @@ class Camera:
         if not self.camera.IsGrabbing():
             self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly, pylon.GrabLoop_ProvidedByInstantCamera)
         try:
-            if self.camera.WaitForFrameTriggerReady(200, pylon.TimeoutHandling_ThrowException):
+            if self.camera.WaitForFrameTriggerReady(400, pylon.TimeoutHandling_Return):
                 self.camera.ExecuteSoftwareTrigger()
             grabbedImage, cam_num = self.imageEventHandler.imageQueue.get(timeout=0.03)
             grabbedImage, info = self.manipulateImage(np.asarray(grabbedImage))
