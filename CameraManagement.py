@@ -204,7 +204,7 @@ class TopCamera(Camera):
         # Overload to deal with images in the right way
         image_to_manipulate = self.toGrayScale(image_to_manipulate)
         image_to_manipulate, info = findObjectsToPickUp(image_to_manipulate)
-        image_to_manipulate = markTimeDateOnImage(image_to_manipulate)
+        # image_to_manipulate = markTimeDateOnImage(image_to_manipulate)
         return image_to_manipulate, info
 
 
@@ -227,7 +227,7 @@ class DetailCamera(Camera):
         info = []
         # Overload to deal with images in the right way
         image_to_manipulate = self.toGrayScale(image_to_manipulate)
-        image_to_manipulate = markTimeDateOnImage(image_to_manipulate)
+        # image_to_manipulate = markTimeDateOnImage(image_to_manipulate)
         return image_to_manipulate, info
 
 

@@ -237,7 +237,7 @@ class MainManager:
                 break
             d_pos_old = d_pos
             d_pos = (d_pos / abs(d_pos)) * min(abs(d_pos), MAX_STEP)
-            # print(f"Now = {round(current_position[idx], 4)}, new = {round(target, 4)}, d = {round(d_pos, 4)} instead of {round(d_pos_old, 4)}")
+            print(f"Now = {round(current_position[idx], 4)}, new = {round(target, 4)}, d = {round(d_pos, 4)} instead of {round(d_pos_old, 4)}")
 
             current_position = transform_position(d_pos, current_position)
             data[:, iteration + 2] = np.array([current_position[idx], sample_objective(current_position, stop_event)])
