@@ -231,16 +231,15 @@ class MainManager:
             # Remove nans from computation and fit the 2nd order polynomial:
             target = new_target(data)
             d_pos = target - current_position[idx]
-            if np.isnan(d_pos):
+            if np.isnan(d_pos) or np.isnan(current_position[idx]):
                 # Nan value from the optimisation
                 print(f"NAN: target = {target}, current_position[idx] = {current_position[idx]}")
                 break
             d_pos_old = d_pos
             d_pos = (d_pos / abs(d_pos)) * min(abs(d_pos), MAX_STEP)
-            print(f"Now = {round(current_position[idx], 4)}, new = {round(target, 4)}, d = {round(d_pos, 4)} instead of {round(d_pos_old, 4)}")
+            # print(f"Now = {round(current_position[idx], 4)}, new = {round(target, 4)}, d = {round(d_pos, 4)} instead of {round(d_pos_old, 4)}")
 
             current_position = transform_position(d_pos, current_position)
-            print("current_position = ", [round(d, 4) for d in current_position])
             data[:, iteration + 2] = np.array([current_position[idx], sample_objective(current_position, stop_event)])
             if abs(d_pos) < MAX_TOLERANCE:  # Because we cannot move closer than 1 mm
                 # instead of measuring how close we are to  the optimal value of the objective
@@ -394,7 +393,6 @@ class MainManager:
             self.switchActiveCamera(stop_event_as_argument)
 
         def pickupTask(stop_event_as_argument):
-            print("Num samples = ", len(self._imageInfo))
             if not self._imageInfo:
                 print("self._imageInfo =", self._imageInfo)
                 raise ValueError("Image info should not be None, possibly no items.")
@@ -402,7 +400,10 @@ class MainManager:
             self.Robot.turnWhiteLampON(stop_event_as_argument)
             self.currentObject = self._imageInfo[0]
             X, Y, w, h, angle = self.Robot.pickUpObject(stop_event_as_argument, self.currentObject)
-            line_sweep = min(w, h) > 100.0  # Then we need to rotate the object and do a line sweep
+            # small lego brick: 76.47 x 103.75 pixels
+            # big lego brick:   76.38 x 204.11 pixels
+            # big alum piece:  131.27 x 389.68 pixels
+            line_sweep = max(w, h) > 175.0  # Then we need to rotate the object and do a line sweep
 
             # Move to desired position from the Home position
             current_joints = self.Robot.getJointAngles()

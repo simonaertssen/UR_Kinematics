@@ -448,7 +448,7 @@ class Robot:
         target_position[1] -= Y  # adjust Y position
         target_position[2] = self.ToolHoverHeight
         # Get right orientation from Rodrigues conversion
-        REAL_ANGLE_ADJUST = pi / 180 * 6  # Offset to table to camera
+        REAL_ANGLE_ADJUST = pi / 180 * 6  # Offset 6 degrees to table to camera
         a, b, c = RPY2RotVecRodr(0, pi, -angle - REAL_ANGLE_ADJUST)
         target_position[3] = a
         target_position[4] = b
